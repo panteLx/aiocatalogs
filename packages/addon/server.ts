@@ -122,7 +122,97 @@ app.get('/manifest.json', async (req, res) => {
   }
 });
 
-// Handler for Stremio endpoints
+// Add new path-based parameter route for manifest
+app.get('/:params/manifest.json', async (req, res) => {
+  try {
+    // Extract userId from URL path parameters
+    let userId = 'default';
+    try {
+      const paramsObj = JSON.parse(decodeURIComponent(req.params.params));
+      userId = paramsObj.userId || 'default';
+    } catch (e) {
+      console.error('Failed to parse path parameters:', e);
+    }
+
+    // Get builder from cache or create a new one
+    let builder;
+
+    if (builderCache.has(userId)) {
+      builder = builderCache.get(userId);
+    } else {
+      builder = await createAddonBuilder(userId);
+      builderCache.set(userId, builder);
+    }
+
+    // Stremio SDK uses getInterface() to get the interface and manifest
+    const addonInterface = builder.getInterface();
+
+    // Logging for debugging purposes
+    console.log(
+      'Sending manifest via path params (first 200 chars):',
+      JSON.stringify(addonInterface.manifest).substring(0, 200) + '...'
+    );
+
+    // Explicitly set headers and send manifest
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.status(200).send(JSON.stringify(addonInterface.manifest));
+  } catch (error) {
+    console.error('Error generating manifest:', error);
+    res.status(500).json({ error: 'Failed to generate manifest' });
+  }
+});
+
+// Handler for Stremio endpoints with path parameters
+app.get('/:params/:resource/:type/:id.json', async (req, res) => {
+  const { resource, type, id, params } = req.params;
+
+  try {
+    // Extract userId from URL path parameters
+    let userId = 'default';
+    try {
+      const paramsObj = JSON.parse(decodeURIComponent(params));
+      userId = paramsObj.userId || 'default';
+    } catch (e) {
+      console.error('Failed to parse path parameters:', e);
+    }
+
+    // Only process catalog requests, respond with error for others
+    if (resource !== 'catalog') {
+      res.status(404).json({ error: 'Resource not supported' });
+      return;
+    }
+
+    // Get builder from cache or create a new one
+    let builder;
+
+    if (builderCache.has(userId)) {
+      builder = builderCache.get(userId);
+    } else {
+      builder = await createAddonBuilder(userId);
+      builderCache.set(userId, builder);
+    }
+
+    // Get addon interface
+    const addonInterface = builder.getInterface();
+
+    // Call catalog method from interface
+    addonInterface
+      .get(resource, type, id)
+      .then((result: unknown) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.json(result);
+      })
+      .catch((error: Error) => {
+        console.error(`Error handling ${resource} request:`, error);
+        res.status(500).json({ error: 'internal error' });
+      });
+  } catch (error) {
+    console.error(`Error in ${req.params.resource} endpoint:`, error);
+    res.status(500).json({ error: 'internal server error' });
+  }
+});
+
+// Original handler for Stremio endpoints (for backward compatibility)
 app.get('/:resource/:type/:id.json', async (req, res) => {
   const { resource, type, id } = req.params;
   const userId = (req.query.userId as string) || 'default';

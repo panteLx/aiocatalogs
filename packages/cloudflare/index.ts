@@ -118,7 +118,80 @@ app.get('/manifest.json', async c => {
   }
 });
 
-// Addon API routes
+// Add new path-based parameter route for manifest
+app.get('/:params/manifest.json', async c => {
+  initConfigManager(c);
+
+  // Extract userId from URL path parameters
+  let userId = 'default';
+  try {
+    const paramsObj = JSON.parse(decodeURIComponent(c.req.param('params')));
+    userId = paramsObj.userId || 'default';
+  } catch (e) {
+    console.error('Failed to parse path parameters:', e);
+  }
+
+  if (c.env && c.env.DB) {
+    try {
+      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+
+      c.header('Content-Type', 'application/json');
+      return c.json(addonInterface.manifest);
+    } catch (error) {
+      console.error('Error generating manifest:', error);
+      return c.json({ error: 'Failed to generate manifest' }, 500);
+    }
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+});
+
+// Addon API routes with path parameters
+app.get('/:params/:resource/:type/:id\\.json', async c => {
+  initConfigManager(c);
+  const params = c.req.param();
+  const resource = params.resource;
+  const type = params.type;
+  // Extract route parameters correctly
+  const idWithJson = params['id\\.json'];
+  const id = idWithJson ? idWithJson.replace(/\.json$/, '') : '';
+
+  // Extract userId from URL path parameters
+  let userId = 'default';
+  try {
+    const paramsObj = JSON.parse(decodeURIComponent(params.params));
+    userId = paramsObj.userId || 'default';
+  } catch (e) {
+    console.error('Failed to parse path parameters:', e);
+  }
+
+  if (c.env && c.env.DB) {
+    try {
+      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+
+      // Handle different resource types
+      let result;
+      if (resource === 'catalog') {
+        result = await addonInterface.catalog({ type, id });
+      } else if (resource === 'meta') {
+        result = await addonInterface.meta();
+      } else if (resource === 'stream') {
+        result = await addonInterface.stream();
+      } else {
+        return c.json({ error: 'Resource not supported' }, 404);
+      }
+
+      return c.json(result);
+    } catch (error) {
+      console.error(`Error in ${resource} endpoint:`, error);
+      return c.json({ error: 'Internal server error' }, 500);
+    }
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+});
+
+// Original Addon API routes (for backward compatibility)
 app.get('/:resource/:type/:id\\.json', async c => {
   initConfigManager(c);
   const params = c.req.param();

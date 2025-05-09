@@ -73,8 +73,10 @@ export function getConfigPageHTML(
 
   // Create URLs for the Stremio integration with query parameters
   // The baseUrl must already contain the protocol
-  const stremioUrl = `stremio://${baseUrl.replace(/^https?:\/\//, '')}/manifest.json?userId=${userId}`;
-  const manifestUrl = `${baseUrl}/manifest.json?userId=${userId}`;
+  const paramsObject = { userId };
+  const encodedParams = encodeURIComponent(JSON.stringify(paramsObject));
+  const stremioUrl = `stremio://${baseUrl.replace(/^https?:\/\//, '')}/${encodedParams}/manifest.json`;
+  const manifestUrl = `${baseUrl}/${encodedParams}/manifest.json`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
     stremioUrl
   )}`;
