@@ -5,6 +5,7 @@ import { configManager } from './configManager';
 import { getAddonInterface, clearAddonCache } from './addon';
 import { D1Database, Env } from './types';
 import { getHomePageHTML } from '../shared/templates/configPage';
+import packageInfo from '../../package.json';
 
 // Create Hono App with Bindings type parameter
 const app = new Hono<{ Bindings: Env }>();
@@ -33,7 +34,7 @@ app.get('/configure', async c => {
   const message = c.req.query('message') || '';
   const error = c.req.query('error') || '';
 
-  return c.html(getHomePageHTML(message, error));
+  return c.html(getHomePageHTML(message, error, packageInfo.version));
 });
 
 // Create user

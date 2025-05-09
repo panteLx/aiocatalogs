@@ -4,6 +4,7 @@ import { createAddonBuilder } from './manifest';
 import configManager from './lib/configManager';
 import { getHomePageHTML } from '../shared/templates/configPage';
 import configRoutes from './routes/configPage';
+import packageInfo from '../../package.json';
 
 // Port for the server (Default: 7000, can be overridden via ENV variable)
 const port = process.env.PORT || 7000;
@@ -59,7 +60,7 @@ app.get('/configure', (req, res) => {
 
   // Otherwise display the home page
   res.setHeader('Content-Type', 'text/html');
-  res.send(getHomePageHTML(message, error));
+  res.send(getHomePageHTML(message, error, packageInfo.version));
 });
 
 // Create new user

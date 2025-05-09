@@ -162,17 +162,43 @@ export function getConfigPageHTML(
       <body class="min-h-screen bg-background text-foreground bg-card-pattern">
         <div class="container py-10">
           <header class="mb-10">
-            <h1 class="text-3xl font-bold tracking-tight mb-2">
-              All-in-One Catalogs - Configuration
-            </h1>
-            <p class="text-lg text-muted-foreground">
-              Your unique user ID: <span class="font-medium text-primary">${userId}</span> (save this ID to access your catalogs later)
-            </p>
+            <div class="flex flex-col">
+              <div class="flex items-center justify-between mb-2">
+                <h1 class="text-3xl font-bold tracking-tight">AIO Catalogs - Configuration</h1>
+                <div class="hidden md:flex items-center space-x-3">
+                  <a
+                    href="/configure"
+                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2"
+                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="m15 18-6-6 6-6"></path>
+                  </svg>
+                    Back to User Selection
+                  </a>
+                </div>
+              </div>
+              <p class="text-lg text-muted-foreground">
+                Your unique user ID: <span class="font-medium text-primary">${userId}</span> (save this ID to access your catalogs later)
+              </p>
+            </div>
           </header>
+
+          <!-- Back to User Selection button, mobile friendly -->
+          <div class="md:hidden mb-6">
+            <a
+              href="/configure"
+              class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2 w-full"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                <path d="m15 18-6-6 6-6"></path>
+              </svg>
+              Back to User Selection
+            </a>
+          </div>
 
           <div id="notifications"></div>
 
-          <!-- Sponsor-Button prominently placed -->
+          <!-- Sponsor-Button -->
           <div class="mb-8 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500 flex flex-col sm:flex-row items-center justify-between">
             <div>
               <h3 class="font-semibold mb-1">Support AIOCatalogs</h3>
@@ -373,7 +399,11 @@ export function getConfigPageHTML(
 /**
  * Creates the HTML for the home page
  */
-export function getHomePageHTML(message: string = '', error: string = '') {
+export function getHomePageHTML(
+  message: string = '',
+  error: string = '',
+  packageVersion: string = '1.0.0'
+) {
   return `
     <!DOCTYPE html>
     <html lang="en" class="dark">
@@ -381,6 +411,7 @@ export function getHomePageHTML(message: string = '', error: string = '') {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>AIO Catalogs</title>
+        <link rel="icon" href="https://i.imgur.com/fRPYeIV.png" />
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
         <script src="https://cdn.tailwindcss.com"></script>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -453,13 +484,13 @@ export function getHomePageHTML(message: string = '', error: string = '') {
       </head>
       <body class="min-h-screen bg-background text-foreground bg-card-pattern">
         <div class="container py-16">
-          <h1 class="text-4xl font-bold tracking-tight text-center mb-10">
+          <h1 class="text-4xl font-bold tracking-tight text-center mb-4">
             All-in-One Catalogs - User Selection
           </h1>
 
           <div id="notifications"></div>
 
-          <div class="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto">
+          <div class="grid gap-8 md:grid-cols-2 max-w-3xl mx-auto mt-20">
             <div class="rounded-lg border bg-card p-6 shadow-sm">
               <h2 class="text-xl font-semibold mb-4">New User</h2>
               <p class="text-muted-foreground mb-6">
@@ -501,6 +532,43 @@ export function getHomePageHTML(message: string = '', error: string = '') {
             </div>
           </div>
         </div>
+
+        <!-- Footer with Social Links -->
+        <footer class="py-6 border-t border-border mt-10">
+          <div class="container flex flex-col items-center gap-4">
+            <div class="flex space-x-4">
+              <!-- GitHub -->
+              <a href="https://github.com/panteLx/aiocatalogs" target="_blank" rel="noopener noreferrer" class="text-muted-foreground hover:text-primary transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path>
+                  <path d="M9 18c-4.51 2-5-2-7-2"></path>
+                </svg>
+              </a>
+              
+              <!-- Discord -->
+              <a href="https://discord.gg/Ma4SnagqwE" target="_blank" rel="noopener noreferrer" class="text-muted-foreground hover:text-primary transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </a>
+              
+              <!-- Sponsor-Link -->
+              <a href="https://buymeacoffee.com/pantel" target="_blank" rel="noopener noreferrer" class="text-muted-foreground hover:text-primary transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <path d="M6 1v3"></path>
+                  <path d="M10 1v3"></path>
+                  <path d="M14 1v3"></path>
+                </svg>
+              </a>
+            </div>
+            <div class="text-sm text-muted-foreground text-center">
+              <p>Version: v${packageVersion} - Developed by panteLx</p>
+              <p class="mt-1">&copy; ${new Date().getFullYear()} AIOCatalogs - <a href="https://github.com/panteLx/aiocatalogs/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary">MIT License</a></p>
+            </div>
+          </div>
+        </footer>
 
         <script>
           // Toast notification function
