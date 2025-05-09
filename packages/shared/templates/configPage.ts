@@ -24,12 +24,12 @@ export function getConfigPageHTML(
 
       return `
     <div class="flex flex-col space-y-2 p-4 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors">
-      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
-        <div>
-          <h3 class="font-medium">${catalog.name}</h3>
-          <p class="text-sm text-muted-foreground">${catalog.id}</p>
+      <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+        <div class="flex-grow overflow-hidden">
+          <h3 class="font-medium break-words">${catalog.name}</h3>
+          <p class="text-sm text-muted-foreground break-words">${catalog.id}</p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
           ${
             !isFirst && !isOnly
               ? `
@@ -64,8 +64,8 @@ export function getConfigPageHTML(
           </form>
         </div>
       </div>
-      <p class="text-sm text-muted-foreground">${catalog.description}</p>
-      <p class="text-xs font-mono text-muted-foreground truncate">${catalog.endpoint}</p>
+      <p class="text-sm text-muted-foreground break-words overflow-hidden">${catalog.description}</p>
+      <p class="text-xs font-mono text-muted-foreground overflow-hidden text-ellipsis">${catalog.endpoint}manifest.json</p>
     </div>
   `;
     })
@@ -261,7 +261,7 @@ export function getConfigPageHTML(
               ${
                 catalogs.length === 0
                   ? '<div class="p-4 rounded-lg bg-secondary/50 text-muted-foreground">No catalogs added yet. Add some catalogs to get started.</div>'
-                  : `<div class="grid gap-4">${catalogRows}</div>`
+                  : `<div class="grid grid-cols-1 gap-4">${catalogRows}</div>`
               }
             </section>
 

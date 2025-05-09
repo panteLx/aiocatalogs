@@ -61,7 +61,7 @@ export function buildManifest(
           manifest.catalogs.push({
             id: `${source.id}:${catalog.id}`,
             type: catalog.type,
-            name: `${source.name}: ${catalog.name}`,
+            name: `${catalog.name}`,
           });
 
           // Collect types for the manifest
