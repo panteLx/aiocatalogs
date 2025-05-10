@@ -26,6 +26,23 @@ app.get('/', async c => {
   return c.redirect('/configure');
 });
 
+// Add redirection route for JSON-formatted userId parameter
+app.get('/:jsonParams/configure', async c => {
+  try {
+    const jsonParams = decodeURIComponent(c.req.param('jsonParams'));
+    const params = JSON.parse(jsonParams);
+    if (params.userId) {
+      return c.redirect(`/configure/${params.userId}`);
+    }
+  } catch (e) {
+    console.error('Failed to parse JSON parameters:', e);
+    return c.redirect('/configure?error=Failed to parse JSON parameters');
+  }
+
+  // If parsing fails, return a 404 response
+  return c.redirect('/configure?error=Something went wrong');
+});
+
 // Home page with user selection
 app.get('/configure', async c => {
   initConfigManager(c);

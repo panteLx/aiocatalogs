@@ -90,6 +90,23 @@ app.post('/configure/load', (req, res) => {
 // Include configuration routes
 app.use('/configure', configRoutes);
 
+// Add redirection route for JSON-formatted userId parameter
+app.get('/:jsonParams/configure', async (req, res) => {
+  try {
+    const jsonParams = decodeURIComponent(req.params.jsonParams);
+    const params = JSON.parse(jsonParams);
+    if (params.userId) {
+      return res.redirect(`/configure/${params.userId}`);
+    }
+  } catch (e) {
+    console.error('Failed to parse JSON parameters:', e);
+    return res.redirect('/configure?error=Failed to parse JSON parameters');
+  }
+
+  // If parsing fails, return a 404 response
+  return res.redirect('/configure?error=Something went wrong');
+});
+
 // Handler for /manifest.json
 app.get('/manifest.json', async (req, res) => {
   const userId = (req.query.userId as string) || 'default';
