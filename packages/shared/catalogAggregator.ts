@@ -64,6 +64,17 @@ export abstract class BaseCatalogAggregator {
         return null;
       }
 
+      // Filter out catalogs with 'search' in their ID as they don't contain content
+      const filteredCatalogs = manifest.catalogs.filter(
+        (cat: { id: string }) => !cat.id.toLowerCase().includes('search')
+      );
+
+      if (manifest.catalogs.length !== filteredCatalogs.length) {
+        console.log(
+          `Filtered out ${manifest.catalogs.length - filteredCatalogs.length} search catalogs from ${manifest.name}`
+        );
+      }
+
       // Create a CatalogManifest object
       const catalogManifest: CatalogManifest = {
         id: manifest.id,
@@ -73,7 +84,7 @@ export abstract class BaseCatalogAggregator {
         version: manifest.version || '0.0.1',
         resources: manifest.resources || ['catalog'],
         types: manifest.types || ['movie', 'series'],
-        catalogs: manifest.catalogs || [],
+        catalogs: filteredCatalogs,
         idPrefixes: manifest.idPrefixes,
         behaviorHints: manifest.behaviorHints,
       };

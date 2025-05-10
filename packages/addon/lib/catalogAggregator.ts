@@ -129,6 +129,19 @@ class NodeCatalogAggregator extends BaseCatalogAggregator {
 
       const manifest = await response.json();
 
+      // Filter out catalogs with 'search' in their ID as they don't contain content
+      const filteredCatalogs = manifest.catalogs
+        ? manifest.catalogs.filter(
+            (cat: { id: string }) => !cat.id.toLowerCase().includes('search')
+          )
+        : [];
+
+      if (manifest.catalogs && manifest.catalogs.length !== filteredCatalogs.length) {
+        console.log(
+          `Filtered out ${manifest.catalogs.length - filteredCatalogs.length} search catalogs from ${manifest.name}`
+        );
+      }
+
       // Extract the necessary information for our catalog manifest
       const catalogManifest: CatalogManifest = {
         id: manifest.id,
@@ -136,7 +149,7 @@ class NodeCatalogAggregator extends BaseCatalogAggregator {
         description: manifest.description || '',
         endpoint: endpoint,
         resources: manifest.resources || [],
-        catalogs: manifest.catalogs || [],
+        catalogs: filteredCatalogs,
         version: manifest.version || '0.0.1',
         types: manifest.types || [],
       };

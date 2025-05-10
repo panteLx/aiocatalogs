@@ -58,14 +58,19 @@ export function buildManifest(
       userCatalogs.forEach(source => {
         // Add catalogs from this source
         source.catalogs.forEach(catalog => {
-          manifest.catalogs.push({
-            id: `${source.id}:${catalog.id}`,
-            type: catalog.type,
-            name: `${catalog.name}`,
-          });
+          // Skip catalogs with 'search' in their ID as they don't contain content
+          if (!catalog.id.toLowerCase().includes('search')) {
+            manifest.catalogs.push({
+              id: `${source.id}:${catalog.id}`,
+              type: catalog.type,
+              name: `${catalog.name}`,
+            });
 
-          // Collect types for the manifest
-          allTypes.add(catalog.type);
+            // Collect types for the manifest
+            allTypes.add(catalog.type);
+          } else {
+            console.log(`Skipping catalog with search in ID: ${catalog.id}`);
+          }
         });
 
         // Collect resources from the source -
