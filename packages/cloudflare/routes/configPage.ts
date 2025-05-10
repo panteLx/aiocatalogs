@@ -70,7 +70,11 @@ export const addCatalog = async (c: any) => {
     catalogUrl,
     url => catalogAggregator.fetchCatalogManifest(url),
     (userId, manifest) => configManager.addCatalog(userId, manifest),
-    userId => clearAddonCache(userId)
+    userId => {
+      // Clear both caches to ensure fresh data
+      clearAddonCache(userId);
+      configManager.clearUserCache(userId);
+    }
   );
 
   if (result.success) {
@@ -96,7 +100,11 @@ export const removeCatalog = async (c: any) => {
     userId,
     catalogId,
     (userId, catalogId) => configManager.removeCatalog(userId, catalogId),
-    userId => clearAddonCache(userId)
+    userId => {
+      // Clear both caches to ensure fresh data
+      clearAddonCache(userId);
+      configManager.clearUserCache(userId);
+    }
   );
 
   if (result.success) {
@@ -122,7 +130,11 @@ export const moveCatalogUp = async (c: any) => {
     userId,
     catalogId,
     (userId, catalogId) => configManager.moveCatalogUp(userId, catalogId),
-    userId => clearAddonCache(userId)
+    userId => {
+      // Clear both caches to ensure fresh data
+      clearAddonCache(userId);
+      configManager.clearUserCache(userId);
+    }
   );
 
   if (result.success) {
@@ -148,7 +160,11 @@ export const moveCatalogDown = async (c: any) => {
     userId,
     catalogId,
     (userId, catalogId) => configManager.moveCatalogDown(userId, catalogId),
-    userId => clearAddonCache(userId)
+    userId => {
+      // Clear both caches to ensure fresh data
+      clearAddonCache(userId);
+      configManager.clearUserCache(userId);
+    }
   );
 
   if (result.success) {

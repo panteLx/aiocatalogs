@@ -126,6 +126,9 @@ app.get('/manifest.json', async c => {
       const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
 
       c.header('Content-Type', 'application/json');
+      c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+      c.header('Pragma', 'no-cache');
+      c.header('Expires', '0');
       return c.json(addonInterface.manifest);
     } catch (error) {
       console.error('Error generating manifest:', error);
@@ -154,6 +157,9 @@ app.get('/:params/manifest.json', async c => {
       const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
 
       c.header('Content-Type', 'application/json');
+      c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+      c.header('Pragma', 'no-cache');
+      c.header('Expires', '0');
       return c.json(addonInterface.manifest);
     } catch (error) {
       console.error('Error generating manifest:', error);
@@ -199,6 +205,9 @@ app.get('/:params/:resource/:type/:id\\.json', async c => {
         return c.json({ error: 'Resource not supported' }, 404);
       }
 
+      c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+      c.header('Pragma', 'no-cache');
+      c.header('Expires', '0');
       return c.json(result);
     } catch (error) {
       console.error(`Error in ${resource} endpoint:`, error);
@@ -236,6 +245,9 @@ app.get('/:resource/:type/:id\\.json', async c => {
         return c.json({ error: 'Resource not supported' }, 404);
       }
 
+      c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+      c.header('Pragma', 'no-cache');
+      c.header('Expires', '0');
       return c.json(result);
     } catch (error) {
       console.error(`Error in ${resource} endpoint:`, error);

@@ -43,9 +43,16 @@ class CloudflareConfigManager extends BaseConfigManager {
 
   // Load configuration for a specific user
   async loadConfig(userId: string): Promise<UserConfig> {
-    if (this.cache.has(userId)) {
-      console.log(`Using cached config for user ${userId}`);
-      return this.cache.get(userId)!;
+    // Add a cache invalidation time - if cache is older than 30 seconds, refresh it
+    // This ensures that changes made to catalogs are visible faster
+    const cachedConfig = this.cache.get(userId);
+    const now = Date.now();
+
+    if (cachedConfig && cachedConfig._cachedAt && now - cachedConfig._cachedAt < 30000) {
+      console.log(
+        `Using cached config for user ${userId} (age: ${(now - cachedConfig._cachedAt) / 1000}s)`
+      );
+      return cachedConfig;
     }
 
     if (!this.db) {
@@ -68,6 +75,8 @@ class CloudflareConfigManager extends BaseConfigManager {
           `Loaded config for user ${userId} with ${config.catalogs?.length || 0} catalogs and catalogOrder: ${JSON.stringify(config.catalogOrder)}`
         );
 
+        // Add timestamp to track cache age
+        config._cachedAt = now;
         this.cache.set(userId, config);
         return config;
       }
@@ -77,7 +86,7 @@ class CloudflareConfigManager extends BaseConfigManager {
 
     // Default empty configuration
     console.log(`Creating new empty config for user ${userId}`);
-    const defaultConfig: UserConfig = { catalogs: [] };
+    const defaultConfig: UserConfig = { catalogs: [], _cachedAt: now };
     return defaultConfig;
   }
 
@@ -128,6 +137,8 @@ class CloudflareConfigManager extends BaseConfigManager {
         `Saved config for user ${userId} with ${config.catalogs.length} catalogs and catalogOrder: ${JSON.stringify(config.catalogOrder)}`
       );
 
+      // Add or update timestamp for cache tracking
+      config._cachedAt = Date.now();
       this.cache.set(userId, config);
       return true;
     } catch (error) {
@@ -182,6 +193,14 @@ class CloudflareConfigManager extends BaseConfigManager {
     } catch (error) {
       console.error('Error getting all users:', error);
       return [];
+    }
+  }
+
+  // Add a new method to explicitly clear cache for a user
+  clearUserCache(userId: string): void {
+    if (this.cache.has(userId)) {
+      console.log(`Manually clearing config cache for user ${userId}`);
+      this.cache.delete(userId);
     }
   }
 }

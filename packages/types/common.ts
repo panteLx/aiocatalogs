@@ -25,6 +25,7 @@ export interface CatalogManifest {
 export interface UserConfig {
   catalogs: CatalogManifest[];
   catalogOrder?: string[]; // Array of catalog IDs in the desired order
+  _cachedAt?: number; // Timestamp when the config was cached
 }
 
 export interface MetaPreviewItem {
