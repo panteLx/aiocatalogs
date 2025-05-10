@@ -43,11 +43,10 @@ class CloudflareConfigManager extends BaseConfigManager {
 
   // Load configuration for a specific user
   async loadConfig(userId: string): Promise<UserConfig> {
-    // Temporarily disabled cache
-    // if (this.cache.has(userId)) {
-    //   console.log(`Using cached config for user ${userId}`);
-    //   return this.cache.get(userId)!;
-    // }
+    if (this.cache.has(userId)) {
+      console.log(`Using cached config for user ${userId}`);
+      return this.cache.get(userId)!;
+    }
 
     if (!this.db) {
       throw new Error('Database not initialized');
@@ -66,11 +65,10 @@ class CloudflareConfigManager extends BaseConfigManager {
       if (result && result.config) {
         const config = JSON.parse(result.config as string);
         console.log(
-          `Loaded config for user ${userId} with ${config.catalogs?.length || 0} catalogs`
+          `Loaded config for user ${userId} with ${config.catalogs?.length || 0} catalogs and catalogOrder: ${JSON.stringify(config.catalogOrder)}`
         );
 
-        // Temporarily disabled cache
-        // this.cache.set(userId, config);
+        this.cache.set(userId, config);
         return config;
       }
     } catch (error) {
@@ -126,10 +124,11 @@ class CloudflareConfigManager extends BaseConfigManager {
           .run();
       }
 
-      console.log(`Saved config for user ${userId} with ${config.catalogs.length} catalogs`);
+      console.log(
+        `Saved config for user ${userId} with ${config.catalogs.length} catalogs and catalogOrder: ${JSON.stringify(config.catalogOrder)}`
+      );
 
-      // Temporarily disabled cache
-      // this.cache.set(userId, config);
+      this.cache.set(userId, config);
       return true;
     } catch (error) {
       console.error(`Error saving config for user ${userId}:`, error);

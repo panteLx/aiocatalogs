@@ -24,6 +24,7 @@ export interface CatalogManifest {
 
 export interface UserConfig {
   catalogs: CatalogManifest[];
+  catalogOrder?: string[]; // Array of catalog IDs in the desired order
 }
 
 export interface MetaPreviewItem {

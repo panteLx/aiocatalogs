@@ -30,7 +30,40 @@ export abstract class BaseConfigManager {
    * Get the current configuration for a user
    */
   async getConfig(userId: string): Promise<UserConfig> {
-    return this.loadConfig(userId);
+    const config = await this.loadConfig(userId);
+
+    // Initialize catalogOrder if it doesn't exist
+    if (!config.catalogOrder || config.catalogOrder.length === 0) {
+      console.log(`Initializing catalogOrder for user ${userId}`);
+      config.catalogOrder = config.catalogs.map(c => c.id);
+      // Save the updated config with catalogOrder
+      this.saveConfig(userId, config);
+    }
+
+    // If catalogOrder exists, sort the catalogs array accordingly
+    if (config.catalogOrder && config.catalogOrder.length > 0) {
+      const orderedCatalogs: CatalogManifest[] = [];
+
+      // First add all catalogs that are in the order array
+      for (const catalogId of config.catalogOrder) {
+        const catalog = config.catalogs.find(c => c.id === catalogId);
+        if (catalog) {
+          orderedCatalogs.push(catalog);
+        }
+      }
+
+      // Then add any catalogs that are not in the order array
+      for (const catalog of config.catalogs) {
+        if (!config.catalogOrder.includes(catalog.id)) {
+          orderedCatalogs.push(catalog);
+        }
+      }
+
+      // Update the catalogs array with the ordered catalogs
+      config.catalogs = orderedCatalogs;
+    }
+
+    return config;
   }
 
   /**
@@ -49,6 +82,14 @@ export abstract class BaseConfigManager {
     } else {
       console.log(`Adding new catalog to list`);
       config.catalogs.push(manifest);
+
+      // Initialize catalogOrder if it doesn't exist
+      if (!config.catalogOrder) {
+        config.catalogOrder = config.catalogs.map(c => c.id);
+      } else {
+        // Add the new catalog ID to the order array
+        config.catalogOrder.push(manifest.id);
+      }
     }
 
     const success = await this.saveConfig(userId, config);
@@ -69,8 +110,14 @@ export abstract class BaseConfigManager {
     const config = await this.loadConfig(userId);
     const initialLength = config.catalogs.length;
 
+    // Remove from catalogs array
     config.catalogs = config.catalogs.filter(c => c.id !== id);
     console.log(`After removal: ${config.catalogs.length} catalogs (was ${initialLength})`);
+
+    // Remove from catalogOrder array if it exists
+    if (config.catalogOrder) {
+      config.catalogOrder = config.catalogOrder.filter(catalogId => catalogId !== id);
+    }
 
     if (initialLength !== config.catalogs.length) {
       return this.saveConfig(userId, config);
@@ -86,8 +133,13 @@ export abstract class BaseConfigManager {
     console.log(`Moving catalog ${id} up for user ${userId}`);
     const config = await this.loadConfig(userId);
 
-    // Find the index of the catalog
-    const index = config.catalogs.findIndex(c => c.id === id);
+    // Initialize catalogOrder if it doesn't exist
+    if (!config.catalogOrder) {
+      config.catalogOrder = config.catalogs.map(c => c.id);
+    }
+
+    // Find the index of the catalog in the order array
+    const index = config.catalogOrder.indexOf(id);
 
     // If catalog not found or already at the top, do nothing
     if (index <= 0) {
@@ -95,10 +147,10 @@ export abstract class BaseConfigManager {
       return false;
     }
 
-    // Swap the catalog with the one above it
-    const temp = config.catalogs[index];
-    config.catalogs[index] = config.catalogs[index - 1];
-    config.catalogs[index - 1] = temp;
+    // Swap the catalog with the one above it in the order array only
+    const temp = config.catalogOrder[index];
+    config.catalogOrder[index] = config.catalogOrder[index - 1];
+    config.catalogOrder[index - 1] = temp;
 
     console.log(`Moved catalog ${id} from position ${index} to ${index - 1}`);
     return this.saveConfig(userId, config);
@@ -111,19 +163,24 @@ export abstract class BaseConfigManager {
     console.log(`Moving catalog ${id} down for user ${userId}`);
     const config = await this.loadConfig(userId);
 
-    // Find the index of the catalog
-    const index = config.catalogs.findIndex(c => c.id === id);
+    // Initialize catalogOrder if it doesn't exist
+    if (!config.catalogOrder) {
+      config.catalogOrder = config.catalogs.map(c => c.id);
+    }
+
+    // Find the index of the catalog in the order array
+    const index = config.catalogOrder.indexOf(id);
 
     // If catalog not found or already at the bottom, do nothing
-    if (index === -1 || index >= config.catalogs.length - 1) {
+    if (index === -1 || index >= config.catalogOrder.length - 1) {
       console.log(`Catalog ${id} not found or already at the bottom`);
       return false;
     }
 
-    // Swap the catalog with the one below it
-    const temp = config.catalogs[index];
-    config.catalogs[index] = config.catalogs[index + 1];
-    config.catalogs[index + 1] = temp;
+    // Swap the catalog with the one below it in the order array only
+    const temp = config.catalogOrder[index];
+    config.catalogOrder[index] = config.catalogOrder[index + 1];
+    config.catalogOrder[index + 1] = temp;
 
     console.log(`Moved catalog ${id} from position ${index} to ${index + 1}`);
     return this.saveConfig(userId, config);
@@ -141,7 +198,8 @@ export abstract class BaseConfigManager {
    * Get all catalogs for a user
    */
   async getAllCatalogs(userId: string): Promise<CatalogManifest[]> {
-    const config = await this.loadConfig(userId);
+    // Use getConfig instead of loadConfig to get ordered catalogs
+    const config = await this.getConfig(userId);
     console.log(`Getting all catalogs for user ${userId}: found ${config.catalogs.length}`);
     return config.catalogs;
   }

@@ -26,7 +26,8 @@ export function getConfigPageHTML(
     <div class="flex flex-col space-y-2 p-4 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors">
       <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
         <div class="flex-grow overflow-hidden">
-          <h3 class="font-medium break-words">${catalog.name}</h3>
+          <span class="inline-flex items-center justify-center rounded-full bg-primary h-6 w-6 text-xs font-medium mr-2">${index + 1}</span>
+          <h3 class="font-medium break-words d-inline">${catalog.name}</h3>
           <p class="text-sm text-muted-foreground break-words">${catalog.id}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
