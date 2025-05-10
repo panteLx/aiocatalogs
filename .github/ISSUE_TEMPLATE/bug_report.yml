@@ -13,10 +13,7 @@ body:
       description: How are you hosting the addon?
       options:
         - Public Instance
-        - Beamup Instance
         - Cloudflare Workers
-        - VPS with Docker
-        - VPS from Source
         - Other, specify at description
     validations:
       required: true

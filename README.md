@@ -33,9 +33,9 @@
 ### 🚀 Performance Optimizations
 
 - Multi-level caching system to minimize API calls
-- D1 database integration for persistent storage (Cloudflare only)
+- D1 database integration for persistent storage
 - Cloudflare Workers for serverless architecture and global edge network
-- Express.js server for local development and Docker deployment
+- Development with Wrangler CLI
 
 ### 🔍 Enhanced Catalog Management
 
@@ -43,6 +43,7 @@
 - User-friendly configuration via web interface
 - Dynamic loading and caching of catalog data
 - Intelligent request routing to the appropriate source addons
+- Reorderable catalogs
 
 ### 🌐 Cross-Platform Support
 
@@ -63,56 +64,13 @@
 
 ## 🛠️ Self-Hosting Guide
 
-For optimal performance and privacy, you can self-host the addon. We offer multiple deployment options:
-
-> **Tip**
->
-> Consider adding your own configurations for enhanced functionality
-
-### 🐳 Docker Compose Deployment
-
-Deploy using Docker Compose for a containerized solution:
-
-```bash
-# Clone the repository
-$ git clone https://github.com/pantelx/aiocatalogs.git && cd aiocatalogs
-# Start Docker Compose
-$ docker-compose up -d
-```
-
-The docker-compose.yml file is configured to use the pre-built image by default, making it the easiest deployment option. To modify the configuration, edit the docker-compose.yml file before running `docker-compose up -d`.
-
-Verify the installation by visiting `http://localhost:8787/` in your browser. To customize the port or other settings, edit the Docker Compose file before starting the container.
+For optimal performance and privacy compared to the public instance, you can self-host the addon using Cloudflare Workers:
 
 > **Note**
 >
-> The Docker image is automatically built and published to GitHub Container Registry (ghcr.io) for each push to the main branch and for each new version tag.
+> AIOCatalogs must be deployed on Cloudflare's infrastructure for production use. As we are using the D1 database, we need to use wrangler to add data to the database.
 
-### 📦 Source Installation
-
-For direct source installation, ensure you have:
-
-- Node.js 20 or higher
-- NPM 7 or higher
-
-```bash
-# Verify Node.js version
-$ node -v
-# Verify NPM version
-$ npm -v
-# Clone and install
-$ git clone https://github.com/pantelx/aiocatalogs.git && cd aiocatalogs
-$ npm i
-# Start in production mode
-$ npm run build
-$ npm start
-```
-
-Access the addon at `http://localhost:8787/`.
-
-### ☁️ Cloud Deployment
-
-#### Cloudflare Worker
+### ☁️ Cloudflare Deployment
 
 Deploy to Cloudflare's global edge network for optimal performance:
 
@@ -129,7 +87,7 @@ $ wrangler d1 create aiocatalogs
 # Apply migrations
 $ wrangler d1 migrations apply aiocatalogs
 # Deploy to Cloudflare
-$ npm run deploy:cf
+$ npm run deploy
 ```
 
 ---
@@ -145,14 +103,16 @@ $ npm i
 $ npm run build
 ```
 
-Development modes:
+Development mode:
 
 ```bash
-# Addon development
-$ npm run dev
-# Cloudflare worker development
+# Cloudflare worker development with locally simulated D1 database
 $ npm run dev:cf
 ```
+
+> **Note**
+>
+> The development mode uses a locally simulated Cloudflare D1 database. You only need to deploy to Cloudflare when moving to production.
 
 ### 📝 Release Process
 
@@ -170,14 +130,15 @@ $ npm run release
 
 AIOCatalogs is an addon that combines multiple catalog addons into a single addon. It allows you to search and discover content from various sources in a single addon, without having to install multiple addons individually.
 
-### How do I configure the addon server?
+### Why can't I self-host the addon via docker or from source (with node)?
 
-You can configure the addon server using environment variables:
+From now on, AIOCatalogs will no longer be possible to self-host via docker or from source (with node). This step is necessary to achieve a standardised structure of the code and to make it easier to add features or fix bugs. Due to the different data storage approaches, I had to implement most functions twice, which led to bugs and significantly more debugging. Starting now, AIOCatalogs will only use the cloudflare D1 database, which means I will have to use wrangler to add data to the database. The alternative would be to use the cloudflare API, but this leads to a significant increase in latency, so I decided against it. The addon can still be self-hosted via cloudflare workers.
 
-1. **Port Configuration**: Change the default port (8787) by setting the `PORT` environment variable
-2. **Cloudflare Configuration**: Configure the D1 database in the `wrangler.toml` file
+### How do I configure the addon to work with cloudflare workers?
 
-For Docker deployments, the docker-compose.yml file is already configured to use the required environment variables.
+You can configure the addon using environment variables:
+
+- **Cloudflare Configuration**: Configure the D1 database in the `wrangler.toml` file
 
 ### How do I add new catalog addons?
 
