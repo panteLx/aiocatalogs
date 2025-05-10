@@ -1,29 +1,29 @@
-import { UserConfig, CatalogManifest } from '../types';
-import { D1Database } from './types';
+import { UserConfig, CatalogManifest } from '../../types/index';
+import { D1Database, Env } from './types';
 import { randomUUID } from 'crypto';
-import { BaseConfigManager } from '../shared/configManager';
+import { BaseConfigManager } from '../../core/config/configManager';
 
-class CloudflareConfigManager extends BaseConfigManager {
-  private db: D1Database | null = null;
+export class CloudflareConfigManager extends BaseConfigManager {
+  private database: D1Database | null = null;
 
   constructor() {
     super();
   }
 
-  // Set database
+  // Set the database
   setDatabase(database: D1Database) {
-    this.db = database;
+    this.database = database;
   }
 
   // Initialize database schema
   async initDatabase() {
-    if (!this.db) {
+    if (!this.database) {
       throw new Error('Database not initialized');
     }
 
     // Create table for user configurations if it doesn't exist
     try {
-      await this.db.exec(
+      await this.database.exec(
         `CREATE TABLE IF NOT EXISTS user_configs (user_id TEXT PRIMARY KEY, config TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`
       );
       console.log('Database schema initialized');
@@ -55,7 +55,7 @@ class CloudflareConfigManager extends BaseConfigManager {
       return cachedConfig;
     }
 
-    if (!this.db) {
+    if (!this.database) {
       throw new Error('Database not initialized');
     }
 
@@ -64,7 +64,7 @@ class CloudflareConfigManager extends BaseConfigManager {
       await this.initDatabase();
 
       // Load configuration from the database
-      const result = await this.db
+      const result = await this.database
         .prepare('SELECT config FROM user_configs WHERE user_id = ?')
         .bind(userId)
         .first();
@@ -92,7 +92,7 @@ class CloudflareConfigManager extends BaseConfigManager {
 
   // Save configuration for a specific user
   async saveConfig(userId: string, config?: UserConfig): Promise<boolean> {
-    if (!this.db) {
+    if (!this.database) {
       throw new Error('Database not initialized');
     }
 
@@ -119,13 +119,13 @@ class CloudflareConfigManager extends BaseConfigManager {
 
       if (exists) {
         // Update existing entry
-        await this.db
+        await this.database
           .prepare('UPDATE user_configs SET config = ?, updated_at = ? WHERE user_id = ?')
           .bind(configJson, now, userId)
           .run();
       } else {
         // Add new entry
-        await this.db
+        await this.database
           .prepare(
             'INSERT INTO user_configs (user_id, config, created_at, updated_at) VALUES (?, ?, ?, ?)'
           )
@@ -149,7 +149,7 @@ class CloudflareConfigManager extends BaseConfigManager {
 
   // Check if user exists
   async userExists(userId: string): Promise<boolean> {
-    if (!this.db) {
+    if (!this.database) {
       throw new Error('Database not initialized');
     }
 
@@ -157,7 +157,7 @@ class CloudflareConfigManager extends BaseConfigManager {
       // Initialize the database if not already done
       await this.initDatabase();
 
-      const result = await this.db
+      const result = await this.database
         .prepare('SELECT 1 FROM user_configs WHERE user_id = ?')
         .bind(userId)
         .first();
@@ -171,7 +171,7 @@ class CloudflareConfigManager extends BaseConfigManager {
 
   // Get all users
   async getAllUsers(): Promise<string[]> {
-    if (!this.db) {
+    if (!this.database) {
       throw new Error('Database not initialized');
     }
 
@@ -179,7 +179,7 @@ class CloudflareConfigManager extends BaseConfigManager {
       // Initialize the database if not already done
       await this.initDatabase();
 
-      const result = await this.db
+      const result = await this.database
         .prepare('SELECT user_id FROM user_configs ORDER BY created_at DESC')
         .all();
 
@@ -205,5 +205,5 @@ class CloudflareConfigManager extends BaseConfigManager {
   }
 }
 
-// Export a singleton instance
+// Singleton instance
 export const configManager = new CloudflareConfigManager();

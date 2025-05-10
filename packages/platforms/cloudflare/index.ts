@@ -4,8 +4,9 @@ import { html } from 'hono/html';
 import { configManager } from './configManager';
 import { getAddonInterface, clearAddonCache } from './addon';
 import { D1Database, Env } from './types';
-import { getHomePageHTML } from '../shared/templates/configPage';
-import packageInfo from '../../package.json';
+import { getHomePageHTML } from '../../../templates/configPage';
+import packageInfo from '../../../package.json';
+import { getConfigPageHTML } from '../../../templates/configPage';
 
 // Create Hono App with Bindings type parameter
 const app = new Hono<{ Bindings: Env }>();
@@ -88,7 +89,7 @@ import {
   removeCatalog,
   moveCatalogUp,
   moveCatalogDown,
-} from './routes/configPage';
+} from '../../api/routes/configPage';
 
 // Configuration endpoints
 app.get('/configure/:userId', async c => {

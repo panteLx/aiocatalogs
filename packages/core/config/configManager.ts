@@ -1,4 +1,4 @@
-import { UserConfig, CatalogManifest } from '../types';
+import { UserConfig, CatalogManifest } from '../../types/index';
 
 /**
  * Abstract configuration manager that defines the common interface
@@ -35,7 +35,7 @@ export abstract class BaseConfigManager {
     // Initialize catalogOrder if it doesn't exist
     if (!config.catalogOrder || config.catalogOrder.length === 0) {
       console.log(`Initializing catalogOrder for user ${userId}`);
-      config.catalogOrder = config.catalogs.map(c => c.id);
+      config.catalogOrder = config.catalogs.map((c: CatalogManifest) => c.id);
       // Save the updated config with catalogOrder
       this.saveConfig(userId, config);
     }
@@ -46,7 +46,7 @@ export abstract class BaseConfigManager {
 
       // First add all catalogs that are in the order array
       for (const catalogId of config.catalogOrder) {
-        const catalog = config.catalogs.find(c => c.id === catalogId);
+        const catalog = config.catalogs.find((c: CatalogManifest) => c.id === catalogId);
         if (catalog) {
           orderedCatalogs.push(catalog);
         }
@@ -74,7 +74,7 @@ export abstract class BaseConfigManager {
     const config = await this.loadConfig(userId);
 
     // Check if a catalog with the same ID already exists
-    const existingIndex = config.catalogs.findIndex(c => c.id === manifest.id);
+    const existingIndex = config.catalogs.findIndex((c: CatalogManifest) => c.id === manifest.id);
 
     if (existingIndex >= 0) {
       console.log(`Updating existing catalog at index ${existingIndex}`);
@@ -85,7 +85,7 @@ export abstract class BaseConfigManager {
 
       // Initialize catalogOrder if it doesn't exist
       if (!config.catalogOrder) {
-        config.catalogOrder = config.catalogs.map(c => c.id);
+        config.catalogOrder = config.catalogs.map((c: CatalogManifest) => c.id);
       } else {
         // Add the new catalog ID to the order array
         config.catalogOrder.push(manifest.id);
@@ -111,12 +111,12 @@ export abstract class BaseConfigManager {
     const initialLength = config.catalogs.length;
 
     // Remove from catalogs array
-    config.catalogs = config.catalogs.filter(c => c.id !== id);
+    config.catalogs = config.catalogs.filter((c: CatalogManifest) => c.id !== id);
     console.log(`After removal: ${config.catalogs.length} catalogs (was ${initialLength})`);
 
     // Remove from catalogOrder array if it exists
     if (config.catalogOrder) {
-      config.catalogOrder = config.catalogOrder.filter(catalogId => catalogId !== id);
+      config.catalogOrder = config.catalogOrder.filter((catalogId: string) => catalogId !== id);
     }
 
     if (initialLength !== config.catalogs.length) {
@@ -135,7 +135,7 @@ export abstract class BaseConfigManager {
 
     // Initialize catalogOrder if it doesn't exist
     if (!config.catalogOrder) {
-      config.catalogOrder = config.catalogs.map(c => c.id);
+      config.catalogOrder = config.catalogs.map((c: CatalogManifest) => c.id);
     }
 
     // Find the index of the catalog in the order array
@@ -191,7 +191,7 @@ export abstract class BaseConfigManager {
    */
   async getCatalog(userId: string, id: string): Promise<CatalogManifest | undefined> {
     const config = await this.loadConfig(userId);
-    return config.catalogs.find(c => c.id === id);
+    return config.catalogs.find((c: CatalogManifest) => c.id === id);
   }
 
   /**

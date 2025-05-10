@@ -5,14 +5,17 @@
     "esModuleInterop": true,
     "strict": true,
     "outDir": "dist",
-    "rootDir": "packages",
+    "rootDir": ".",
     "declaration": true,
     "sourceMap": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "lib": ["es2021", "WebWorker", "DOM"],
-    "types": ["@cloudflare/workers-types", "node"]
+    "types": ["@cloudflare/workers-types", "node"],
+    "paths": {
+      "@/*": ["./packages/*"]
+    }
   },
-  "include": ["packages/**/*"],
+  "include": ["packages/**/*", "templates/**/*"],
   "exclude": ["node_modules", "dist"]
 }

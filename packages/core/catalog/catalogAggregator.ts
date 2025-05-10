@@ -1,4 +1,4 @@
-import { CatalogManifest } from '../types';
+import { CatalogManifest } from '../../types/index';
 
 // Interface for raw data from the manifest API
 interface RawManifest {

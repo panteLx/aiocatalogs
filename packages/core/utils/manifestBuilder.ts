@@ -1,4 +1,4 @@
-import { CatalogManifest, UserConfig } from '../types';
+import { CatalogManifest, UserConfig } from '../../types/index';
 
 export const ADDON_ID = 'community.aiocatalogs';
 
@@ -35,11 +35,13 @@ export function buildManifest(
         configurable: true,
         configurationRequired: false,
       },
+      idPrefixes: [],
     };
 
     // Collect all catalogs, types and resources
     const allTypes = new Set<string>();
     const allResources = new Set<string>();
+    const catalogIds = new Set<string>();
 
     // Only add 'catalog' since we only define this handler
     allResources.add('catalog');
@@ -57,26 +59,32 @@ export function buildManifest(
       // Add catalogs from user configurations
       userCatalogs.forEach(source => {
         // Add catalogs from this source
-        source.catalogs.forEach(catalog => {
-          // Skip catalogs with 'search' in their ID as they don't contain content
-          if (!catalog.id.toLowerCase().includes('search')) {
-            manifest.catalogs.push({
-              id: `${source.id}:${catalog.id}`,
-              type: catalog.type,
-              name: `${catalog.name}`,
-            });
+        if (source.catalogs && source.catalogs.length > 0) {
+          source.catalogs.forEach((catalog: any) => {
+            // Skip catalogs with 'search' in the ID as they don't contain content
+            if (catalog.id.toLowerCase().includes('search')) {
+              return;
+            }
 
-            // Collect types for the manifest
-            allTypes.add(catalog.type);
-          } else {
-            console.log(`Skipping catalog with search in ID: ${catalog.id}`);
-          }
-        });
+            // Add a prefix to the catalog ID to ensure uniqueness
+            const prefixedId = `${source.id}_${catalog.id}`;
+
+            // Only add if not already in the collection
+            if (!catalogIds.has(prefixedId)) {
+              manifest.catalogs.push({
+                ...catalog,
+                id: prefixedId,
+                source: source.id,
+              });
+              catalogIds.add(prefixedId);
+            }
+          });
+        }
 
         // Collect resources from the source -
         // but only keep those we support
-        if (source.resources) {
-          source.resources.forEach(resource => {
+        if (source.resources && source.resources.length > 0) {
+          source.resources.forEach((resource: string) => {
             if (resource === 'catalog') {
               allResources.add(resource);
             }
@@ -126,87 +134,57 @@ export function buildManifest(
  * @returns Catalog response
  */
 export async function handleCatalogRequest(
-  args: {
-    type: string;
-    id: string;
-  },
+  args: any,
   userCatalogs: CatalogManifest[]
-): Promise<{ metas: any[] }> {
-  console.log(`Catalog request for type ${args.type}, id ${args.id}`);
+): Promise<any> {
+  console.log(`Handling catalog request with args: ${JSON.stringify(args)}`);
+
+  // Find the target source catalog
+  const catalogId = args.id.split('_')[1]; // Extract the original catalog ID
+  const sourceId = args.id.split('_')[0]; // Extract the source addon ID
+
+  // Find the source catalog from user's catalogs
+  const source = userCatalogs.find(c => c.id === sourceId);
+
+  if (!source) {
+    console.error(`Source ${sourceId} not found in user catalogs`);
+    return { metas: [] };
+  }
+
+  // Find the specific catalog within the source
+  const catalog = source.catalogs.find((c: any) => c.type === args.type && c.id === catalogId);
+
+  if (!catalog) {
+    console.error(`Catalog ${catalogId} of type ${args.type} not found in source ${sourceId}`);
+    return { metas: [] };
+  }
+
+  // Create catalog endpoint
+  const endpoint = source.endpoint.endsWith('/') ? source.endpoint.slice(0, -1) : source.endpoint;
+  const url = `${endpoint}/catalog/${args.type}/${catalogId}.json`;
+  console.log(`Fetching catalog from: ${url}`);
 
   try {
-    // Handle default catalog
-    if (args.id === 'aiocatalogs-default') {
-      return {
-        metas: [
-          {
-            id: 'setup-required',
-            type: args.type,
-            name: 'Setup Required',
-            poster: 'https://i.imgur.com/fRPYeIV.png',
-            description: 'Please visit the configuration page to add catalogs.',
-          },
-        ],
-      };
-    }
+    const response = await fetch(url);
 
-    // The catalog ID format is: sourceId:catalogId
-    // Split ID to identify source and catalog
-    const idParts = args.id.split(':');
-    if (idParts.length !== 2) {
-      console.error(`Invalid catalog ID format: ${args.id}`);
+    if (!response.ok) {
+      console.error(`Error fetching catalog: ${response.statusText}`);
       return { metas: [] };
     }
 
-    const sourceId = idParts[0];
-    const catalogId = idParts[1];
+    const data = (await response.json()) as { metas?: any[] };
+    const metas = data.metas || [];
 
-    // Get catalog source from user configuration
-    const source = userCatalogs.find(c => c.id === sourceId);
-
-    if (!source) {
-      console.error(`Source not found: ${sourceId}`);
-      return { metas: [] };
+    // Add source to each item
+    if (Array.isArray(metas)) {
+      metas.forEach((item: any) => {
+        item.sourceAddon = sourceId;
+      });
     }
 
-    // Find catalog in the source
-    const catalog = source.catalogs.find(c => c.type === args.type && c.id === catalogId);
-
-    if (!catalog) {
-      console.error(`Catalog not found: ${catalogId} in source ${sourceId}`);
-      return { metas: [] };
-    }
-
-    // Create catalog endpoint
-    const endpoint = source.endpoint.endsWith('/') ? source.endpoint.slice(0, -1) : source.endpoint;
-    const url = `${endpoint}/catalog/${args.type}/${catalogId}.json`;
-    console.log(`Fetching catalog from: ${url}`);
-
-    try {
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        console.error(`Error fetching catalog: ${response.statusText}`);
-        return { metas: [] };
-      }
-
-      const data = (await response.json()) as { metas?: any[] };
-      const metas = data.metas || [];
-
-      // Add source to each item
-      if (Array.isArray(metas)) {
-        metas.forEach((item: any) => {
-          item.sourceAddon = sourceId;
-        });
-      }
-
-      return { metas };
-    } catch (error) {
-      console.error(`Error fetching catalog: ${error}`);
-      return { metas: [] };
-    }
+    return { metas };
   } catch (error) {
-    console.error(`Error handling catalog request: ${error}`);
+    console.error(`Error fetching catalog: ${error}`);
     return { metas: [] };
   }
 }

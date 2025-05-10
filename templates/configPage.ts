@@ -1,7 +1,7 @@
 /**
  * Shared templates for the configuration page
  *
- * This file contains HTML templates that can be used by both the Node.js and Cloudflare implementations.
+ * This file contains HTML templates that can be used by Cloudflare and future implementations.
  */
 
 /**

@@ -2,7 +2,7 @@
   "name": "aiocatalogs",
   "version": "1.1.2-beta.1",
   "description": "AIOCatalogs is an open-source addon that combines multiple catalog addons into a single one with enhanced performance and a user-friendly configuration interface. It features multi-platform compatibility, serverless deployment options, and an optimized caching system. Join our community on Discord (discord.gg/Ma4SnagqwE) or contribute on GitHub (github.com/panteLx/aiocatalogs)",
-  "main": "dist/cloudflare/index.js",
+  "main": "dist/platforms/cloudflare/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "wrangler dev",

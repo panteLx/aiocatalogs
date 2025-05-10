@@ -1,12 +1,15 @@
 import { CatalogRequest, CatalogResponse, D1Database, MetaItem } from './types';
 import { configManager } from './configManager';
-import { version, description } from '../../package.json';
-import { buildManifest, handleCatalogRequest } from '../shared/manifestBuilder';
+import packageJson from '../../../package.json';
+import { buildManifest, handleCatalogRequest } from '../../core/utils/manifestBuilder';
 
 // Cache for builders to avoid multiple creations
 const addonCache = new Map();
 
 const ADDON_ID = 'community.aiocatalogs';
+
+// Import package.json with correct path
+const { version, description } = packageJson;
 
 // Create AddonInterface for a specific user
 export async function getAddonInterface(userId: string, db: D1Database) {
@@ -41,6 +44,20 @@ export async function getAddonInterface(userId: string, db: D1Database) {
     // Stream handler - not implemented
     async stream() {
       return { streams: [] };
+    },
+
+    // Handle catalog request
+    async handleCatalog(userId: string, args: any) {
+      console.log(`Handling catalog request for user ${userId} with args: ${JSON.stringify(args)}`);
+      const userCatalogs = await configManager.getAllCatalogs(userId);
+      console.log(`Found ${userCatalogs.length} catalogs for user ${userId}`);
+
+      if (!userCatalogs || userCatalogs.length === 0) {
+        console.log(`User ${userId} has no catalogs configured or they couldn't be loaded`);
+        return { metas: [] };
+      }
+
+      return handleCatalogRequest(args, userCatalogs);
     },
   };
 

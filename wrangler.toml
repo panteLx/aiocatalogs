@@ -1,5 +1,5 @@
 name = "aiocatalogs"
-main = "./packages/cloudflare/index.ts"
+main = "./packages/platforms/cloudflare/index.ts"
 
 compatibility_date = "2024-09-23"
 
@@ -16,4 +16,4 @@ PORT = "8787"
 binding = "DB"
 database_name = "aiocatalogs"
 database_id = "55f455b6-3bac-4b05-8292-6de60c26eb9d"
-migrations_dir = "./packages/cloudflare/migrations" 
+migrations_dir = "./packages/platforms/cloudflare/migrations" 

@@ -1,9 +1,9 @@
-// Datentypen für Cloudflare D1
+// Data types for Cloudflare D1
 import { D1Database as CloudflareD1Database } from '@cloudflare/workers-types';
 
 export type D1Database = CloudflareD1Database;
 
-// Import gemeinsamer Typen aus dem types-Paket
+// Import common types from the types package
 import {
   UserConfig,
   CatalogManifest,
@@ -11,14 +11,14 @@ import {
   CatalogRequest,
   CatalogResponse,
   MetaItem,
-} from '../types';
+} from '../../types/index';
 
-// Re-Export der gemeinsamen Typen
+// Re-export of common types
 export { UserConfig, CatalogManifest, MetaPreviewItem, CatalogRequest, CatalogResponse, MetaItem };
 
 // Cloudflare Worker Environment
 export interface Env {
   DB: D1Database;
-  // Hinzufügen eines Index-Signatures, um den Env-Typ zu erfüllen
+  // Add an index signature to meet the Env type requirements
   [key: string]: any;
 }

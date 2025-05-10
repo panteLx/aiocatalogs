@@ -182,3 +182,21 @@ MIT
 > **Note**
 >
 > This is an independent, fan-made addon. It connects to other source addons but has no direct connection to their operators.
+
+## Project Structure
+
+```
+aiocatalogs/
+├── packages/
+│   ├── core/                    # Core functionality
+│   │   ├── config/              # Configuration management
+│   │   ├── catalog/             # Catalog aggregation and processing
+│   │   └── utils/               # General utility functions
+│   ├── types/                   # Shared type definitions
+│   ├── api/                     # API interfaces
+│   │   ├── routes/              # Route definitions
+│   │   └── middleware/          # Middleware components
+│   └── platforms/               # Platform-specific implementations
+│       └── cloudflare/          # Cloudflare Workers implementation
+└── templates/                   # Templates for configuration and other files
+```
