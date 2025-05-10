@@ -43,11 +43,11 @@ class CloudflareConfigManager extends BaseConfigManager {
 
   // Load configuration for a specific user
   async loadConfig(userId: string): Promise<UserConfig> {
-    // First check the cache
-    if (this.cache.has(userId)) {
-      console.log(`Using cached config for user ${userId}`);
-      return this.cache.get(userId)!;
-    }
+    // Temporarily disabled cache
+    // if (this.cache.has(userId)) {
+    //   console.log(`Using cached config for user ${userId}`);
+    //   return this.cache.get(userId)!;
+    // }
 
     if (!this.db) {
       throw new Error('Database not initialized');
@@ -69,8 +69,8 @@ class CloudflareConfigManager extends BaseConfigManager {
           `Loaded config for user ${userId} with ${config.catalogs?.length || 0} catalogs`
         );
 
-        // Save in cache
-        this.cache.set(userId, config);
+        // Temporarily disabled cache
+        // this.cache.set(userId, config);
         return config;
       }
     } catch (error) {
@@ -128,8 +128,8 @@ class CloudflareConfigManager extends BaseConfigManager {
 
       console.log(`Saved config for user ${userId} with ${config.catalogs.length} catalogs`);
 
-      // Update the cache
-      this.cache.set(userId, config);
+      // Temporarily disabled cache
+      // this.cache.set(userId, config);
       return true;
     } catch (error) {
       console.error(`Error saving config for user ${userId}:`, error);

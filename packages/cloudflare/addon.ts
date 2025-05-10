@@ -10,10 +10,10 @@ const ADDON_ID = 'community.aiocatalogs';
 
 // Create AddonInterface for a specific user
 export async function getAddonInterface(userId: string, db: D1Database) {
-  // Check cache
-  if (addonCache.has(userId)) {
-    return addonCache.get(userId);
-  }
+  // Temporarily disabled cache
+  // if (addonCache.has(userId)) {
+  //   return addonCache.get(userId);
+  // }
 
   // Ensure database is set in configManager
   configManager.setDatabase(db);
@@ -45,8 +45,8 @@ export async function getAddonInterface(userId: string, db: D1Database) {
     },
   };
 
-  // Cache and return the AddonInterface
-  addonCache.set(userId, addonInterface);
+  // Temporarily disabled cache
+  // addonCache.set(userId, addonInterface);
   return addonInterface;
 }
 
