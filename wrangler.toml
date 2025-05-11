@@ -9,6 +9,14 @@ compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
 enabled = true
 head_sampling_rate = 1 
 
+[vars]
+AIOCATALOGS_API_RATE_LIMIT = true
+AIOCATALOGS_API_MAX_REQUESTS = 50 # requests per minute
+
+[env.dev.vars]
+AIOCATALOGS_API_RATE_LIMIT = true
+AIOCATALOGS_API_MAX_REQUESTS = 5 # requests per minute
+
 [dev]
 port = 8787
 

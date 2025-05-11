@@ -5,12 +5,19 @@ import { getAddonInterface, clearAddonCache } from './addon';
 import { D1Database, Env } from './types';
 import { getHomePageHTML } from '../../../templates/configPage';
 import packageInfo from '../../../package.json';
+import { rateLimit } from './middleware/rateLimit';
 
 // Create Hono App with Bindings type parameter
 const app = new Hono<{ Bindings: Env }>();
 
 // Enable CORS middleware
 app.use('*', cors());
+
+// Apply rate limiting to API endpoints
+app.use('/manifest.json', rateLimit());
+app.use('/:params/manifest.json', rateLimit());
+app.use('/:params/:resource/:type/:id\\.json', rateLimit());
+app.use('/:resource/:type/:id\\.json', rateLimit());
 
 // Initialize config manager
 const initConfigManager = (c: any) => {

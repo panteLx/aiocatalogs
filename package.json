@@ -5,7 +5,7 @@
   "main": "dist/platforms/cloudflare/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --env dev",
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler versions upload",
     "test": "vitest run --passWithNoTests",
