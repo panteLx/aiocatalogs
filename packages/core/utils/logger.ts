@@ -227,7 +227,18 @@ export class Logger {
     if (this.config.level <= LogLevel.DEBUG) {
       console.debug(
         this.formatMessage(
-          args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg))).join(' '),
+          args
+            .map(arg => {
+              if (typeof arg === 'object') {
+                try {
+                  return JSON.stringify(arg);
+                } catch {
+                  return require('util').inspect(arg, { depth: 2, colors: false });
+                }
+              }
+              return String(arg);
+            })
+            .join(' '),
           LogLevel.DEBUG
         )
       );
@@ -241,7 +252,18 @@ export class Logger {
     if (this.config.level <= LogLevel.INFO) {
       console.log(
         this.formatMessage(
-          args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg))).join(' '),
+          args
+            .map(arg => {
+              if (typeof arg === 'object') {
+                try {
+                  return JSON.stringify(arg);
+                } catch {
+                  return require('util').inspect(arg, { depth: 2, colors: false });
+                }
+              }
+              return String(arg);
+            })
+            .join(' '),
           LogLevel.INFO
         )
       );
@@ -255,7 +277,18 @@ export class Logger {
     if (this.config.level <= LogLevel.WARN) {
       console.warn(
         this.formatMessage(
-          args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg))).join(' '),
+          args
+            .map(arg => {
+              if (typeof arg === 'object') {
+                try {
+                  return JSON.stringify(arg);
+                } catch {
+                  return require('util').inspect(arg, { depth: 2, colors: false });
+                }
+              }
+              return String(arg);
+            })
+            .join(' '),
           LogLevel.WARN
         )
       );
@@ -269,7 +302,18 @@ export class Logger {
     if (this.config.level <= LogLevel.ERROR) {
       console.error(
         this.formatMessage(
-          args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg))).join(' '),
+          args
+            .map(arg => {
+              if (typeof arg === 'object') {
+                try {
+                  return JSON.stringify(arg);
+                } catch {
+                  return require('util').inspect(arg, { depth: 2, colors: false });
+                }
+              }
+              return String(arg);
+            })
+            .join(' '),
           LogLevel.ERROR
         )
       );
