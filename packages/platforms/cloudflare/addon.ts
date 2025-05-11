@@ -6,8 +6,6 @@ import { buildManifest, handleCatalogRequest } from '../../core/utils/manifestBu
 // Cache for builders to avoid multiple creations
 const addonCache = new Map();
 
-const ADDON_ID = 'community.aiocatalogs';
-
 // Import package.json with correct path
 const { version, description } = packageJson;
 
