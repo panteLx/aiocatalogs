@@ -23,8 +23,11 @@ export function getConfigPageHTML(
       const isOnly = array.length === 1;
 
       return `
-    <div class="flex items-start gap-2 sm:gap-4">
-      <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary h-7 w-7 sm:h-8 sm:w-8 text-sm sm:text-base font-semibold shrink-0 mt-1">${index + 1}</span>
+    <div class="catalog-item flex items-start gap-2 sm:gap-4" data-draggable="true" data-catalog-id="${catalog.id}" data-catalog-index="${index}">
+      <span class="catalog-handle inline-flex items-center justify-center rounded-full bg-primary/10 text-primary h-7 w-7 sm:h-8 sm:w-8 text-sm sm:text-base font-semibold shrink-0 mt-1 md:cursor-grab">
+        <span>${index + 1}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden mr-1"><path d="M12 5v14M5 12h14"></path></svg>
+      </span>
       <div class="flex flex-col space-y-2 p-3 sm:p-4 rounded-lg bg-card border border-border hover:bg-accent/50 transition-colors flex-grow min-w-0">
         <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-2 sm:gap-3">
           <div class="flex-grow overflow-hidden min-w-0">
@@ -35,7 +38,7 @@ export function getConfigPageHTML(
             ${
               !isFirst && !isOnly
                 ? `
-            <form method="POST" action="/configure/${userId}/moveUp" class="flex-shrink-0">
+            <form method="POST" action="/configure/${userId}/moveUp" class="flex-shrink-0 md:hidden">
               <input type="hidden" name="catalogId" value="${catalog.id}">
               <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 w-9 p-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-up"><path d="m18 15-6-6-6 6"/></svg>
@@ -48,7 +51,7 @@ export function getConfigPageHTML(
             ${
               !isLast && !isOnly
                 ? `
-            <form method="POST" action="/configure/${userId}/moveDown" class="flex-shrink-0">
+            <form method="POST" action="/configure/${userId}/moveDown" class="flex-shrink-0 md:hidden">
               <input type="hidden" name="catalogId" value="${catalog.id}">
               <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 w-9 p-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
@@ -270,7 +273,17 @@ export function getConfigPageHTML(
               ${
                 catalogs.length === 0
                   ? '<div class="p-4 rounded-lg bg-secondary/50 text-muted-foreground">No catalogs added yet. Add some catalogs to get started.</div>'
-                  : `<div class="grid grid-cols-1 gap-4">${catalogRows}</div>`
+                  : `<div id="catalog-list" class="grid grid-cols-1 gap-4">${catalogRows}</div>`
+              }
+              ${
+                catalogs.length > 1
+                  ? `<div class="mt-4 p-4 rounded-lg bg-secondary/50 border-l-4 border-primary">
+                      <p class="text-sm text-muted-foreground">
+                        <strong>Hint:</strong> <span class="md:inline hidden">You can reorder the catalogs by dragging and dropping them.</span>
+                        <span class="md:hidden">Use the arrow buttons to reorder catalogs.</span>
+                      </p>
+                    </div>`
+                  : ''
               }
             </section>
 
@@ -410,7 +423,136 @@ export function getConfigPageHTML(
             // Show toasts if there are messages or errors
             ${message ? `showToast("${message}", "success");` : ''}
             ${error ? `showToast("${error}", "error");` : ''}
+
+            // Check if it's a mobile device
+            const isMobile = window.matchMedia("(max-width: 768px)").matches;
+            
+            // Set up drag and drop functionality only for desktop devices
+            if (!isMobile) {
+              setupDragAndDrop(userId);
+              
+              // Make items draggable on desktop
+              document.querySelectorAll('[data-draggable="true"]').forEach(item => {
+                item.setAttribute('draggable', 'true');
+              });
+            }
           });
+          
+          // Function to set up drag and drop
+          function setupDragAndDrop(userId) {
+            const catalogList = document.getElementById('catalog-list');
+            if (catalogList) {
+              let draggedItem = null;
+              let sourceIndex = -1;
+              
+              // Add event listeners to all catalog items
+              const catalogItems = document.querySelectorAll('.catalog-item');
+              catalogItems.forEach((item) => {
+                // Drag start
+                item.addEventListener('dragstart', function(e) {
+                  draggedItem = this;
+                  sourceIndex = parseInt(this.getAttribute('data-catalog-index'));
+                  // Set a timeout to add opacity class
+                  setTimeout(() => {
+                    this.classList.add('opacity-50');
+                  }, 0);
+                });
+                
+                // Drag end
+                item.addEventListener('dragend', function() {
+                  this.classList.remove('opacity-50');
+                  draggedItem = null;
+                  sourceIndex = -1;
+                  // Update the index numbers visually
+                  updateIndexNumbers();
+                });
+                
+                // Drag over
+                item.addEventListener('dragover', function(e) {
+                  e.preventDefault();
+                  if (draggedItem === this) return;
+                  this.classList.add('bg-accent');
+                });
+                
+                // Drag leave
+                item.addEventListener('dragleave', function() {
+                  this.classList.remove('bg-accent');
+                });
+                
+                // Drag drop
+                item.addEventListener('drop', async function(e) {
+                  e.preventDefault();
+                  this.classList.remove('bg-accent');
+                  
+                  if (draggedItem === this) return;
+                  
+                  const targetIndex = parseInt(this.getAttribute('data-catalog-index'));
+                  const draggedId = draggedItem.getAttribute('data-catalog-id');
+                  
+                  // If dragging downwards, insert after the target item
+                  if (sourceIndex < targetIndex) {
+                    catalogList.insertBefore(draggedItem, this.nextSibling);
+                  } 
+                  // If dragging upwards, insert before the target item
+                  else {
+                    catalogList.insertBefore(draggedItem, this);
+                  }
+                  
+                  // Update the backend using the existing moveUp/moveDown functions
+                  await updateCatalogOrder(draggedId, sourceIndex, targetIndex, userId);
+                });
+              });
+            }
+          }
+          
+          // Function to update backend catalog order
+          async function updateCatalogOrder(catalogId, fromIndex, toIndex, userId) {
+            const steps = Math.abs(toIndex - fromIndex);
+            const moveDirection = fromIndex < toIndex ? 'down' : 'up';
+            const moveEndpoint = moveDirection === 'down' ? 'moveDown' : 'moveUp';
+            
+            try {
+              // Make the necessary number of move requests to get from source to target
+              for (let i = 0; i < steps; i++) {
+                const formData = new FormData();
+                formData.append('catalogId', catalogId);
+                
+                await fetch('/configure/' + userId + '/' + moveEndpoint, {
+                  method: 'POST',
+                  body: formData
+                });
+              }
+              
+              showToast('Catalog position updated successfully', 'success');
+              
+              // Update the data-catalog-index attributes
+              updateCatalogIndexAttributes();
+              
+            } catch (error) {
+              console.error('Error updating catalog position:', error);
+              showToast('Failed to update catalog position', 'error');
+              
+              // If error, reload the page to restore the correct order
+              window.location.reload();
+            }
+          }
+          
+          // Function to update the numbered indicators
+          function updateIndexNumbers() {
+            document.querySelectorAll('.catalog-item').forEach((item, index) => {
+              const indicator = item.querySelector('.catalog-handle span');
+              if (indicator) {
+                indicator.textContent = (index + 1).toString();
+              }
+            });
+          }
+          
+          // Function to update data-catalog-index attributes
+          function updateCatalogIndexAttributes() {
+            document.querySelectorAll('.catalog-item').forEach((item, index) => {
+              item.setAttribute('data-catalog-index', index.toString());
+            });
+          }
         </script>
       </body>
     </html>
