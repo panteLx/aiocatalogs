@@ -51,8 +51,43 @@ app.get('/configure', async c => {
   // Get message and error parameters from query
   const message = c.req.query('message') || '';
   const error = c.req.query('error') || '';
+  const noRedirect = c.req.query('noRedirect') === 'true';
 
-  return c.html(getHomePageHTML(message, error, packageInfo.version));
+  const html = getHomePageHTML(message, error, packageInfo.version);
+
+  // Add script to redirect to stored userId if available and noRedirect is not set
+  const htmlWithAutoRedirect = html.replace(
+    '</body>',
+    `
+    <script>
+      // Auto-redirect to saved configuration if available and no redirect prevention flag is set
+      document.addEventListener('DOMContentLoaded', function() {
+        // We need to wait a moment for everything to be fully initialized
+        setTimeout(function() {
+          const shouldRedirect = !${noRedirect};
+          console.log("Should redirect check:", shouldRedirect);
+          
+          if (shouldRedirect) {
+            const savedUserId = localStorage.getItem('aioCatalogsUserId');
+            console.log("Auto-redirect check - saved userId:", savedUserId);
+            
+            if (savedUserId && savedUserId.trim().length > 0) {
+              console.log("Redirecting to:", '/configure/' + savedUserId);
+              window.location.href = '/configure/' + savedUserId;
+            } else {
+              console.log("No userId found in localStorage or empty string");
+            }
+          } else {
+            console.log("Redirect prevented by noRedirect flag");
+          }
+        }, 100); // Small delay to ensure localStorage is accessible
+      });
+    </script>
+    </body>
+  `
+  );
+
+  return c.html(htmlWithAutoRedirect);
 });
 
 // Create user

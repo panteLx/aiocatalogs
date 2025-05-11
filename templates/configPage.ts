@@ -162,15 +162,15 @@ export function getConfigPageHTML(
           }
         </style>
       </head>
-      <body class="min-h-screen bg-background text-foreground bg-card-pattern">
+      <body class="min-h-screen bg-background text-foreground bg-card-pattern" data-user-id="${userId}">
         <div class="container py-10">
           <header class="mb-10">
             <div class="flex flex-col">
               <div class="flex items-center justify-between mb-2">
-                <h1 class="text-3xl font-bold tracking-tight">AIO Catalogs - Configuration</h1>
+                <h1 class="text-3xl font-bold tracking-tight">AIOCatalogs - Configuration</h1>
                 <div class="hidden md:flex items-center space-x-3">
                   <a
-                    href="/configure"
+                    href="/configure?noRedirect=true"
                     class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2"
                   >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
@@ -181,7 +181,13 @@ export function getConfigPageHTML(
                 </div>
               </div>
               <p class="text-lg text-muted-foreground">
-                Your unique user ID: <span class="font-medium text-primary">${userId}</span> (save this ID to access your catalogs later)
+                User ID: <span class="font-medium text-primary">${userId}</span>
+                <button 
+                  id="clearStoredUserBtn" 
+                  class="ml-2 inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-6 px-2 py-1"
+                >
+                  Clear Config from Local Storage
+                </button>
               </p>
             </div>
           </header>
@@ -189,7 +195,7 @@ export function getConfigPageHTML(
           <!-- Back to User Selection button, mobile friendly -->
           <div class="md:hidden mb-6">
             <a
-              href="/configure"
+              href="/configure?noRedirect=true"
               class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2 w-full"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
@@ -388,8 +394,20 @@ export function getConfigPageHTML(
             }).showToast();
           }
 
-          // Show toasts if there are messages or errors
+          // Save user ID to localStorage when page loads
           document.addEventListener('DOMContentLoaded', function() {
+            // Get user ID from data attribute
+            const userId = document.body.getAttribute('data-user-id');
+            console.log("Storing userId in localStorage:", userId);
+            localStorage.setItem('aioCatalogsUserId', userId);
+            
+            // Set up clear stored user button
+            document.getElementById('clearStoredUserBtn').addEventListener('click', function() {
+              localStorage.removeItem('aioCatalogsUserId');
+              showToast('Stored user ID cleared. Next time you visit, you\\'ll need to enter it manually.', 'success');
+            });
+            
+            // Show toasts if there are messages or errors
             ${message ? `showToast("${message}", "success");` : ''}
             ${error ? `showToast("${error}", "error");` : ''}
           });
@@ -413,7 +431,7 @@ export function getHomePageHTML(
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>AIO Catalogs</title>
+        <title>AIOCatalogs</title>
         <link rel="icon" href="https://i.imgur.com/fRPYeIV.png" />
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
         <script src="https://cdn.tailwindcss.com"></script>
@@ -593,10 +611,22 @@ export function getHomePageHTML(
             }).showToast();
           }
 
-          // Show toasts if there are messages or errors
+          // Show toasts if there are messages or errors and set up saved ID
           document.addEventListener('DOMContentLoaded', function() {
             ${message ? `showToast("${message}", "success");` : ''}
             ${error ? `showToast("${error}", "error");` : ''}
+            
+            // Set up the user ID field with the saved value if available
+            console.log("Checking for saved user ID in localStorage");
+            const savedUserId = localStorage.getItem('aioCatalogsUserId');
+            console.log("Saved user ID from localStorage:", savedUserId);
+            
+            const userIdField = document.getElementById('userId');
+            
+            if (savedUserId && savedUserId.trim().length > 0) {
+              console.log("Setting userId field value:", savedUserId);
+              userIdField.value = savedUserId;
+            }
           });
         </script>
       </body>

@@ -34,3 +34,6 @@ Thumbs.db
 
 # Cloudflare
 .wrangler/
+
+# Reddit and Discord
+.reddit-and-discord/
