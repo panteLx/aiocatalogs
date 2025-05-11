@@ -2,6 +2,7 @@ import { CatalogRequest, CatalogResponse, D1Database, MetaItem } from './types';
 import { configManager } from './configManager';
 import packageJson from '../../../package.json';
 import { buildManifest, handleCatalogRequest } from '../../core/utils/manifestBuilder';
+import { logger } from '../../core/utils/logger';
 
 // Cache for builders to avoid multiple creations
 const addonCache = new Map();
@@ -30,7 +31,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 
     // Catalog handler
     async catalog(args: CatalogRequest): Promise<CatalogResponse> {
-      console.log(`Catalog request for ${userId} - ${args.type}/${args.id}`);
+      logger.debug(`Catalog request for ${userId} - ${args.type}/${args.id}`);
       return handleCatalogRequest(args, userCatalogs);
     },
 
@@ -46,12 +47,12 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 
     // Handle catalog request
     async handleCatalog(userId: string, args: any) {
-      console.log(`Handling catalog request for user ${userId} with args: ${JSON.stringify(args)}`);
+      logger.debug(`Handling catalog request for user ${userId} with args:`, args);
       const userCatalogs = await configManager.getAllCatalogs(userId);
-      console.log(`Found ${userCatalogs.length} catalogs for user ${userId}`);
+      logger.info(`Found ${userCatalogs.length} catalogs for user ${userId}`);
 
       if (!userCatalogs || userCatalogs.length === 0) {
-        console.log(`User ${userId} has no catalogs configured or they couldn't be loaded`);
+        logger.warn(`User ${userId} has no catalogs configured or they couldn't be loaded`);
         return { metas: [] };
       }
 
@@ -66,13 +67,13 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 // Clear cache for a specific user
 export function clearAddonCache(userId: string) {
   if (addonCache.has(userId)) {
-    console.log(`Clearing addon cache for user ${userId}`);
+    logger.debug(`Clearing addon cache for user ${userId}`);
     addonCache.delete(userId);
   }
 }
 
 // Clear entire addon cache
 export function clearAllAddonCache() {
-  console.log('Clearing entire addon cache');
+  logger.debug('Clearing entire addon cache');
   addonCache.clear();
 }

@@ -2,6 +2,7 @@ import { UserConfig, CatalogManifest } from '../../types/index';
 import { D1Database, Env } from './types';
 import { randomUUID } from 'crypto';
 import { BaseConfigManager } from '../../core/config/configManager';
+import { logger } from '../../core/utils/logger';
 
 export class CloudflareConfigManager extends BaseConfigManager {
   private database: D1Database | null = null;
@@ -26,9 +27,9 @@ export class CloudflareConfigManager extends BaseConfigManager {
       await this.database.exec(
         `CREATE TABLE IF NOT EXISTS user_configs (user_id TEXT PRIMARY KEY, config TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`
       );
-      console.log('Database schema initialized');
+      logger.debug('Database schema initialized');
     } catch (error) {
-      console.error('Error initializing database schema:', error);
+      logger.error('Error initializing database schema:', error);
       throw error;
     }
   }
@@ -37,7 +38,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
   async generateUserId(): Promise<string> {
     // In Cloudflare Workers we use crypto.randomUUID
     const userId = randomUUID();
-    console.log(`Generated new user ID: ${userId}`);
+    logger.info(`Generated new user ID: ${userId}`);
     return userId;
   }
 
@@ -49,7 +50,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
     const now = Date.now();
 
     if (cachedConfig && cachedConfig._cachedAt && now - cachedConfig._cachedAt < 30000) {
-      console.log(
+      logger.info(
         `Using cached config for user ${userId} (age: ${(now - cachedConfig._cachedAt) / 1000}s)`
       );
       return cachedConfig;
@@ -71,7 +72,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
 
       if (result && result.config) {
         const config = JSON.parse(result.config as string);
-        console.log(
+        logger.debug(
           `Loaded config for user ${userId} with ${config.catalogs?.length || 0} catalogs and catalogOrder: ${JSON.stringify(config.catalogOrder)}`
         );
 
@@ -81,11 +82,11 @@ export class CloudflareConfigManager extends BaseConfigManager {
         return config;
       }
     } catch (error) {
-      console.error(`Error loading config for user ${userId}:`, error);
+      logger.error(`Error loading config for user ${userId}:`, error);
     }
 
     // Default empty configuration
-    console.log(`Creating new empty config for user ${userId}`);
+    logger.info(`Creating new empty config for user ${userId}`);
     const defaultConfig: UserConfig = { catalogs: [], _cachedAt: now };
     return defaultConfig;
   }
@@ -101,7 +102,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
       config = this.cache.get(userId)!;
     } else if (!config) {
       // Error if no configuration found
-      console.error(
+      logger.error(
         `Cannot save config for user ${userId}: config not provided and not found in cache`
       );
       return false;
@@ -133,7 +134,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
           .run();
       }
 
-      console.log(
+      logger.info(
         `Saved config for user ${userId} with ${config.catalogs.length} catalogs and catalogOrder: ${JSON.stringify(config.catalogOrder)}`
       );
 
@@ -142,7 +143,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
       this.cache.set(userId, config);
       return true;
     } catch (error) {
-      console.error(`Error saving config for user ${userId}:`, error);
+      logger.error(`Error saving config for user ${userId}:`, error);
       return false;
     }
   }
@@ -164,7 +165,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
 
       return !!result;
     } catch (error) {
-      console.error(`Error checking if user ${userId} exists:`, error);
+      logger.error(`Error checking if user ${userId} exists:`, error);
       return false;
     }
   }
@@ -185,13 +186,13 @@ export class CloudflareConfigManager extends BaseConfigManager {
 
       if (result && result.results) {
         const users = result.results.map((row: any) => row.user_id);
-        console.log(`Retrieved ${users.length} users`);
+        logger.info(`Retrieved ${users.length} users`);
         return users;
       }
 
       return [];
     } catch (error) {
-      console.error('Error getting all users:', error);
+      logger.error('Error getting all users:', error);
       return [];
     }
   }
@@ -199,7 +200,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
   // Add a new method to explicitly clear cache for a user
   clearUserCache(userId: string): void {
     if (this.cache.has(userId)) {
-      console.log(`Manually clearing config cache for user ${userId}`);
+      logger.info(`Manually clearing config cache for user ${userId}`);
       this.cache.delete(userId);
     }
   }

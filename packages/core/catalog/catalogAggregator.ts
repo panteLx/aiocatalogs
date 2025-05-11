@@ -1,4 +1,5 @@
 import { CatalogManifest } from '../../types/index';
+import { logger } from '../utils/logger';
 
 // Interface for raw data from the manifest API
 interface RawManifest {
@@ -38,12 +39,12 @@ export abstract class BaseCatalogAggregator {
       }
 
       const manifestUrl = `${endpoint}manifest.json`;
-      console.log(`Fetching manifest from: ${manifestUrl}`);
+      logger.debug(`Fetching manifest from: ${manifestUrl}`);
 
       const response = await fetch(manifestUrl);
 
       if (!response.ok) {
-        console.error(`Failed to fetch manifest: ${response.statusText}`);
+        logger.error(`Failed to fetch manifest: ${response.statusText}`);
         return null;
       }
 
@@ -51,7 +52,7 @@ export abstract class BaseCatalogAggregator {
 
       // Type checking of required fields
       if (!data || typeof data !== 'object') {
-        console.error('Invalid manifest format: not an object');
+        logger.error('Invalid manifest format: not an object');
         return null;
       }
 
@@ -60,7 +61,7 @@ export abstract class BaseCatalogAggregator {
 
       // Check if the manifest is valid and contains required fields
       if (!manifest.id || !manifest.name || !manifest.catalogs) {
-        console.error('Invalid manifest format: missing required fields');
+        logger.error('Invalid manifest format: missing required fields');
         return null;
       }
 
@@ -70,7 +71,7 @@ export abstract class BaseCatalogAggregator {
       );
 
       if (manifest.catalogs.length !== filteredCatalogs.length) {
-        console.log(
+        logger.info(
           `Filtered out ${manifest.catalogs.length - filteredCatalogs.length} search catalogs from ${manifest.name}`
         );
       }
@@ -89,12 +90,12 @@ export abstract class BaseCatalogAggregator {
         behaviorHints: manifest.behaviorHints,
       };
 
-      console.log(
+      logger.info(
         `Successfully fetched manifest for ${catalogManifest.name} with ${catalogManifest.catalogs.length} catalogs`
       );
       return catalogManifest;
     } catch (error) {
-      console.error('Error fetching catalog manifest:', error);
+      logger.error('Error fetching catalog manifest:', error);
       return null;
     }
   }
@@ -108,18 +109,18 @@ export abstract class BaseCatalogAggregator {
       const baseUrl = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
       const url = `${baseUrl}/catalog/${type}/${id}.json`;
 
-      console.log(`Fetching catalog data from ${url}`);
+      logger.debug(`Fetching catalog data from ${url}`);
       const response = await fetch(url);
 
       if (!response.ok) {
-        console.error(`Failed to fetch catalog data: ${response.statusText}`);
+        logger.error(`Failed to fetch catalog data: ${response.statusText}`);
         return { metas: [] };
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching catalog data:', error);
+      logger.error('Error fetching catalog data:', error);
       return { metas: [] };
     }
   }
@@ -136,7 +137,7 @@ export abstract class BaseCatalogAggregator {
       const response = await fetch(`${endpoint}manifest.json`);
       return response.ok;
     } catch (error) {
-      console.error(`Health check failed for ${manifest.id}:`, error);
+      logger.error(`Health check failed for ${manifest.id}:`, error);
       return false;
     }
   }

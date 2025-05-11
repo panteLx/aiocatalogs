@@ -1,4 +1,5 @@
 import { CatalogManifest, UserConfig } from '../../types/index';
+import { logger } from './logger';
 
 export const ADDON_ID = 'community.aiocatalogs';
 
@@ -18,7 +19,9 @@ export function buildManifest(
   userCatalogs: CatalogManifest[]
 ) {
   try {
-    console.log(`Building manifest for user ${userId} with ${userCatalogs.length} catalog sources`);
+    logger.debug(
+      `Building manifest for user ${userId} with ${userCatalogs.length} catalog sources`
+    );
 
     // Initialize manifest object
     const manifest = {
@@ -99,7 +102,7 @@ export function buildManifest(
 
     return manifest;
   } catch (error) {
-    console.error('Error building manifest:', error);
+    logger.error('Error building manifest:', error);
 
     // Return fallback manifest
     return {
@@ -137,7 +140,7 @@ export async function handleCatalogRequest(
   args: any,
   userCatalogs: CatalogManifest[]
 ): Promise<any> {
-  console.log(`Handling catalog request with args: ${JSON.stringify(args)}`);
+  logger.info(`Handling catalog request with args:`, args);
 
   // Find the target source catalog
   const catalogId = args.id.split('_')[1]; // Extract the original catalog ID
@@ -147,7 +150,7 @@ export async function handleCatalogRequest(
   const source = userCatalogs.find(c => c.id === sourceId);
 
   if (!source) {
-    console.error(`Source ${sourceId} not found in user catalogs`);
+    logger.error(`Source ${sourceId} not found in user catalogs`);
     return { metas: [] };
   }
 
@@ -155,20 +158,20 @@ export async function handleCatalogRequest(
   const catalog = source.catalogs.find((c: any) => c.type === args.type && c.id === catalogId);
 
   if (!catalog) {
-    console.error(`Catalog ${catalogId} of type ${args.type} not found in source ${sourceId}`);
+    logger.error(`Catalog ${catalogId} of type ${args.type} not found in source ${sourceId}`);
     return { metas: [] };
   }
 
   // Create catalog endpoint
   const endpoint = source.endpoint.endsWith('/') ? source.endpoint.slice(0, -1) : source.endpoint;
   const url = `${endpoint}/catalog/${args.type}/${catalogId}.json`;
-  console.log(`Fetching catalog from: ${url}`);
+  logger.debug(`Fetching catalog from: ${url}`);
 
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error(`Error fetching catalog: ${response.statusText}`);
+      logger.error(`Error fetching catalog: ${response.statusText}`);
       return { metas: [] };
     }
 
@@ -184,7 +187,7 @@ export async function handleCatalogRequest(
 
     return { metas };
   } catch (error) {
-    console.error(`Error fetching catalog: ${error}`);
+    logger.error(`Error fetching catalog:`, error);
     return { metas: [] };
   }
 }

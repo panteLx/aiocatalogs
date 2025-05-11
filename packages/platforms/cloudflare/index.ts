@@ -6,6 +6,11 @@ import { D1Database, Env } from './types';
 import { getHomePageHTML } from '../../../templates/configPage';
 import packageInfo from '../../../package.json';
 import { rateLimit } from './middleware/rateLimit';
+import { logger, initLogger } from '../../core/utils/logger';
+import { appConfig } from './appConfig';
+
+// Initialize logger with appConfig
+initLogger(appConfig);
 
 // Create Hono App with Bindings type parameter
 const app = new Hono<{ Bindings: Env }>();
@@ -41,7 +46,7 @@ app.get('/:jsonParams/configure', async c => {
       return c.redirect(`/configure/${params.userId}`);
     }
   } catch (e) {
-    console.error('Failed to parse JSON parameters:', e);
+    logger.error('Failed to parse JSON parameters:', e);
     return c.redirect('/configure?error=Failed to parse JSON parameters');
   }
 
@@ -70,6 +75,7 @@ app.get('/configure', async c => {
         // We need to wait a moment for everything to be fully initialized
         setTimeout(function() {
           const shouldRedirect = !${noRedirect};
+          // Use logger in client code
           console.log("Should redirect check:", shouldRedirect);
           
           if (shouldRedirect) {
