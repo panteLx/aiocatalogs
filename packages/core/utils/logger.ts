@@ -221,27 +221,29 @@ export class Logger {
   }
 
   /**
+   * Format arguments into a string
+   */
+  private formatArgs(args: any[]): string {
+    return args
+      .map(arg => {
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return require('util').inspect(arg, { depth: 2, colors: false });
+          }
+        }
+        return String(arg);
+      })
+      .join(' ');
+  }
+
+  /**
    * Log a debug message
    */
   public debug(...args: any[]): void {
     if (this.config.level <= LogLevel.DEBUG) {
-      console.debug(
-        this.formatMessage(
-          args
-            .map(arg => {
-              if (typeof arg === 'object') {
-                try {
-                  return JSON.stringify(arg);
-                } catch {
-                  return require('util').inspect(arg, { depth: 2, colors: false });
-                }
-              }
-              return String(arg);
-            })
-            .join(' '),
-          LogLevel.DEBUG
-        )
-      );
+      console.debug(this.formatMessage(this.formatArgs(args), LogLevel.DEBUG));
     }
   }
 
@@ -250,23 +252,7 @@ export class Logger {
    */
   public info(...args: any[]): void {
     if (this.config.level <= LogLevel.INFO) {
-      console.log(
-        this.formatMessage(
-          args
-            .map(arg => {
-              if (typeof arg === 'object') {
-                try {
-                  return JSON.stringify(arg);
-                } catch {
-                  return require('util').inspect(arg, { depth: 2, colors: false });
-                }
-              }
-              return String(arg);
-            })
-            .join(' '),
-          LogLevel.INFO
-        )
-      );
+      console.log(this.formatMessage(this.formatArgs(args), LogLevel.INFO));
     }
   }
 
@@ -275,23 +261,7 @@ export class Logger {
    */
   public warn(...args: any[]): void {
     if (this.config.level <= LogLevel.WARN) {
-      console.warn(
-        this.formatMessage(
-          args
-            .map(arg => {
-              if (typeof arg === 'object') {
-                try {
-                  return JSON.stringify(arg);
-                } catch {
-                  return require('util').inspect(arg, { depth: 2, colors: false });
-                }
-              }
-              return String(arg);
-            })
-            .join(' '),
-          LogLevel.WARN
-        )
-      );
+      console.warn(this.formatMessage(this.formatArgs(args), LogLevel.WARN));
     }
   }
 
@@ -300,23 +270,7 @@ export class Logger {
    */
   public error(...args: any[]): void {
     if (this.config.level <= LogLevel.ERROR) {
-      console.error(
-        this.formatMessage(
-          args
-            .map(arg => {
-              if (typeof arg === 'object') {
-                try {
-                  return JSON.stringify(arg);
-                } catch {
-                  return require('util').inspect(arg, { depth: 2, colors: false });
-                }
-              }
-              return String(arg);
-            })
-            .join(' '),
-          LogLevel.ERROR
-        )
-      );
+      console.error(this.formatMessage(this.formatArgs(args), LogLevel.ERROR));
     }
   }
 }
