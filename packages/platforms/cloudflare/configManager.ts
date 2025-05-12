@@ -206,6 +206,14 @@ export class CloudflareConfigManager extends BaseConfigManager {
     }
   }
 
+  // Add a new method to explicitly clear API key cache for a user
+  clearApiKeyCache(userId: string): void {
+    if (this.apiKeyCache.has(userId)) {
+      logger.info(`Clearing API key cache for user ${userId}`);
+      this.apiKeyCache.delete(userId);
+    }
+  }
+
   // Save MDBList API key for a user
   async saveMDBListApiKey(userId: string, apiKey: string): Promise<boolean> {
     if (!this.database) {

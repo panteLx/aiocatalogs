@@ -278,6 +278,9 @@ export const saveMDBListConfig = async (c: any) => {
       );
     }
 
+    // Clear the API key cache to ensure the new key is used immediately
+    configManager.clearApiKeyCache(userId);
+
     return c.redirect(`/configure/${userId}?message=MDBList API configuration saved successfully`);
   } catch (error) {
     console.error('Error saving MDBList API configuration:', error);
