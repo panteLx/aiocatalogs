@@ -3,6 +3,8 @@
  *
  * This file contains HTML templates that can be used by Cloudflare and future implementations.
  */
+import { getMDBListSearchFormHTML } from './mdblistTemplates';
+import { getMDBListApiConfig, isMDBListApiConfigured } from '../packages/core/utils/mdblist';
 
 /**
  * Creates the HTML for the configuration page
@@ -86,6 +88,47 @@ export function getConfigPageHTML(
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
     stremioUrl
   )}`;
+
+  // Add MDBList search form
+  const mdblistSearchForm = getMDBListSearchFormHTML(userId);
+
+  // Check if MDBList API is configured
+  const mdblistApiConfig = getMDBListApiConfig();
+  const isMDBListConfigured = isMDBListApiConfigured();
+
+  // Create MDBList API config section
+  const mdblistApiConfigSection = `
+    <section>
+      <div class="rounded-lg border bg-card p-6 shadow-sm mt-8">
+        <h2 class="text-xl font-semibold mb-4">MDBList API Configuration</h2>
+        <form method="POST" action="/configure/${userId}/mdblist/config">
+          <div class="grid gap-4">
+            <div class="grid gap-2">
+              <label for="apiKey" class="text-sm font-medium">MDBList API Key</label>
+              <input
+                type="text"
+                id="apiKey"
+                name="apiKey"
+                value="${mdblistApiConfig.apiKey}"
+                placeholder="Enter your MDBList API key..."
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <p class="text-sm text-muted-foreground">
+                Get your free API key from <a href="https://mdblist.com/preferences/" target="_blank" class="text-primary hover:underline">MDBList Preferences</a>.
+                ${!isMDBListConfigured ? 'Currently using fallback HTML scraping method which might be unreliable.' : ''}
+              </p>
+            </div>
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              Save API Configuration
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  `;
 
   return `
     <!DOCTYPE html>
@@ -267,6 +310,10 @@ export function getConfigPageHTML(
                 </form>
               </div>
             </section>
+
+            ${mdblistApiConfigSection}
+
+            ${mdblistSearchForm}
 
             <section>
               <h2 class="text-xl font-semibold mb-4">Your Catalogs</h2>

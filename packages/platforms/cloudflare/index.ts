@@ -8,6 +8,13 @@ import packageInfo from '../../../package.json';
 import { rateLimit } from './middleware/rateLimit';
 import { logger, initLogger } from '../../core/utils/logger';
 import { appConfig } from './appConfig';
+import {
+  fetchListDetails,
+  fetchMDBListCatalog,
+  getMDBListApiConfig,
+  setMDBListApiConfig,
+} from '../../core/utils/mdblist';
+import { loadUserMDBListApiKey } from '../../api/routes/mdblistRoutes';
 
 // Initialize logger with appConfig
 initLogger(appConfig);
@@ -137,6 +144,14 @@ import {
   moveCatalogDown,
 } from '../../api/routes/configPage';
 
+// Import MDBList routes
+import {
+  getMDBListSearch,
+  getMDBListTop100,
+  addMDBListCatalog,
+  saveMDBListConfig,
+} from '../../api/routes/mdblistRoutes';
+
 // Configuration endpoints
 app.get('/configure/:userId', async c => {
   initConfigManager(c);
@@ -161,6 +176,250 @@ app.post('/configure/:userId/moveUp', async c => {
 app.post('/configure/:userId/moveDown', async c => {
   initConfigManager(c);
   return moveCatalogDown(c);
+});
+
+// MDBList endpoints
+app.get('/configure/:userId/mdblist/search', async c => {
+  initConfigManager(c);
+  return getMDBListSearch(c);
+});
+
+app.get('/configure/:userId/mdblist/top100', async c => {
+  initConfigManager(c);
+  return getMDBListTop100(c);
+});
+
+app.post('/configure/:userId/mdblist/add', async c => {
+  initConfigManager(c);
+  return addMDBListCatalog(c);
+});
+
+app.post('/configure/:userId/mdblist/config', async c => {
+  initConfigManager(c);
+  return saveMDBListConfig(c);
+});
+
+// Direct MDBList catalog endpoints
+app.get('/configure/:userId/mdblist/:listId/catalog/:type/:id.json', async c => {
+  initConfigManager(c);
+  const listId = c.req.param('listId');
+  const type = c.req.param('type');
+  const userId = c.req.param('userId');
+
+  if (c.env && c.env.DB) {
+    try {
+      // Verify that the user exists
+      configManager.setDatabase(c.env.DB);
+      const exists = await configManager.userExists(userId);
+      if (!exists) {
+        return c.json({ error: 'User not found' }, 404);
+      }
+
+      // Load the user's API key from the database
+      await loadUserMDBListApiKey(userId);
+
+      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+
+      // Use the main catalog handler with the MDBList ID format that our addon understands
+      const catalogId = `mdblist_${listId}`;
+      const result = await addonInterface.handleCatalog(userId, { type, id: catalogId });
+
+      return c.json(result);
+    } catch (error) {
+      console.error(`Error serving MDBList catalog: ${error}`);
+      return c.json({ error: 'Failed to generate catalog' }, 500);
+    }
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+});
+
+// Direct MDBList manifest endpoint
+app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
+  initConfigManager(c);
+  const listId = c.req.param('listId');
+  const userId = c.req.param('userId');
+
+  // Verify that the user exists
+  if (c.env && c.env.DB) {
+    configManager.setDatabase(c.env.DB);
+    const exists = await configManager.userExists(userId);
+    if (!exists) {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    // Load the user's API key from the database
+    const apiKeyLoaded = await loadUserMDBListApiKey(userId);
+
+    // If there's an error, try to load the API key directly from cache
+    const apiKey = apiKeyLoaded
+      ? getMDBListApiConfig().apiKey
+      : await configManager.loadMDBListApiKey(userId);
+
+    if (!apiKey) {
+      logger.warn(`No MDBList API key found for user ${userId}`);
+      return c.json(
+        {
+          error: 'MDBList API key not configured',
+          message: 'Please configure your MDBList API key in the settings.',
+        },
+        403
+      );
+    }
+
+    // Set the API key for the current session
+    setMDBListApiConfig({ apiKey, userId });
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+
+  // Get base URL
+  const url = new URL(c.req.url);
+  const baseUrl = `${url.protocol}//${url.host}`;
+
+  try {
+    // Get the API key from the configuration that was just set
+    const apiKey = getMDBListApiConfig().apiKey;
+
+    if (!apiKey) {
+      return c.json({ error: 'MDBList API key not configured' }, 403);
+    }
+
+    // Fetch list details to get the actual name
+    const listDetails = await fetchListDetails(listId, apiKey);
+    const listName = listDetails?.name || `MDBList ${listId}`;
+
+    // Fetch actual content to determine what types are available
+    const catalog = await fetchMDBListCatalog(listId, apiKey);
+    const hasMovies = catalog.metas.some(item => item.type === 'movie');
+    const hasSeries = catalog.metas.some(item => item.type === 'series');
+
+    // Create catalogs array based on available content
+    const catalogs = [];
+
+    if (hasMovies) {
+      catalogs.push({
+        id: `mdblist_${listId}`,
+        type: 'movie',
+        name: listName,
+      });
+    }
+
+    if (hasSeries) {
+      catalogs.push({
+        id: `mdblist_${listId}`,
+        type: 'series',
+        name: listName,
+      });
+    }
+
+    // If no content was found, add both types as fallback
+    if (catalogs.length === 0) {
+      catalogs.push(
+        {
+          id: `mdblist_${listId}`,
+          type: 'movie',
+          name: listName,
+        },
+        {
+          id: `mdblist_${listId}`,
+          type: 'series',
+          name: listName,
+        }
+      );
+    }
+
+    // Create a basic manifest for this MDBList
+    const manifest = {
+      id: `mdblist_${listId}`,
+      version: '1.0.0',
+      name: listName,
+      description: `${listName} - MDBList catalog`,
+      resources: [
+        {
+          name: 'catalog',
+          types: ['movie', 'series'],
+          idPrefixes: ['tt'],
+        },
+      ],
+      catalogs: catalogs,
+      // Tell Stremio to use our direct catalog endpoint instead
+      behaviorHints: {
+        configurable: false,
+        configurationRequired: false,
+      },
+    };
+
+    return c.json(manifest);
+  } catch (error) {
+    console.error(`Error generating MDBList manifest for ${listId}:`, error);
+    return c.json({ error: 'Failed to generate manifest' }, 500);
+  }
+});
+
+// Helper function to find a valid user with MDBList API key
+async function findUserWithMDBListApiKey(requestedUserId: string): Promise<string> {
+  let validUserId = requestedUserId;
+  let exists = await configManager.userExists(requestedUserId);
+
+  if (!exists) {
+    // Try to find any user who has a MDBList API key configured
+    const allUsers = await configManager.getAllUsers();
+    for (const user of allUsers) {
+      const hasApiKey = await configManager.loadMDBListApiKey(user);
+      if (hasApiKey) {
+        validUserId = user;
+        exists = true;
+        break;
+      }
+    }
+
+    // If we still don't have a valid user, use the default
+    if (!exists) {
+      validUserId = 'default';
+    }
+  }
+
+  return validUserId;
+}
+
+// Add a compatibility route for direct MDBList access without userId
+// This redirects to the version with userId for better compatibility
+app.get('/mdblist/:listId/manifest.json', async c => {
+  const listId = c.req.param('listId');
+  const userId = c.req.query('userId') || 'default';
+
+  // First check if this user exists, if not, try to find a user with a valid MDBList API key
+  if (c.env && c.env.DB) {
+    configManager.setDatabase(c.env.DB);
+    const validUserId = await findUserWithMDBListApiKey(userId);
+
+    // Redirect to the proper URL with userId in the path
+    return c.redirect(`/configure/${validUserId}/mdblist/${listId}/manifest.json`);
+  } else {
+    // If no database, just use the default userId
+    return c.redirect(`/configure/default/mdblist/${listId}/manifest.json`);
+  }
+});
+
+// Also add compatibility for the catalog endpoint
+app.get('/mdblist/:listId/catalog/:type/:id.json', async c => {
+  const listId = c.req.param('listId');
+  const type = c.req.param('type');
+  const id = c.req.param('id.json').replace(/\.json$/, '');
+  const userId = c.req.query('userId') || 'default';
+
+  // First check if this user exists, if not, try to find a user with a valid MDBList API key
+  if (c.env && c.env.DB) {
+    configManager.setDatabase(c.env.DB);
+    const validUserId = await findUserWithMDBListApiKey(userId);
+
+    // Redirect to the proper URL with userId in the path
+    return c.redirect(`/configure/${validUserId}/mdblist/${listId}/catalog/${type}/${id}.json`);
+  } else {
+    // If no database, just use the default userId
+    return c.redirect(`/configure/default/mdblist/${listId}/catalog/${type}/${id}.json`);
+  }
 });
 
 // Manifest.json with userId as query parameter
@@ -232,6 +491,11 @@ app.get('/:params/:resource/:type/:id\\.json', async c => {
   try {
     const paramsObj = JSON.parse(decodeURIComponent(params.params));
     userId = paramsObj.userId || 'default';
+
+    // Load the user's MDBList API key if DB is available
+    if (c.env && c.env.DB) {
+      await loadUserMDBListApiKey(userId);
+    }
   } catch (e) {
     console.error('Failed to parse path parameters:', e);
   }
@@ -275,6 +539,11 @@ app.get('/:resource/:type/:id\\.json', async c => {
   const idWithJson = params['id\\.json'];
   const id = idWithJson ? idWithJson.replace(/\.json$/, '') : '';
   const userId = c.req.query('userId') || 'default';
+
+  // Load the user's MDBList API key if DB is available
+  if (c.env && c.env.DB) {
+    await loadUserMDBListApiKey(userId);
+  }
 
   if (c.env && c.env.DB) {
     try {

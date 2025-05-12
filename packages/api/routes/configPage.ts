@@ -172,9 +172,22 @@ export const getConfigPage = async (c: any) => {
   try {
     // Load configuration
     const catalogs = await configManager.getAllCatalogs(userId);
+
+    // Load the MDBList API key from the database and set it for the current session
+    try {
+      // Import the required functions
+      const { loadUserMDBListApiKey } = await import('../../api/routes/mdblistRoutes');
+
+      // Load the API key from the database and set it globally
+      await loadUserMDBListApiKey(userId);
+      console.log(`Loaded MDBList API key for user ${userId} for config page`);
+    } catch (apiKeyError) {
+      console.warn(`Error loading MDBList API key for user ${userId}:`, apiKeyError);
+      // Ignore errors here as it's not critical
+    }
+
     const url = new URL(c.req.url);
     const baseUrlHost = url.host;
-    // const baseUrl = `${url.protocol === 'https' ? 'https' : 'http'}://${baseUrlHost}`;
     const baseUrl = `${url.protocol}//${baseUrlHost}`;
     const message = c.req.query('message') || '';
     const error = c.req.query('error') || '';

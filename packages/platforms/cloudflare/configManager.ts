@@ -6,6 +6,7 @@ import { logger } from '../../core/utils/logger';
 
 export class CloudflareConfigManager extends BaseConfigManager {
   private database: D1Database | null = null;
+  private apiKeyCache: Map<string, string> = new Map<string, string>();
 
   constructor() {
     super();
@@ -202,6 +203,106 @@ export class CloudflareConfigManager extends BaseConfigManager {
     if (this.cache.has(userId)) {
       logger.info(`Manually clearing config cache for user ${userId}`);
       this.cache.delete(userId);
+    }
+  }
+
+  // Save MDBList API key for a user
+  async saveMDBListApiKey(userId: string, apiKey: string): Promise<boolean> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // Initialize the database if not already done
+      await this.initDatabase();
+
+      const now = Date.now();
+
+      // Check if an entry for this user already exists
+      const exists = await this.database
+        .prepare('SELECT 1 FROM mdblist_api_keys WHERE user_id = ?')
+        .bind(userId)
+        .first();
+
+      if (exists) {
+        // Update existing entry
+        await this.database
+          .prepare('UPDATE mdblist_api_keys SET api_key = ?, updated_at = ? WHERE user_id = ?')
+          .bind(apiKey, now, userId)
+          .run();
+      } else {
+        // Add new entry
+        await this.database
+          .prepare(
+            'INSERT INTO mdblist_api_keys (user_id, api_key, created_at, updated_at) VALUES (?, ?, ?, ?)'
+          )
+          .bind(userId, apiKey, now, now)
+          .run();
+      }
+
+      logger.info(`Saved MDBList API key for user ${userId}`);
+      return true;
+    } catch (error) {
+      // Improved error handling with more detailed information
+      if (error instanceof Error) {
+        logger.error(`Error saving MDBList API key for user ${userId}: ${error.message}`, error);
+      } else {
+        logger.error(`Unknown error saving MDBList API key for user ${userId}:`, error);
+      }
+
+      // Try as fallback to store the API key in the in-memory cache
+      try {
+        this.apiKeyCache.set(userId, apiKey);
+        logger.info(`Saved MDBList API key for user ${userId} in memory cache as fallback`);
+        return true;
+      } catch (cacheError) {
+        logger.error(`Failed to save API key in memory cache: ${cacheError}`);
+        return false;
+      }
+    }
+  }
+
+  // Load MDBList API key for a user
+  async loadMDBListApiKey(userId: string): Promise<string | null> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // First check the memory cache
+      if (this.apiKeyCache.has(userId)) {
+        const cachedKey = this.apiKeyCache.get(userId);
+        logger.debug(`Retrieved MDBList API key for user ${userId} from memory cache`);
+        return cachedKey || null;
+      }
+
+      // Initialize the database if not already done
+      await this.initDatabase();
+
+      const result = await this.database
+        .prepare('SELECT api_key FROM mdblist_api_keys WHERE user_id = ?')
+        .bind(userId)
+        .first();
+
+      if (result && result.api_key) {
+        logger.debug(`Loaded MDBList API key for user ${userId} from database`);
+
+        // Cache for future requests
+        this.apiKeyCache.set(userId, result.api_key as string);
+
+        return result.api_key as string;
+      }
+
+      logger.info(`No MDBList API key found for user ${userId}`);
+      return null;
+    } catch (error) {
+      // Improved error handling
+      if (error instanceof Error) {
+        logger.error(`Error loading MDBList API key for user ${userId}: ${error.message}`, error);
+      } else {
+        logger.error(`Unknown error loading MDBList API key for user ${userId}:`, error);
+      }
+      return null;
     }
   }
 }
