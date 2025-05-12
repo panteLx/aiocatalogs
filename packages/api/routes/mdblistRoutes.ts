@@ -151,52 +151,81 @@ export const addMDBListCatalog = async (c: any) => {
     // Continue with the provided name
   }
 
-  // Use our own endpoint with userId included
-  const catalogUrl = `${baseUrl}/configure/${userId}/mdblist/${catalogId}/manifest.json`;
-
   try {
-    // Before adding the catalog, customize the manifest with the real name
-    const result = await handleAddCatalog(
-      userId,
-      catalogUrl,
-      async (url: string) => {
-        // Include the apiKey in a context object with the request
-        const manifest = await catalogAggregator.fetchCatalogManifest(url, { apiKey });
-        // Update name in the manifest with the real name
-        if (manifest && manifest.name) {
-          manifest.name = listName;
-        }
-        if (manifest && manifest.catalogs) {
-          for (const cat of manifest.catalogs) {
-            // Replace the generic name with type-specific real name
-            if (cat.type === 'movie') {
-              cat.name = `${listName}`;
-            } else if (cat.type === 'series') {
-              cat.name = `${listName}`;
-            }
-          }
-        }
-        return manifest;
-      },
-      (userId: string, manifest: any) => configManager.addCatalog(userId, manifest),
-      (userId: string) => {
-        // Clear both caches to ensure fresh data
-        clearAddonCache(userId);
-        configManager.clearCache(userId);
-      }
-    );
+    // Instead of fetching via HTTP, directly create the manifest
+    // Generate the manifest URL (for reference only)
+    const manifestUrl = `${baseUrl}/configure/${userId}/mdblist/${catalogId}/manifest.json`;
 
-    if (result.success) {
-      return c.redirect(`/configure/${userId}?message=${result.message}`);
-    } else {
-      // Try to go back to the previous page if possible
-      const referer = c.req.header('referer');
-      if (referer && (referer.includes('/mdblist/search') || referer.includes('/mdblist/top100'))) {
-        return c.redirect(`${referer}?error=${result.error}`);
-      }
+    // Check if we have content to make a better manifest
+    const catalog = await fetchMDBListCatalog(catalogId, apiKey);
+    const hasMovies = catalog.metas.some(item => item.type === 'movie');
+    const hasSeries = catalog.metas.some(item => item.type === 'series');
 
-      return c.redirect(`/configure/${userId}?error=${result.error}`);
+    // Create catalogs array based on available content
+    const catalogs = [];
+
+    if (hasMovies) {
+      catalogs.push({
+        id: `mdblist_${catalogId}`,
+        type: 'movie',
+        name: listName,
+      });
     }
+
+    if (hasSeries) {
+      catalogs.push({
+        id: `mdblist_${catalogId}`,
+        type: 'series',
+        name: listName,
+      });
+    }
+
+    // If no content was found, add both types as fallback
+    if (catalogs.length === 0) {
+      catalogs.push(
+        {
+          id: `mdblist_${catalogId}`,
+          type: 'movie',
+          name: listName,
+        },
+        {
+          id: `mdblist_${catalogId}`,
+          type: 'series',
+          name: listName,
+        }
+      );
+    }
+
+    // Create the manifest directly
+    const manifest = {
+      id: `mdblist_${catalogId}`,
+      version: '1.0.0',
+      name: listName,
+      description: `${listName} - MDBList catalog`,
+      endpoint: `${baseUrl}/configure/${userId}/mdblist/${catalogId}`,
+      resources: ['catalog'],
+      types: ['movie', 'series'],
+      catalogs: catalogs,
+      behaviorHints: {
+        adult: false,
+        p2p: false,
+      },
+      // Store apiKey in context for future use
+      context: { apiKey },
+    };
+
+    // Add the catalog to the user's config
+    const success = await configManager.addCatalog(userId, manifest);
+
+    if (!success) {
+      return c.redirect(`/configure/${userId}?error=Failed to add MDBList catalog`);
+    }
+
+    // Clear both caches to ensure fresh data
+    clearAddonCache(userId);
+    configManager.clearCache(userId);
+
+    return c.redirect(`/configure/${userId}?message=Successfully added catalog: ${listName}`);
   } catch (error) {
     console.error('Error adding MDBList catalog:', error);
     return c.redirect(`/configure/${userId}?error=Failed to add MDBList catalog: ${error}`);
