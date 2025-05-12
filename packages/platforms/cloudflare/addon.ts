@@ -3,12 +3,7 @@ import { configManager } from './configManager';
 import packageJson from '../../../package.json';
 import { buildManifest, handleCatalogRequest } from '../../core/utils/manifestBuilder';
 import { logger } from '../../core/utils/logger';
-import {
-  fetchMDBListCatalog,
-  fetchListDetails,
-  setMDBListApiConfig,
-} from '../../core/utils/mdblist';
-import { loadUserMDBListApiKey } from '../../api/routes/mdblistRoutes';
+import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
 
 // Cache for builders to avoid multiple creations
 const addonCache = new Map();
@@ -19,7 +14,7 @@ const { version, description } = packageJson;
 /**
  * Helper function to process MDBList catalog requests
  */
-async function processMDBListCatalog(args: any): Promise<{ metas: MetaItem[] }> {
+async function processMDBListCatalog(args: any, userId: string): Promise<{ metas: MetaItem[] }> {
   try {
     // Extract the MDBList ID from the catalog ID
     // Handle both formats: mdblist_2236 and mdblist_2236_mdblist_2236
@@ -32,8 +27,15 @@ async function processMDBListCatalog(args: any): Promise<{ metas: MetaItem[] }> 
 
     logger.debug(`Processing MDBList catalog request for list ID: ${mdblistId}`);
 
-    // Fetch the MDBList catalog with all items
-    const result = await fetchMDBListCatalog(mdblistId);
+    // Get the API key for this user
+    const apiKey = await configManager.loadMDBListApiKey(userId);
+    if (!apiKey) {
+      logger.warn(`No MDBList API key found for user ${userId}`);
+      return { metas: [] };
+    }
+
+    // Fetch the MDBList catalog with all items using the user's API key
+    const result = await fetchMDBListCatalog(mdblistId, apiKey);
 
     // Keep track of what types are available in this catalog
     const hasMovies = result.metas.some(item => item.type === 'movie');
@@ -70,17 +72,6 @@ export async function getAddonInterface(userId: string, db: D1Database) {
   // Ensure database is set in configManager
   configManager.setDatabase(db);
 
-  // Load the MDBList API key for this user
-  try {
-    const apiKey = await configManager.loadMDBListApiKey(userId);
-    if (apiKey) {
-      setMDBListApiConfig({ apiKey, userId });
-      logger.info(`Loaded MDBList API key for user ${userId} during addon initialization`);
-    }
-  } catch (error) {
-    logger.error(`Error loading MDBList API key for user ${userId}:`, error);
-  }
-
   // Get all catalogs for the user
   const userCatalogs = await configManager.getAllCatalogs(userId);
 
@@ -97,11 +88,15 @@ export async function getAddonInterface(userId: string, db: D1Database) {
             mdblistId = mdblistId.split('_')[0]; // Handle IDs like mdblist_123_mdblist_123
           }
 
-          // Fetch list details to get real name
-          const listDetails = await fetchListDetails(mdblistId);
-          if (listDetails && listDetails.name) {
-            // Update the catalog name with the real list name
-            catalog.name = listDetails.name;
+          // Get the API key for this user
+          const apiKey = await configManager.loadMDBListApiKey(userId);
+          if (apiKey) {
+            // Fetch list details to get real name
+            const listDetails = await fetchListDetails(mdblistId, apiKey);
+            if (listDetails && listDetails.name) {
+              // Update the catalog name with the real list name
+              catalog.name = listDetails.name;
+            }
           }
         } catch (error) {
           logger.warn(`Error updating MDBList catalog name: ${error}`);
@@ -123,7 +118,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 
       // Check if this is a MDBList catalog request
       if (args.id && args.id.includes('mdblist_')) {
-        return processMDBListCatalog(args);
+        return processMDBListCatalog(args, userId);
       }
 
       // Process regular catalogs
@@ -146,7 +141,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 
       // Check if this is a MDBList catalog request
       if (args.id && args.id.includes('mdblist_')) {
-        return processMDBListCatalog(args);
+        return processMDBListCatalog(args, userId);
       }
 
       // Handle regular catalogs

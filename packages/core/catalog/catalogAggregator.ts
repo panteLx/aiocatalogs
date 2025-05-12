@@ -25,7 +25,7 @@ export abstract class BaseCatalogAggregator {
   /**
    * Fetch a catalog manifest from a URL
    */
-  async fetchCatalogManifest(catalogUrl: string): Promise<CatalogManifest | null> {
+  async fetchCatalogManifest(catalogUrl: string, context?: any): Promise<CatalogManifest | null> {
     try {
       // Normalize the URL to ensure it points to the manifest.json
       let endpoint = catalogUrl;
@@ -88,6 +88,7 @@ export abstract class BaseCatalogAggregator {
         catalogs: filteredCatalogs,
         idPrefixes: manifest.idPrefixes,
         behaviorHints: manifest.behaviorHints,
+        context: context, // Store the context for future use
       };
 
       logger.info(

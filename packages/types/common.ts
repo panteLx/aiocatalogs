@@ -20,6 +20,7 @@ export interface CatalogManifest {
     p2p?: boolean;
   };
   endpoint: string;
+  context?: any; // Additional context information (like apiKey)
 }
 
 export interface UserConfig {

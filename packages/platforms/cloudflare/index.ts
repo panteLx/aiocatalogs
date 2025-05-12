@@ -8,13 +8,7 @@ import packageInfo from '../../../package.json';
 import { rateLimit } from './middleware/rateLimit';
 import { logger, initLogger } from '../../core/utils/logger';
 import { appConfig } from './appConfig';
-import {
-  fetchListDetails,
-  fetchMDBListCatalog,
-  getMDBListApiConfig,
-  setMDBListApiConfig,
-} from '../../core/utils/mdblist';
-import { loadUserMDBListApiKey } from '../../api/routes/mdblistRoutes';
+import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
 
 // Initialize logger with appConfig
 initLogger(appConfig);
@@ -199,62 +193,19 @@ app.post('/configure/:userId/mdblist/config', async c => {
   return saveMDBListConfig(c);
 });
 
-// Direct MDBList catalog endpoints
-app.get('/configure/:userId/mdblist/:listId/catalog/:type/:id.json', async c => {
-  initConfigManager(c);
-  const listId = c.req.param('listId');
-  const type = c.req.param('type');
-  const userId = c.req.param('userId');
-
-  if (c.env && c.env.DB) {
-    try {
-      // Verify that the user exists
-      configManager.setDatabase(c.env.DB);
-      const exists = await configManager.userExists(userId);
-      if (!exists) {
-        return c.json({ error: 'User not found' }, 404);
-      }
-
-      // Load the user's API key from the database
-      await loadUserMDBListApiKey(userId);
-
-      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
-
-      // Use the main catalog handler with the MDBList ID format that our addon understands
-      const catalogId = `mdblist_${listId}`;
-      const result = await addonInterface.handleCatalog(userId, { type, id: catalogId });
-
-      return c.json(result);
-    } catch (error) {
-      console.error(`Error serving MDBList catalog: ${error}`);
-      return c.json({ error: 'Failed to generate catalog' }, 500);
-    }
-  } else {
-    return c.json({ error: 'Database not available' }, 500);
-  }
-});
-
-// Direct MDBList manifest endpoint
+// MDBList manifest endpoint - needed for MDBList catalogs
 app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
-  initConfigManager(c);
-  const listId = c.req.param('listId');
   const userId = c.req.param('userId');
+  const listId = c.req.param('listId');
 
-  // Verify that the user exists
+  initConfigManager(c);
+
+  // Check if database is available
   if (c.env && c.env.DB) {
     configManager.setDatabase(c.env.DB);
-    const exists = await configManager.userExists(userId);
-    if (!exists) {
-      return c.json({ error: 'User not found' }, 404);
-    }
 
-    // Load the user's API key from the database
-    const apiKeyLoaded = await loadUserMDBListApiKey(userId);
-
-    // If there's an error, try to load the API key directly from cache
-    const apiKey = apiKeyLoaded
-      ? getMDBListApiConfig().apiKey
-      : await configManager.loadMDBListApiKey(userId);
+    // Load the user's API key directly from the database
+    const apiKey = await configManager.loadMDBListApiKey(userId);
 
     if (!apiKey) {
       logger.warn(`No MDBList API key found for user ${userId}`);
@@ -266,9 +217,6 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
         403
       );
     }
-
-    // Set the API key for the current session
-    setMDBListApiConfig({ apiKey, userId });
   } else {
     return c.json({ error: 'Database not available' }, 500);
   }
@@ -278,8 +226,8 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
   const baseUrl = `${url.protocol}//${url.host}`;
 
   try {
-    // Get the API key from the configuration that was just set
-    const apiKey = getMDBListApiConfig().apiKey;
+    // Get the API key directly from the database
+    const apiKey = await configManager.loadMDBListApiKey(userId);
 
     if (!apiKey) {
       return c.json({ error: 'MDBList API key not configured' }, 403);
@@ -491,11 +439,6 @@ app.get('/:params/:resource/:type/:id\\.json', async c => {
   try {
     const paramsObj = JSON.parse(decodeURIComponent(params.params));
     userId = paramsObj.userId || 'default';
-
-    // Load the user's MDBList API key if DB is available
-    if (c.env && c.env.DB) {
-      await loadUserMDBListApiKey(userId);
-    }
   } catch (e) {
     console.error('Failed to parse path parameters:', e);
   }
@@ -540,11 +483,6 @@ app.get('/:resource/:type/:id\\.json', async c => {
   const id = idWithJson ? idWithJson.replace(/\.json$/, '') : '';
   const userId = c.req.query('userId') || 'default';
 
-  // Load the user's MDBList API key if DB is available
-  if (c.env && c.env.DB) {
-    await loadUserMDBListApiKey(userId);
-  }
-
   if (c.env && c.env.DB) {
     try {
       const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
@@ -568,6 +506,38 @@ app.get('/:resource/:type/:id\\.json', async c => {
     } catch (error) {
       console.error(`Error in ${resource} endpoint:`, error);
       return c.json({ error: 'Internal server error' }, 500);
+    }
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+});
+
+// Direct MDBList catalog endpoints
+app.get('/configure/:userId/mdblist/:listId/catalog/:type/:id.json', async c => {
+  initConfigManager(c);
+  const listId = c.req.param('listId');
+  const type = c.req.param('type');
+  const userId = c.req.param('userId');
+
+  if (c.env && c.env.DB) {
+    try {
+      // Verify that the user exists
+      configManager.setDatabase(c.env.DB);
+      const exists = await configManager.userExists(userId);
+      if (!exists) {
+        return c.json({ error: 'User not found' }, 404);
+      }
+
+      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+
+      // Use the main catalog handler with the MDBList ID format that our addon understands
+      const catalogId = `mdblist_${listId}`;
+      const result = await addonInterface.handleCatalog(userId, { type, id: catalogId });
+
+      return c.json(result);
+    } catch (error) {
+      console.error(`Error serving MDBList catalog: ${error}`);
+      return c.json({ error: 'Failed to generate catalog' }, 500);
     }
   } else {
     return c.json({ error: 'Database not available' }, 500);

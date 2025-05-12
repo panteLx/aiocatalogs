@@ -4,7 +4,6 @@
  * This file contains HTML templates that can be used by Cloudflare and future implementations.
  */
 import { getMDBListSearchFormHTML } from './mdblistTemplates';
-import { getMDBListApiConfig, isMDBListApiConfigured } from '../packages/core/utils/mdblist';
 
 /**
  * Creates the HTML for the configuration page
@@ -16,7 +15,8 @@ export function getConfigPageHTML(
   message: string = '',
   error: string = '',
   isCloudflare: boolean = false,
-  packageVersion: string = '1.0.0'
+  packageVersion: string = '1.0.0',
+  apiKey: string = ''
 ) {
   const catalogRows = catalogs
     .map((catalog, index, array) => {
@@ -90,11 +90,7 @@ export function getConfigPageHTML(
   )}`;
 
   // Add MDBList search form
-  const mdblistSearchForm = getMDBListSearchFormHTML(userId);
-
-  // Check if MDBList API is configured
-  const mdblistApiConfig = getMDBListApiConfig();
-  const isMDBListConfigured = isMDBListApiConfigured();
+  const mdblistSearchForm = apiKey ? getMDBListSearchFormHTML(userId) : '';
 
   // Create MDBList API config section
   const mdblistApiConfigSection = `
@@ -109,13 +105,12 @@ export function getConfigPageHTML(
                 type="text"
                 id="apiKey"
                 name="apiKey"
-                value="${mdblistApiConfig.apiKey}"
+                value="${apiKey}"
                 placeholder="Enter your MDBList API key..."
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <p class="text-sm text-muted-foreground">
                 Get your free API key from <a href="https://mdblist.com/preferences/" target="_blank" class="text-primary hover:underline">MDBList Preferences</a>.
-                ${!isMDBListConfigured ? 'Currently using fallback HTML scraping method which might be unreliable.' : ''}
               </p>
             </div>
             <button

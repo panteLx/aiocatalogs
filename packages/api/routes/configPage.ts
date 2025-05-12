@@ -173,13 +173,10 @@ export const getConfigPage = async (c: any) => {
     // Load configuration
     const catalogs = await configManager.getAllCatalogs(userId);
 
-    // Load the MDBList API key from the database and set it for the current session
+    // Load the MDBList API key from the database to display in the form
+    let apiKey = '';
     try {
-      // Import the required functions
-      const { loadUserMDBListApiKey } = await import('../../api/routes/mdblistRoutes');
-
-      // Load the API key from the database and set it globally
-      await loadUserMDBListApiKey(userId);
+      apiKey = (await configManager.loadMDBListApiKey(userId)) || '';
       console.log(`Loaded MDBList API key for user ${userId} for config page`);
     } catch (apiKeyError) {
       console.warn(`Error loading MDBList API key for user ${userId}:`, apiKeyError);
@@ -194,7 +191,7 @@ export const getConfigPage = async (c: any) => {
 
     // Return HTML as text
     return c.html(
-      getConfigPageHTML(userId, catalogs, baseUrl, message, error, true, PACKAGE_VERSION)
+      getConfigPageHTML(userId, catalogs, baseUrl, message, error, true, PACKAGE_VERSION, apiKey)
     );
   } catch (error) {
     console.error('Error displaying config page:', error);

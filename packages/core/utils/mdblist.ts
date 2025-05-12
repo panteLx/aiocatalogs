@@ -65,33 +65,14 @@ export interface MDBListDetails {
  */
 interface MDBListApiConfig {
   apiKey: string;
-  userId?: string; // Add userId to track which user's key we're using
-}
-
-// Default config - should be replaced with a real API key by the user
-let apiConfig: MDBListApiConfig = {
-  apiKey: '',
-};
-
-/**
- * Set the MDBList API configuration
- */
-export function setMDBListApiConfig(config: MDBListApiConfig): void {
-  apiConfig = config;
+  userId?: string;
 }
 
 /**
- * Get the MDBList API configuration
+ * Check if a provided MDBList API key is valid
  */
-export function getMDBListApiConfig(): MDBListApiConfig {
-  return apiConfig;
-}
-
-/**
- * Check if the MDBList API key is configured
- */
-export function isMDBListApiConfigured(): boolean {
-  return !!apiConfig.apiKey && apiConfig.apiKey.trim() !== '';
+export function isMDBListApiKeyValid(apiKey?: string): boolean {
+  return !!apiKey && apiKey.trim() !== '';
 }
 
 /**
@@ -99,14 +80,11 @@ export function isMDBListApiConfigured(): boolean {
  */
 async function fetchListsFromApi(
   endpoint: string,
-  params: Record<string, string> = {},
-  customApiKey?: string // Allow passing a specific API key
+  apiKey: string,
+  params: Record<string, string> = {}
 ): Promise<any> {
-  // Use provided API key or fall back to the configured one
-  const apiKey = customApiKey || apiConfig.apiKey;
-
-  if (!apiKey || apiKey.trim() === '') {
-    logger.warn('MDBList API key not configured');
+  if (!isMDBListApiKeyValid(apiKey)) {
+    logger.warn('MDBList API key not provided or invalid');
     return { lists: [] };
   }
 
@@ -173,16 +151,16 @@ function convertApiListToCatalog(list: any): MDBListCatalog {
 /**
  * Fetches the top 100 lists from MDBList
  */
-export async function fetchTopLists(customApiKey?: string): Promise<MDBListCatalog[]> {
+export async function fetchTopLists(apiKey: string): Promise<MDBListCatalog[]> {
   try {
     logger.debug('Fetching top lists from MDBList');
 
-    if (!customApiKey && !isMDBListApiConfigured()) {
-      logger.warn('MDBList API key not configured. Cannot fetch top lists.');
+    if (!isMDBListApiKeyValid(apiKey)) {
+      logger.warn('MDBList API key not provided or invalid. Cannot fetch top lists.');
       return [];
     }
 
-    const data = await fetchListsFromApi('/lists/top', {}, customApiKey);
+    const data = await fetchListsFromApi('/lists/top', apiKey);
 
     // Handle both direct array responses and {lists: [...]} formatted responses
     let listsData: any[] = [];
@@ -211,7 +189,7 @@ export async function fetchTopLists(customApiKey?: string): Promise<MDBListCatal
 /**
  * Searches for lists on MDBList
  */
-export async function searchLists(query: string, customApiKey?: string): Promise<MDBListCatalog[]> {
+export async function searchLists(query: string, apiKey: string): Promise<MDBListCatalog[]> {
   try {
     if (!query || query.trim() === '') {
       return [];
@@ -219,12 +197,12 @@ export async function searchLists(query: string, customApiKey?: string): Promise
 
     logger.debug(`Searching MDBList for: ${query}`);
 
-    if (!customApiKey && !isMDBListApiConfigured()) {
-      logger.warn('MDBList API key not configured. Cannot search lists.');
+    if (!isMDBListApiKeyValid(apiKey)) {
+      logger.warn('MDBList API key not provided or invalid. Cannot search lists.');
       return [];
     }
 
-    const data = await fetchListsFromApi('/lists/search', { query }, customApiKey);
+    const data = await fetchListsFromApi('/lists/search', apiKey, { query });
 
     // Handle both direct array responses and {lists: [...]} formatted responses
     let listsData: any[] = [];
@@ -251,43 +229,73 @@ export async function searchLists(query: string, customApiKey?: string): Promise
 }
 
 /**
- * Fetches the items in a MDBList list
- * @param identifier Either the list ID or slug
- * @param useSlug If true, uses the slug instead of ID for fetching
- * @param customApiKey Optional custom API key
+ * Fetches items from a MDBList list (limited to 100 items)
  */
 export async function fetchListItems(
   identifier: string | number,
-  useSlug: boolean = false,
-  customApiKey?: string
+  apiKey: string,
+  useSlug: boolean = false
 ): Promise<{ movies: MDBListItem[]; shows: MDBListItem[] }> {
   try {
-    logger.debug(`Fetching items for list: ${identifier}`);
+    logger.debug(`Fetching first 100 items for list ${identifier}`);
 
-    if (!customApiKey && !isMDBListApiConfigured()) {
-      logger.warn('MDBList API key not configured. Cannot fetch list items.');
+    if (!isMDBListApiKeyValid(apiKey)) {
+      logger.warn('MDBList API key not provided or invalid. Cannot fetch list items.');
       return { movies: [], shows: [] };
     }
 
-    const endpoint = useSlug ? `/lists/s/${identifier}/items` : `/lists/${identifier}/items`;
+    // Determine endpoint based on whether we're using a slug or ID
+    const endpoint = useSlug ? `/list/${identifier}` : `/lists/${identifier}/items`;
 
-    // Add limit parameter to get only the first 100 items
-    const data = await fetchListsFromApi(endpoint, { limit: '100' }, customApiKey);
+    // Add limit=100 parameter to only fetch the first 100 items
+    const data = await fetchListsFromApi(endpoint, apiKey, { limit: '100' });
 
-    if (!data || (!data.movies && !data.shows)) {
-      logger.warn('Invalid response from MDBList API for list items');
+    // Handle different response formats from the API
+    let items: any[] = [];
+
+    if (data && data.items && Array.isArray(data.items)) {
+      // Object with items array
+      items = data.items;
+    } else if (
+      Array.isArray(data) &&
+      data.length > 0 &&
+      data[0].items &&
+      Array.isArray(data[0].items)
+    ) {
+      // Array with first element containing items array
+      items = data[0].items;
+    } else if (Array.isArray(data)) {
+      // Direct array of items
+      items = data;
+    } else if (data && data.movies && Array.isArray(data.movies)) {
+      // Object with separate movies and shows arrays
+      return {
+        movies: data.movies || [],
+        shows: data.shows || [],
+      };
+    }
+
+    if (items.length === 0) {
+      logger.warn(`No items found for list ${identifier}`);
       return { movies: [], shows: [] };
     }
 
-    const movies = Array.isArray(data.movies) ? data.movies : [];
-    const shows = Array.isArray(data.shows) ? data.shows : [];
+    // Split items into movies and shows
+    const movies: MDBListItem[] = [];
+    const shows: MDBListItem[] = [];
 
-    logger.debug(
-      `Successfully fetched ${movies.length} movies and ${shows.length} shows from list ${identifier} (limited to first 100 items)`
-    );
+    items.forEach((item: MDBListItem) => {
+      if (item.mediatype === 'movie') {
+        movies.push(item);
+      } else if (item.mediatype === 'show') {
+        shows.push(item);
+      }
+    });
+
+    logger.debug(`Found ${movies.length} movies and ${shows.length} shows for list ${identifier}`);
     return { movies, shows };
   } catch (error) {
-    logger.error(`Error fetching items for list ${identifier}:`, error);
+    logger.error(`Error fetching list items for ${identifier}:`, error);
     return { movies: [], shows: [] };
   }
 }
@@ -337,60 +345,65 @@ export function convertToStremioMeta(items: {
 }
 
 /**
- * Fetches a complete catalog from MDBList and converts it to Stremio format
+ * Fetches a complete catalog from MDBList based on list ID (limited to 100 items)
  */
 export async function fetchMDBListCatalog(
   mdblistId: string | number,
-  customApiKey?: string
+  apiKey: string
 ): Promise<{ metas: StremioMeta[] }> {
   try {
-    const items = await fetchListItems(mdblistId, false, customApiKey);
-    const metas = convertToStremioMeta(items);
+    if (!isMDBListApiKeyValid(apiKey)) {
+      return { metas: [] };
+    }
 
-    logger.debug(`Generated catalog with ${metas.length} items from MDBList ${mdblistId}`);
+    const items = await fetchListItems(mdblistId, apiKey);
+    const metas = convertToStremioMeta(items);
     return { metas };
   } catch (error) {
-    logger.error(`Error fetching MDBList catalog ${mdblistId}:`, error);
+    logger.error(`Error fetching MDBList catalog for ${mdblistId}:`, error);
     return { metas: [] };
   }
 }
 
 /**
- * Fetches details about a MDBList list
+ * Fetches list details from MDBList
  */
 export async function fetchListDetails(
   listId: string | number,
-  customApiKey?: string
+  apiKey: string
 ): Promise<MDBListDetails> {
   try {
-    logger.debug(`Fetching details for list: ${listId}`);
+    logger.debug(`Fetching details for list ${listId}`);
 
-    if (!customApiKey && !isMDBListApiConfigured()) {
-      logger.warn('MDBList API key not configured. Cannot fetch list details.');
-      return { name: `MDBList ${listId}` };
+    if (!isMDBListApiKeyValid(apiKey)) {
+      logger.warn('MDBList API key not provided or invalid. Cannot fetch list details.');
+      return { name: 'Unknown List' };
     }
 
-    const data = await fetchListsFromApi(`/lists/${listId}`, {}, customApiKey);
+    const data = await fetchListsFromApi(`/lists/${listId}`, apiKey);
 
     // Handle different response formats
-    let listData;
-    if (Array.isArray(data)) {
+    // Some endpoints return an array, others might return an object with info property
+    let listData = null;
+
+    if (Array.isArray(data) && data.length > 0) {
       // If response is an array, take the first item
-      listData = data.length > 0 ? data[0] : null;
-    } else {
-      // If response is an object, use it directly
-      listData = data;
+      listData = data[0];
+    } else if (data && data.info) {
+      // If response has an info property, use that
+      listData = data.info;
     }
 
-    if (!listData || !listData.name) {
-      logger.warn('Invalid response from MDBList API for list details');
+    if (!listData) {
+      logger.warn(`No details found for list ${listId}`);
       return { name: `MDBList ${listId}` };
     }
 
     logger.debug(`Successfully fetched details for list ${listId}: ${listData.name}`);
+
     return {
       id: listData.id,
-      name: listData.name,
+      name: listData.name || `MDBList ${listId}`,
       mediatype: listData.mediatype,
       user_id: listData.user_id,
       user_name: listData.user_name,
@@ -399,7 +412,7 @@ export async function fetchListDetails(
       slug: listData.slug,
     };
   } catch (error) {
-    logger.error(`Error fetching details for list ${listId}:`, error);
+    logger.error(`Error fetching list details for ${listId}:`, error);
     return { name: `MDBList ${listId}` };
   }
 }

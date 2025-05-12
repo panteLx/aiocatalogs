@@ -1,8 +1,7 @@
 import {
   fetchTopLists,
   searchLists,
-  setMDBListApiConfig,
-  isMDBListApiConfigured,
+  isMDBListApiKeyValid,
   fetchMDBListCatalog,
   fetchListDetails,
 } from '../../core/utils/mdblist';
@@ -16,20 +15,18 @@ import { catalogAggregator } from '../../platforms/cloudflare/catalogAggregator'
 import { clearAddonCache } from '../../platforms/cloudflare/addon';
 import { logger } from '../../core/utils/logger';
 
-// Helper function to load and set the MDBList API key for a user
-export async function loadUserMDBListApiKey(userId: string): Promise<boolean> {
+// Helper function to load the MDBList API key for a user
+export async function loadUserMDBListApiKey(userId: string): Promise<string | null> {
   try {
     const apiKey = await configManager.loadMDBListApiKey(userId);
     if (apiKey) {
-      // Set the API key in the global configuration
-      setMDBListApiConfig({ apiKey, userId });
       logger.debug(`Loaded MDBList API key for user ${userId}`);
-      return true;
+      return apiKey;
     }
-    return false;
+    return null;
   } catch (error) {
     logger.error(`Error loading MDBList API key for user ${userId}:`, error);
-    return false;
+    return null;
   }
 }
 
@@ -45,17 +42,17 @@ export const getMDBListSearch = async (c: any) => {
   }
 
   // Load the user's API key from the database
-  await loadUserMDBListApiKey(userId);
+  const apiKey = await loadUserMDBListApiKey(userId);
 
   // Check if API key is configured
-  if (!isMDBListApiConfigured()) {
+  if (!apiKey || !isMDBListApiKeyValid(apiKey)) {
     return c.redirect(
       `/configure/${userId}?error=MDBList API key is required. Please configure it in the settings.`
     );
   }
 
   try {
-    const catalogs = await searchLists(query);
+    const catalogs = await searchLists(query, apiKey);
     const message = c.req.query('message') || '';
     const error = c.req.query('error') || '';
 
@@ -78,17 +75,17 @@ export const getMDBListTop100 = async (c: any) => {
   }
 
   // Load the user's API key from the database
-  await loadUserMDBListApiKey(userId);
+  const apiKey = await loadUserMDBListApiKey(userId);
 
   // Check if API key is configured
-  if (!isMDBListApiConfigured()) {
+  if (!apiKey || !isMDBListApiKeyValid(apiKey)) {
     return c.redirect(
       `/configure/${userId}?error=MDBList API key is required. Please configure it in the settings.`
     );
   }
 
   try {
-    const catalogs = await fetchTopLists();
+    const catalogs = await fetchTopLists(apiKey);
     const message = c.req.query('message') || '';
     const error = c.req.query('error') || '';
 
@@ -111,10 +108,10 @@ export const addMDBListCatalog = async (c: any) => {
   }
 
   // Load the user's API key from the database
-  await loadUserMDBListApiKey(userId);
+  const apiKey = await loadUserMDBListApiKey(userId);
 
   // Check if API key is configured
-  if (!isMDBListApiConfigured()) {
+  if (!apiKey || !isMDBListApiKeyValid(apiKey)) {
     return c.redirect(
       `/configure/${userId}?error=MDBList API key is required. Please configure it in the settings.`
     );
@@ -145,7 +142,7 @@ export const addMDBListCatalog = async (c: any) => {
   // Fetch the actual list details to get the proper name
   let listName = name;
   try {
-    const listDetails = await fetchListDetails(catalogId);
+    const listDetails = await fetchListDetails(catalogId, apiKey);
     if (listDetails && listDetails.name) {
       listName = listDetails.name;
     }
@@ -163,7 +160,8 @@ export const addMDBListCatalog = async (c: any) => {
       userId,
       catalogUrl,
       async (url: string) => {
-        const manifest = await catalogAggregator.fetchCatalogManifest(url);
+        // Include the apiKey in a context object with the request
+        const manifest = await catalogAggregator.fetchCatalogManifest(url, { apiKey });
         // Update name in the manifest with the real name
         if (manifest && manifest.name) {
           manifest.name = listName;
@@ -225,7 +223,6 @@ export const saveMDBListConfig = async (c: any) => {
 
     // Validate the API key by making a test call to the MDBList API
     try {
-      setMDBListApiConfig({ apiKey, userId });
       const testResult = await fetchTopLists(apiKey);
       if (!testResult || testResult.length === 0) {
         logger.warn(`API key validation failed for user ${userId}: No lists returned`);
@@ -245,17 +242,12 @@ export const saveMDBListConfig = async (c: any) => {
     const success = await configManager.saveMDBListApiKey(userId, apiKey);
 
     if (!success) {
-      logger.warn(`Database save failed, but API key is set in memory for user ${userId}`);
-      // Despite database error, set the key in memory
-      setMDBListApiConfig({ apiKey, userId });
-      // Inform the user that there was a problem, but the API key works
+      logger.warn(`Database save failed for API key for user ${userId}`);
+      // Inform the user that there was a problem
       return c.redirect(
-        `/configure/${userId}?message=MDBList API key is working but could not be saved permanently. It will work until the server restarts.`
+        `/configure/${userId}?error=Could not save MDBList API key permanently. Please try again.`
       );
     }
-
-    // Set it in memory for immediate use
-    setMDBListApiConfig({ apiKey, userId });
 
     return c.redirect(`/configure/${userId}?message=MDBList API configuration saved successfully`);
   } catch (error) {

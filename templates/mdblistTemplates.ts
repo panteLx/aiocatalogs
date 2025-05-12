@@ -1,26 +1,17 @@
 /**
  * Templates for MDBList catalog integration
  */
-import { MDBListCatalog, isMDBListApiConfigured } from '../packages/core/utils/mdblist';
+import { MDBListCatalog } from '../packages/core/utils/mdblist';
 
 /**
  * Creates HTML for the MDBList search form
  */
 export function getMDBListSearchFormHTML(userId: string): string {
-  const isApiConfigured = isMDBListApiConfigured();
-
+  // We don't know the API key here, so we'll just provide a basic form
+  // The server will handle the check if the key is valid or not
   return `
     <div class="rounded-lg border bg-card p-6 shadow-sm mt-8">
       <h2 class="text-xl font-semibold mb-4">Search MDBList Catalogs</h2>
-      ${
-        !isApiConfigured
-          ? `
-        <div class="p-4 mb-4 bg-destructive/10 border border-destructive/50 rounded-lg">
-          <p class="text-sm">MDBList API key is required to use this feature. Please configure your API key in the MDBList API Configuration section.</p>
-        </div>
-      `
-          : ''
-      }
       <form method="GET" action="/configure/${userId}/mdblist/search" class="grid gap-4">
         <div class="grid gap-2">
           <label for="searchQuery" class="text-sm font-medium">Search Query</label>
@@ -32,12 +23,10 @@ export function getMDBListSearchFormHTML(userId: string): string {
               placeholder="Enter search query..."
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-grow"
               required
-              ${!isApiConfigured ? 'disabled' : ''}
             />
             <button
               type="submit"
               class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 ml-2"
-              ${!isApiConfigured ? 'disabled' : ''}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                 <circle cx="11" cy="11" r="8"></circle>
@@ -51,8 +40,7 @@ export function getMDBListSearchFormHTML(userId: string): string {
       <div class="mt-4">
         <a 
           href="/configure/${userId}/mdblist/top100" 
-          class="text-primary hover:text-primary/80 text-sm flex items-center ${!isApiConfigured ? 'opacity-50 pointer-events-none' : ''}"
-          ${!isApiConfigured ? 'aria-disabled="true"' : ''}
+          class="text-primary hover:text-primary/80 text-sm flex items-center"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
             <path d="M12 2v20M2 12h20"></path>
