@@ -44,6 +44,7 @@
 - Dynamic loading and caching of catalog data
 - Intelligent request routing to the appropriate source addons
 - Reorderable catalogs
+- Add MDBList catalogs with one click (requires MDBList API key)
 
 ### 🌐 Cross-Platform Support
 
@@ -85,7 +86,7 @@ $ wrangler login
 $ wrangler d1 create aiocatalogs
 # Insert the returned database ID in `wrangler.toml`
 # Apply migrations
-$ wrangler d1 migrations apply aiocatalogs
+$ wrangler d1 migrations apply aiocatalogs --remote
 # Deploy to Cloudflare
 $ npm run deploy
 ```
@@ -101,6 +102,8 @@ $ git clone https://github.com/pantelx/aiocatalogs.git && cd aiocatalogs
 $ npm i
 # Build the addon
 $ npm run build
+# Apply local migrations
+$ wrangler d1 migrations apply aiocatalogs
 # Cloudflare worker development with locally simulated D1 database
 $ npm run dev
 ```
@@ -182,21 +185,3 @@ MIT
 > **Note**
 >
 > This is an independent, fan-made addon. It connects to other source addons but has no direct connection to their operators.
-
-## Project Structure
-
-```
-aiocatalogs/
-├── packages/
-│   ├── core/                    # Core functionality
-│   │   ├── config/              # Configuration management
-│   │   ├── catalog/             # Catalog aggregation and processing
-│   │   └── utils/               # General utility functions
-│   ├── types/                   # Shared type definitions
-│   ├── api/                     # API interfaces
-│   │   ├── routes/              # Route definitions
-│   │   └── middleware/          # Middleware components
-│   └── platforms/               # Platform-specific implementations
-│       └── cloudflare/          # Cloudflare Workers implementation
-└── templates/                   # Templates for configuration and other files
-```
