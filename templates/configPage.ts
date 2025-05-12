@@ -37,19 +37,25 @@ export function getConfigPageHTML(
   return `
     ${getHTMLHead('AIOCatalogs - Configuration')}
     ${getBodyOpeningHTML(userId)}
-    ${getConfigPageHeaderHTML(userId)}
-    ${getSponsorBannerHTML()}
-    
-    <div class="grid gap-8">
-      ${getAddCatalogFormHTML(userId)}
-      ${apiKey ? getMDBListApiConfigHTML(userId, apiKey) : ''}
-      ${mdblistSearchForm}
-      ${getCatalogListHTML(userId, catalogs)}
-      ${getAddonInstallationHTML(userId, baseUrl)}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      ${getConfigPageHeaderHTML(userId)}
+      ${getSponsorBannerHTML()}
+      
+      <div class="grid gap-8 md:grid-cols-12">
+        <div class="md:col-span-12 lg:col-span-8 space-y-6">
+          ${getAddCatalogFormHTML(userId)}
+          ${getCatalogListHTML(userId, catalogs)}
+        </div>
+        <div class="md:col-span-12 lg:col-span-4 space-y-6">
+          ${getMDBListApiConfigHTML(userId, apiKey)}
+          ${mdblistSearchForm}
+          ${getAddonInstallationHTML(userId, baseUrl)}
+        </div>
+      </div>
+      
+      ${getFooterHTML(packageVersion)}
+      ${getPageScriptsHTML(message, error)}
     </div>
-    
-    ${getFooterHTML(packageVersion)}
-    ${getPageScriptsHTML(message, error)}
     ${getBodyClosingHTML()}
   `;
 }
