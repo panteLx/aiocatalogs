@@ -218,17 +218,62 @@ export const addMDBListCatalog = async (c: any) => {
     const success = await configManager.addCatalog(userId, manifest);
 
     if (!success) {
-      return c.redirect(`/configure/${userId}?error=Failed to add MDBList catalog`);
+      // Get the referrer URL to determine where to redirect back to
+      const referrer = c.req.header('referer') || `/configure/${userId}`;
+      // If we're on the search page, preserve the query parameter
+      if (referrer.includes('/mdblist/search')) {
+        const searchQuery = new URL(referrer).searchParams.get('query') || '';
+        return c.redirect(
+          `/configure/${userId}/mdblist/search?query=${searchQuery}&error=Failed to add MDBList catalog`
+        );
+      }
+      // If we're on the top100 page, use the specific endpoint
+      if (referrer.includes('/mdblist/top100')) {
+        return c.redirect(
+          `/configure/${userId}/mdblist/top100?error=Failed to add MDBList catalog`
+        );
+      }
+      return c.redirect(`${referrer}?error=Failed to add MDBList catalog`);
     }
 
     // Clear both caches to ensure fresh data
     clearAddonCache(userId);
     configManager.clearCache(userId);
 
-    return c.redirect(`/configure/${userId}?message=Successfully added catalog: ${listName}`);
+    // Get the referrer URL to determine where to redirect back to
+    const referrer = c.req.header('referer') || `/configure/${userId}`;
+    // If we're on the search page, preserve the query parameter
+    if (referrer.includes('/mdblist/search')) {
+      const searchQuery = new URL(referrer).searchParams.get('query') || '';
+      return c.redirect(
+        `/configure/${userId}/mdblist/search?query=${searchQuery}&message=Successfully added catalog: ${listName}`
+      );
+    }
+    // If we're on the top100 page, use the specific endpoint
+    if (referrer.includes('/mdblist/top100')) {
+      return c.redirect(
+        `/configure/${userId}/mdblist/top100?message=Successfully added catalog: ${listName}`
+      );
+    }
+    return c.redirect(`${referrer}?message=Successfully added catalog: ${listName}`);
   } catch (error) {
     console.error('Error adding MDBList catalog:', error);
-    return c.redirect(`/configure/${userId}?error=Failed to add MDBList catalog: ${error}`);
+    // Get the referrer URL to determine where to redirect back to
+    const referrer = c.req.header('referer') || `/configure/${userId}`;
+    // If we're on the search page, preserve the query parameter
+    if (referrer.includes('/mdblist/search')) {
+      const searchQuery = new URL(referrer).searchParams.get('query') || '';
+      return c.redirect(
+        `/configure/${userId}/mdblist/search?query=${searchQuery}&error=Failed to add MDBList catalog: ${error}`
+      );
+    }
+    // If we're on the top100 page, use the specific endpoint
+    if (referrer.includes('/mdblist/top100')) {
+      return c.redirect(
+        `/configure/${userId}/mdblist/top100?error=Failed to add MDBList catalog: ${error}`
+      );
+    }
+    return c.redirect(`${referrer}?error=Failed to add MDBList catalog: ${error}`);
   }
 };
 
