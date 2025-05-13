@@ -38,14 +38,14 @@ export abstract class BaseConfigManager {
       logger.debug(`Initializing catalogOrder for user ${userId}`);
       config.catalogOrder = config.catalogs.map((c: CatalogManifest) => c.id);
       // Save the updated config with catalogOrder
-      this.saveConfig(userId, config);
+      await this.saveConfig(userId, config);
     }
 
     // Initialize randomizedCatalogs if it doesn't exist
     if (!config.randomizedCatalogs) {
       logger.debug(`Initializing randomizedCatalogs for user ${userId}`);
       config.randomizedCatalogs = [];
-      this.saveConfig(userId, config);
+      await this.saveConfig(userId, config);
     }
 
     // If catalogOrder exists, sort the catalogs array accordingly
@@ -144,7 +144,7 @@ export abstract class BaseConfigManager {
     }
 
     if (initialLength !== config.catalogs.length) {
-      return this.saveConfig(userId, config);
+      return await this.saveConfig(userId, config);
     }
 
     return false;
@@ -174,7 +174,7 @@ export abstract class BaseConfigManager {
       logger.debug(`Removed catalog ${id} from randomized list`);
     }
 
-    return this.saveConfig(userId, config);
+    return await this.saveConfig(userId, config);
   }
 
   /**
@@ -212,7 +212,7 @@ export abstract class BaseConfigManager {
     config.catalogOrder[index - 1] = temp;
 
     logger.debug(`Moved catalog ${id} from position ${index} to ${index - 1}`);
-    return this.saveConfig(userId, config);
+    return await this.saveConfig(userId, config);
   }
 
   /**
@@ -242,7 +242,7 @@ export abstract class BaseConfigManager {
     config.catalogOrder[index + 1] = temp;
 
     logger.debug(`Moved catalog ${id} from position ${index} to ${index + 1}`);
-    return this.saveConfig(userId, config);
+    return await this.saveConfig(userId, config);
   }
 
   /**
