@@ -1,9 +1,33 @@
 import { getEnvAsNumber, getEnvAsBoolean, getEnv } from '../../core/utils/env';
 
 /**
+ * Helper to parse a comma-separated list from an environment variable
+ * @param value The environment variable value
+ * @returns Array of trimmed non-empty strings
+ */
+function parseCommaSeparatedList(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+/**
  * Application configuration from environment variables
  */
 export const appConfig = {
+  /**
+   * Application configuration
+   */
+  app: {
+    /**
+     * List of trusted origins for redirects (comma-separated URLs)
+     * Example: 'https://app1.example.com,https://app2.example.com'
+     * @default []
+     */
+    trustedOrigins: parseCommaSeparatedList(getEnv('AIOCATALOGS_TRUSTED_ORIGINS')),
+  },
   /**
    * API configuration
    */

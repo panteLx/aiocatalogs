@@ -16,6 +16,7 @@ head_sampling_rate = 1
 
 # Production environment variables
 [vars]
+AIOCATALOGS_TRUSTED_ORIGINS = "https://aio.pantelx.com, https://aiocatalogs.jqrw92fchz.workers.dev" # comma-separated list of trusted origins
 AIOCATALOGS_API_RATE_LIMIT = true
 AIOCATALOGS_API_MAX_REQUESTS = 50 # requests per minute
 AIOCATALOGS_API_MAX_ITEMS_MDBLIST = 100 # maximum number of items fetched from MDBList API
@@ -38,6 +39,7 @@ migrations_dir = "./packages/platforms/cloudflare/migrations"
 
 # Development environment variables
 [env.dev.vars]
+AIOCATALOGS_TRUSTED_ORIGINS = "http://localhost:8787" # comma-separated list of trusted origins
 AIOCATALOGS_API_RATE_LIMIT = false
 AIOCATALOGS_API_MAX_REQUESTS = 5 # requests per minute
 AIOCATALOGS_API_MAX_ITEMS_MDBLIST = 10 # maximum number of items fetched from MDBList API

@@ -9,11 +9,35 @@ import {
   getMDBListSearchResultsHTML,
   getMDBListTop100HTML,
 } from '../../../templates/mdblistTemplates';
-import { handleAddCatalog } from './configPage';
 import { configManager } from '../../platforms/cloudflare/configManager';
-import { catalogAggregator } from '../../platforms/cloudflare/catalogAggregator';
 import { clearAddonCache } from '../../platforms/cloudflare/addon';
 import { logger } from '../../core/utils/logger';
+import { appConfig } from '../../platforms/cloudflare/appConfig';
+/**
+ * Sanitizes a redirect URL to ensure it's a same-origin path
+ * @param referrer The referrer URL to sanitize
+ * @param fallback The fallback URL to use if the referrer is invalid
+ * @returns A safe path to redirect to
+ */
+function sanitizeRedirect(referrer: string, fallback: string): string {
+  try {
+    // Use the request's host as the base for parsing
+    const baseUrl = new URL(referrer);
+
+    // Create an array of trusted origins
+    const trustedOrigins = [
+      // Add any additional trusted origins from the comma-separated list
+      ...(appConfig.app.trustedOrigins || []),
+    ].filter(Boolean); // Remove any undefined/null values
+
+    // Check if the URL's origin is in our list of trusted origins
+    if (!trustedOrigins.includes(baseUrl.origin)) throw new Error();
+
+    return baseUrl.pathname + (baseUrl.search || '');
+  } catch {
+    return fallback;
+  }
+}
 
 // Helper function to load the MDBList API key for a user
 export async function loadUserMDBListApiKey(userId: string): Promise<string | null> {
@@ -219,21 +243,29 @@ export const addMDBListCatalog = async (c: any) => {
 
     if (!success) {
       // Get the referrer URL to determine where to redirect back to
-      const referrer = c.req.header('referer') || `/configure/${userId}`;
+      const rawRef = c.req.header('referer') || `/configure/${userId}`;
+      const safePath = sanitizeRedirect(rawRef, `/configure/${userId}`);
+
       // If we're on the search page, preserve the query parameter
-      if (referrer.includes('/mdblist/search')) {
-        const searchQuery = new URL(referrer).searchParams.get('query') || '';
+      if (safePath.includes('/mdblist/search')) {
+        let searchQuery = '';
+        try {
+          const url = new URL(rawRef);
+          searchQuery = url.searchParams.get('query') || '';
+        } catch (err) {
+          logger.warn(`Invalid referrer URL: ${rawRef}`);
+        }
         return c.redirect(
           `/configure/${userId}/mdblist/search?query=${searchQuery}&error=Failed to add MDBList catalog`
         );
       }
       // If we're on the top100 page, use the specific endpoint
-      if (referrer.includes('/mdblist/top100')) {
+      if (safePath.includes('/mdblist/top100')) {
         return c.redirect(
           `/configure/${userId}/mdblist/top100?error=Failed to add MDBList catalog`
         );
       }
-      return c.redirect(`${referrer}?error=Failed to add MDBList catalog`);
+      return c.redirect(`${safePath}?error=Failed to add MDBList catalog`);
     }
 
     // Clear both caches to ensure fresh data
@@ -241,39 +273,55 @@ export const addMDBListCatalog = async (c: any) => {
     configManager.clearCache(userId);
 
     // Get the referrer URL to determine where to redirect back to
-    const referrer = c.req.header('referer') || `/configure/${userId}`;
+    const rawRef = c.req.header('referer') || `/configure/${userId}`;
+    const safePath = sanitizeRedirect(rawRef, `/configure/${userId}`);
+
     // If we're on the search page, preserve the query parameter
-    if (referrer.includes('/mdblist/search')) {
-      const searchQuery = new URL(referrer).searchParams.get('query') || '';
+    if (safePath.includes('/mdblist/search')) {
+      let searchQuery = '';
+      try {
+        const url = new URL(rawRef);
+        searchQuery = url.searchParams.get('query') || '';
+      } catch (err) {
+        logger.warn(`Invalid referrer URL: ${rawRef}`);
+      }
       return c.redirect(
         `/configure/${userId}/mdblist/search?query=${searchQuery}&message=Successfully added catalog: ${listName}`
       );
     }
     // If we're on the top100 page, use the specific endpoint
-    if (referrer.includes('/mdblist/top100')) {
+    if (safePath.includes('/mdblist/top100')) {
       return c.redirect(
         `/configure/${userId}/mdblist/top100?message=Successfully added catalog: ${listName}`
       );
     }
-    return c.redirect(`${referrer}?message=Successfully added catalog: ${listName}`);
+    return c.redirect(`${safePath}?message=Successfully added catalog: ${listName}`);
   } catch (error) {
     console.error('Error adding MDBList catalog:', error);
     // Get the referrer URL to determine where to redirect back to
-    const referrer = c.req.header('referer') || `/configure/${userId}`;
+    const rawRef = c.req.header('referer') || `/configure/${userId}`;
+    const safePath = sanitizeRedirect(rawRef, `/configure/${userId}`);
+
     // If we're on the search page, preserve the query parameter
-    if (referrer.includes('/mdblist/search')) {
-      const searchQuery = new URL(referrer).searchParams.get('query') || '';
+    if (safePath.includes('/mdblist/search')) {
+      let searchQuery = '';
+      try {
+        const url = new URL(rawRef);
+        searchQuery = url.searchParams.get('query') || '';
+      } catch (err) {
+        logger.warn(`Invalid referrer URL: ${rawRef}`);
+      }
       return c.redirect(
         `/configure/${userId}/mdblist/search?query=${searchQuery}&error=Failed to add MDBList catalog: ${error}`
       );
     }
     // If we're on the top100 page, use the specific endpoint
-    if (referrer.includes('/mdblist/top100')) {
+    if (safePath.includes('/mdblist/top100')) {
       return c.redirect(
         `/configure/${userId}/mdblist/top100?error=Failed to add MDBList catalog: ${error}`
       );
     }
-    return c.redirect(`${referrer}?error=Failed to add MDBList catalog: ${error}`);
+    return c.redirect(`${safePath}?error=Failed to add MDBList catalog: ${error}`);
   }
 };
 
