@@ -26,6 +26,7 @@ export interface CatalogManifest {
 export interface UserConfig {
   catalogs: CatalogManifest[];
   catalogOrder?: string[]; // Array of catalog IDs in the desired order
+  randomizedCatalogs?: string[]; // Array of catalog IDs that should have randomized items
   _cachedAt?: number; // Timestamp when the config was cached
 }
 

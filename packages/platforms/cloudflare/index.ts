@@ -136,6 +136,7 @@ import {
   removeCatalog,
   moveCatalogUp,
   moveCatalogDown,
+  toggleCatalogRandomize,
 } from '../../api/routes/configPage';
 
 // Import MDBList routes
@@ -170,6 +171,11 @@ app.post('/configure/:userId/moveUp', async c => {
 app.post('/configure/:userId/moveDown', async c => {
   initConfigManager(c);
   return moveCatalogDown(c);
+});
+
+app.post('/configure/:userId/toggleRandomize', async c => {
+  initConfigManager(c);
+  return toggleCatalogRandomize(c);
 });
 
 // MDBList endpoints

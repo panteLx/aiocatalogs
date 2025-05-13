@@ -147,11 +147,13 @@ export function buildManifest(
  *
  * @param args Catalog request parameters
  * @param userCatalogs List of catalog sources for the user
+ * @param randomizedCatalogs List of catalog IDs to randomize
  * @returns Catalog response
  */
 export async function handleCatalogRequest(
   args: any,
-  userCatalogs: CatalogManifest[]
+  userCatalogs: CatalogManifest[],
+  randomizedCatalogs: string[] = []
 ): Promise<any> {
   logger.info(`Handling catalog request with args:`, args);
 
@@ -196,6 +198,19 @@ export async function handleCatalogRequest(
       metas.forEach((item: any) => {
         item.sourceAddon = sourceId;
       });
+
+      // Check if this catalog should be randomized
+      const shouldRandomize = randomizedCatalogs.includes(source.id);
+
+      if (shouldRandomize && metas.length > 1) {
+        logger.debug(`Randomizing catalog items for ${source.id}`);
+        // Fisher-Yates shuffle algorithm
+        for (let i = metas.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [metas[i], metas[j]] = [metas[j], metas[i]];
+        }
+        logger.debug(`Randomized ${metas.length} items for catalog ${source.id}`);
+      }
     }
 
     return { metas };

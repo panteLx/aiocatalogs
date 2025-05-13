@@ -154,6 +154,39 @@ export async function handleMoveCatalogDown(
   }
 }
 
+// Handler for toggling randomization
+export async function handleToggleRandomize(
+  userId: string,
+  catalogId: string,
+  toggleRandomize: (userId: string, catalogId: string) => Promise<boolean>,
+  clearCache: (userId: string) => void
+) {
+  if (!catalogId) {
+    return { success: false, error: 'No catalog ID provided - Failed to toggle randomization' };
+  }
+
+  try {
+    const success = await toggleRandomize(userId, catalogId);
+    if (!success) {
+      return { success: false, error: 'Failed to toggle randomization' };
+    }
+
+    // Clear caches
+    clearCache(userId);
+
+    return {
+      success: true,
+      message: 'Successfully toggled randomization',
+    };
+  } catch (error) {
+    console.error('Error toggling randomization:', error);
+    return {
+      success: false,
+      error: `Failed to toggle randomization: ${error}`,
+    };
+  }
+}
+
 // Display configuration page
 export const getConfigPage = async (c: any) => {
   const userId = c.req.param('userId');
@@ -309,6 +342,36 @@ export const moveCatalogDown = async (c: any) => {
     userId,
     catalogId,
     (userId: string, catalogId: string) => configManager.moveCatalogDown(userId, catalogId),
+    (userId: string) => {
+      // Clear both caches to ensure fresh data
+      clearAddonCache(userId);
+      configManager.clearCache(userId);
+    }
+  );
+
+  if (result.success) {
+    return c.redirect(`/configure/${userId}?message=${result.message}`);
+  } else {
+    return c.redirect(`/configure/${userId}?error=${result.error}`);
+  }
+};
+
+// Toggle catalog randomization
+export const toggleCatalogRandomize = async (c: any) => {
+  const userId = c.req.param('userId');
+  const formData = await c.req.formData();
+  const catalogId = formData.get('catalogId') as string;
+
+  // Check if user exists
+  const exists = await configManager.userExists(userId);
+  if (!exists) {
+    return c.redirect('/configure?error=User not found');
+  }
+
+  const result = await handleToggleRandomize(
+    userId,
+    catalogId,
+    (userId: string, catalogId: string) => configManager.toggleRandomize(userId, catalogId),
     (userId: string) => {
       // Clear both caches to ensure fresh data
       clearAddonCache(userId);

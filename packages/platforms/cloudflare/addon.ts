@@ -56,6 +56,23 @@ async function processMDBListCatalog(args: any, userId: string): Promise<{ metas
       );
     }
 
+    // Check if this MDBList catalog should be randomized
+    const userConfig = await configManager.getConfig(userId);
+    const randomizedCatalogs = userConfig.randomizedCatalogs || [];
+    const catalogId = `mdblist_${mdblistId}`;
+    const shouldRandomize = randomizedCatalogs.includes(catalogId);
+
+    if (shouldRandomize && result.metas.length > 1) {
+      logger.debug(`Randomizing MDBList catalog items for ${catalogId}`);
+      // Fisher-Yates shuffle algorithm
+      const metas = result.metas;
+      for (let i = metas.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [metas[i], metas[j]] = [metas[j], metas[i]];
+      }
+      logger.debug(`Randomized ${metas.length} items for MDBList catalog ${catalogId}`);
+    }
+
     return result;
   } catch (error) {
     logger.error(`Error processing MDBList catalog: ${error}`);
@@ -63,17 +80,21 @@ async function processMDBListCatalog(args: any, userId: string): Promise<{ metas
   }
 }
 
-// Create AddonInterface for a specific user
+/**
+ * Create an addon interface for a specific user
+ */
 export async function getAddonInterface(userId: string, db: D1Database) {
   if (addonCache.has(userId)) {
+    logger.debug(`Using cached addon interface for user ${userId}`);
     return addonCache.get(userId);
   }
 
-  // Ensure database is set in configManager
+  // Initialize config manager with the database
   configManager.setDatabase(db);
 
-  // Get all catalogs for the user
+  // Get the user's catalogs
   const userCatalogs = await configManager.getAllCatalogs(userId);
+  logger.info(`Found ${userCatalogs.length} catalogs for user ${userId}`);
 
   // Update MDBList catalog names if they're using generic names
   for (const catalog of userCatalogs) {
@@ -105,7 +126,11 @@ export async function getAddonInterface(userId: string, db: D1Database) {
     }
   }
 
-  // Create manifest
+  // Get the user's config to access randomizedCatalogs
+  const userConfig = await configManager.getConfig(userId);
+  const randomizedCatalogs = userConfig.randomizedCatalogs || [];
+
+  // Build the manifest
   const manifest = buildManifest(userId, version, description, userCatalogs);
 
   // Create AddonInterface
@@ -122,7 +147,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
       }
 
       // Process regular catalogs
-      return handleCatalogRequest(args, userCatalogs);
+      return handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
     },
 
     // Meta handler - not implemented
@@ -153,7 +178,11 @@ export async function getAddonInterface(userId: string, db: D1Database) {
         return { metas: [] };
       }
 
-      return handleCatalogRequest(args, userCatalogs);
+      // Get randomized catalogs
+      const userConfig = await configManager.getConfig(userId);
+      const randomizedCatalogs = userConfig.randomizedCatalogs || [];
+
+      return handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
     },
   };
 
@@ -162,7 +191,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 }
 
 // Clear cache for a specific user
-export function clearAddonCache(userId: string) {
+export function clearAddonCache(userId: string): void {
   if (addonCache.has(userId)) {
     logger.debug(`Clearing addon cache for user ${userId}`);
     addonCache.delete(userId);

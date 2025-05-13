@@ -41,6 +41,13 @@ export abstract class BaseConfigManager {
       this.saveConfig(userId, config);
     }
 
+    // Initialize randomizedCatalogs if it doesn't exist
+    if (!config.randomizedCatalogs) {
+      logger.debug(`Initializing randomizedCatalogs for user ${userId}`);
+      config.randomizedCatalogs = [];
+      this.saveConfig(userId, config);
+    }
+
     // If catalogOrder exists, sort the catalogs array accordingly
     if (config.catalogOrder && config.catalogOrder.length > 0) {
       const orderedCatalogs: CatalogManifest[] = [];
@@ -62,6 +69,15 @@ export abstract class BaseConfigManager {
 
       // Update the catalogs array with the ordered catalogs
       config.catalogs = orderedCatalogs;
+    }
+
+    // Add randomize flag to catalogs
+    if (config.randomizedCatalogs && config.randomizedCatalogs.length > 0) {
+      for (const catalog of config.catalogs) {
+        if (config.randomizedCatalogs.includes(catalog.id)) {
+          (catalog as any).randomize = true;
+        }
+      }
     }
 
     return config;
@@ -120,11 +136,53 @@ export abstract class BaseConfigManager {
       config.catalogOrder = config.catalogOrder.filter((catalogId: string) => catalogId !== id);
     }
 
+    // Remove from randomizedCatalogs array if it exists
+    if (config.randomizedCatalogs) {
+      config.randomizedCatalogs = config.randomizedCatalogs.filter(
+        (catalogId: string) => catalogId !== id
+      );
+    }
+
     if (initialLength !== config.catalogs.length) {
       return this.saveConfig(userId, config);
     }
 
     return false;
+  }
+
+  /**
+   * Toggle randomization for a catalog
+   */
+  async toggleRandomize(userId: string, id: string): Promise<boolean> {
+    logger.debug(`Toggling randomization for catalog ${id} for user ${userId}`);
+    const config = await this.loadConfig(userId);
+
+    // Initialize randomizedCatalogs if it doesn't exist
+    if (!config.randomizedCatalogs) {
+      config.randomizedCatalogs = [];
+    }
+
+    // Check if the catalog is already in the randomized list
+    const index = config.randomizedCatalogs.indexOf(id);
+    if (index === -1) {
+      // Add to randomized list
+      config.randomizedCatalogs.push(id);
+      logger.debug(`Added catalog ${id} to randomized list`);
+    } else {
+      // Remove from randomized list
+      config.randomizedCatalogs.splice(index, 1);
+      logger.debug(`Removed catalog ${id} from randomized list`);
+    }
+
+    return this.saveConfig(userId, config);
+  }
+
+  /**
+   * Check if a catalog should be randomized
+   */
+  async isRandomized(userId: string, id: string): Promise<boolean> {
+    const config = await this.loadConfig(userId);
+    return config.randomizedCatalogs ? config.randomizedCatalogs.includes(id) : false;
   }
 
   /**
@@ -227,4 +285,14 @@ export abstract class BaseConfigManager {
     logger.debug('Clearing entire cache');
     this.cache.clear();
   }
+
+  /**
+   * Save MDBList API key for a user
+   */
+  abstract saveMDBListApiKey(userId: string, apiKey: string): Promise<boolean> | boolean;
+
+  /**
+   * Load MDBList API key for a user
+   */
+  abstract loadMDBListApiKey(userId: string): Promise<string | null> | string | null;
 }
