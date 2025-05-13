@@ -199,7 +199,7 @@ export async function handleRenameCatalog(
     return { success: false, error: 'No catalog ID provided' };
   }
 
-  if (!newName && newName.trim() === '') {
+  if (!newName || newName.trim() === '') {
     return { success: false, error: 'No new name provided' };
   }
 
