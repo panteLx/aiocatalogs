@@ -48,6 +48,13 @@ export abstract class BaseConfigManager {
       await this.saveConfig(userId, config);
     }
 
+    // Initialize randomizedCatalogs if it doesn't exist
+    if (!config.randomizedCatalogs) {
+      logger.debug(`Initializing randomizedCatalogs for user ${userId}`);
+      config.randomizedCatalogs = [];
+      this.saveConfig(userId, config);
+    }
+
     // If catalogOrder exists, sort the catalogs array accordingly
     if (config.catalogOrder && config.catalogOrder.length > 0) {
       const orderedCatalogs: CatalogManifest[] = [];
@@ -173,7 +180,7 @@ export abstract class BaseConfigManager {
       config.randomizedCatalogs.splice(index, 1);
       logger.debug(`Removed catalog ${id} from randomized list`);
     }
-
+    
     return await this.saveConfig(userId, config);
   }
 
