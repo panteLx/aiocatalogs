@@ -16,6 +16,6 @@
       "@/*": ["./packages/*"]
     }
   },
-  "include": ["packages/**/*", "templates/**/*"],
+  "include": ["packages/**/*", "templates/**/*", "vitest.setup.ts"],
   "exclude": ["node_modules", "dist"]
 }

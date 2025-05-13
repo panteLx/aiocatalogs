@@ -8,7 +8,7 @@
     "dev": "wrangler dev --env dev",
     "deploy": "npm run build && wrangler deploy",
     "preview": "npm run build && wrangler versions upload",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
