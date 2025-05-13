@@ -13,6 +13,8 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
       const isLast = index === array.length - 1;
       const isOnly = array.length === 1;
       const isRandomized = catalog.randomize === true;
+      const displayName = catalog.customName || catalog.name;
+      const isCustomNamed = !!catalog.customName;
 
       return `
     <div class="catalog-item flex items-start gap-3 group" data-draggable="true" data-catalog-id="${catalog.id}" data-catalog-index="${index}">
@@ -23,7 +25,10 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex-grow overflow-hidden min-w-0">
             <div class="flex flex-wrap items-center gap-2">
-              <h3 class="font-medium text-lg truncate max-w-full">${catalog.name}</h3>
+              <h3 class="font-medium text-lg truncate max-w-full">
+                ${displayName}
+                ${isCustomNamed ? `<span class="text-xs text-muted-foreground">(Original: ${catalog.name})</span>` : ''}
+              </h3>
             </div>
             <p class="text-sm text-muted-foreground">${catalog.description}</p>
             </div>
@@ -52,6 +57,10 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
             `
                 : ''
             }
+            <button type="button" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3 py-2" onclick="toggleRenameForm('${catalog.id}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+              Rename
+            </button>
             <form method="POST" action="/configure/${userId}/toggleRandomize" class="flex-shrink-0">
               <input type="hidden" name="catalogId" value="${catalog.id}">
               <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${isRandomized ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'} h-9 px-3 py-2">
@@ -67,6 +76,27 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
               </button>
             </form>
           </div>
+        </div>
+        <div id="rename-form-${catalog.id}" class="rename-form hidden mt-2 p-3 border border-border rounded-md bg-muted/30">
+          <form method="POST" action="/configure/${userId}/rename" class="flex items-center gap-2">
+            <input type="hidden" name="catalogId" value="${catalog.id}">
+            <div class="flex-grow">
+              <input
+                type="text"
+                name="newName"
+                value="${catalog.customName || catalog.name}"
+                placeholder="Enter new name"
+                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                required
+              />
+            </div>
+            <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
+              Save
+            </button>
+            <button type="button" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3 py-2" onclick="toggleRenameForm('${catalog.id}')">
+              Cancel
+            </button>
+          </form>
         </div>
       </div>
     </div>

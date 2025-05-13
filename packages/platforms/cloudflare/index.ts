@@ -10,6 +10,25 @@ import { logger, initLogger } from '../../core/utils/logger';
 import { appConfig } from './appConfig';
 import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
 
+// Configuration page (imported from separate file)
+import {
+  getConfigPage,
+  addCatalog,
+  removeCatalog,
+  moveCatalogUp,
+  moveCatalogDown,
+  toggleCatalogRandomize,
+  renameCatalog,
+} from '../../api/routes/configPage';
+
+// Import MDBList routes
+import {
+  getMDBListSearch,
+  getMDBListTop100,
+  addMDBListCatalog,
+  saveMDBListConfig,
+} from '../../api/routes/mdblistRoutes';
+
 // Initialize logger with appConfig
 initLogger(appConfig);
 
@@ -129,24 +148,6 @@ app.post('/configure/load', async c => {
   return c.redirect(`/configure/${userId}`);
 });
 
-// Configuration page (imported from separate file)
-import {
-  getConfigPage,
-  addCatalog,
-  removeCatalog,
-  moveCatalogUp,
-  moveCatalogDown,
-  toggleCatalogRandomize,
-} from '../../api/routes/configPage';
-
-// Import MDBList routes
-import {
-  getMDBListSearch,
-  getMDBListTop100,
-  addMDBListCatalog,
-  saveMDBListConfig,
-} from '../../api/routes/mdblistRoutes';
-
 // Configuration endpoints
 app.get('/configure/:userId', async c => {
   initConfigManager(c);
@@ -176,6 +177,10 @@ app.post('/configure/:userId/moveDown', async c => {
 app.post('/configure/:userId/toggleRandomize', async c => {
   initConfigManager(c);
   return toggleCatalogRandomize(c);
+});
+
+app.post('/configure/:userId/rename', async c => {
+  return renameCatalog(c);
 });
 
 // MDBList endpoints
@@ -243,10 +248,15 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
     const listDetails = await fetchListDetails(listId, apiKey);
     const listName = listDetails?.name || `MDBList ${listId}`;
 
+    // Check if there's a custom name for this catalog
+    const catalogId = `mdblist_${listId}`;
+    const catalog = await configManager.getCatalog(userId, catalogId);
+    const catalogName = catalog?.customName || listName;
+
     // Fetch actual content to determine what types are available
-    const catalog = await fetchMDBListCatalog(listId, apiKey);
-    const hasMovies = catalog.metas.some(item => item.type === 'movie');
-    const hasSeries = catalog.metas.some(item => item.type === 'series');
+    const catalogData = await fetchMDBListCatalog(listId, apiKey);
+    const hasMovies = catalogData.metas.some(item => item.type === 'movie');
+    const hasSeries = catalogData.metas.some(item => item.type === 'series');
 
     // Create catalogs array based on available content
     const catalogs = [];
@@ -255,7 +265,7 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
       catalogs.push({
         id: `mdblist_${listId}`,
         type: 'movie',
-        name: listName,
+        name: catalogName,
       });
     }
 
@@ -263,7 +273,7 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
       catalogs.push({
         id: `mdblist_${listId}`,
         type: 'series',
-        name: listName,
+        name: catalogName,
       });
     }
 
@@ -273,12 +283,12 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
         {
           id: `mdblist_${listId}`,
           type: 'movie',
-          name: listName,
+          name: catalogName,
         },
         {
           id: `mdblist_${listId}`,
           type: 'series',
-          name: listName,
+          name: catalogName,
         }
       );
     }
@@ -287,8 +297,8 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
     const manifest = {
       id: `mdblist_${listId}`,
       version: '1.0.0',
-      name: listName,
-      description: `${listName} - MDBList catalog`,
+      name: catalogName,
+      description: `${catalogName} - MDBList catalog`,
       resources: [
         {
           name: 'catalog',

@@ -21,6 +21,7 @@ export interface CatalogManifest {
   };
   endpoint: string;
   context?: any; // Additional context information (like apiKey)
+  customName?: string; // Custom name for the catalog defined by the user
 }
 
 export interface UserConfig {

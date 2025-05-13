@@ -187,6 +187,44 @@ export async function handleToggleRandomize(
   }
 }
 
+// Handler for renaming catalogs
+export async function handleRenameCatalog(
+  userId: string,
+  catalogId: string,
+  newName: string,
+  renameCatalog: (userId: string, catalogId: string, newName: string) => Promise<boolean>,
+  clearCache: (userId: string) => void
+) {
+  if (!catalogId) {
+    return { success: false, error: 'No catalog ID provided' };
+  }
+
+  if (!newName && newName.trim() === '') {
+    return { success: false, error: 'No new name provided' };
+  }
+
+  try {
+    const success = await renameCatalog(userId, catalogId, newName);
+    if (!success) {
+      return { success: false, error: 'Failed to rename catalog' };
+    }
+
+    // Clear caches
+    clearCache(userId);
+
+    return {
+      success: true,
+      message: 'Successfully renamed catalog',
+    };
+  } catch (error) {
+    console.error('Error renaming catalog:', error);
+    return {
+      success: false,
+      error: `Failed to rename catalog: ${error}`,
+    };
+  }
+}
+
 // Display configuration page
 export const getConfigPage = async (c: any) => {
   const userId = c.req.param('userId');
@@ -376,6 +414,38 @@ export const toggleCatalogRandomize = async (c: any) => {
       // Clear both caches to ensure fresh data
       clearAddonCache(userId);
       configManager.clearCache(userId);
+    }
+  );
+
+  if (result.success) {
+    return c.redirect(`/configure/${userId}?message=${result.message}`);
+  } else {
+    return c.redirect(`/configure/${userId}?error=${result.error}`);
+  }
+};
+
+// Add catalog rename handler function
+export const renameCatalog = async (c: any) => {
+  const userId = c.req.param('userId');
+  const formData = await c.req.formData();
+  const catalogId = formData.get('catalogId') as string;
+  const newName = formData.get('newName') as string;
+
+  // Check if user exists
+  const exists = await configManager.userExists(userId);
+  if (!exists) {
+    return c.redirect(`/configure?error=User with ID ${userId} not found`);
+  }
+
+  // Handle the rename
+  const result = await handleRenameCatalog(
+    userId,
+    catalogId,
+    newName,
+    configManager.renameCatalog.bind(configManager),
+    () => {
+      configManager.clearCache(userId);
+      clearAddonCache(userId);
     }
   );
 

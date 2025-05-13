@@ -85,6 +85,8 @@ export function buildManifest(
                 ...catalog,
                 id: prefixedId,
                 source: source.id,
+                // Use customName if available, otherwise use original catalog name
+                name: source.customName || catalog.name,
               });
               catalogIds.add(prefixedId);
             }

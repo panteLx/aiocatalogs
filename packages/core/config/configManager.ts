@@ -253,6 +253,28 @@ export abstract class BaseConfigManager {
   }
 
   /**
+   * Rename a catalog in the user's configuration
+   */
+  async renameCatalog(userId: string, id: string, newName: string): Promise<boolean> {
+    logger.debug(`Renaming catalog ${id} for user ${userId} to ${newName}`);
+    const config = await this.loadConfig(userId);
+
+    // Find the catalog with the matching ID
+    const catalog = config.catalogs.find((c: CatalogManifest) => c.id === id);
+
+    if (!catalog) {
+      logger.debug(`Catalog ${id} not found for user ${userId}`);
+      return false;
+    }
+
+    // Update the customName field
+    catalog.customName = newName.trim() || undefined;
+
+    logger.debug(`Updated catalog ${id} with custom name: ${catalog.customName}`);
+    return await this.saveConfig(userId, config);
+  }
+
+  /**
    * Get a specific catalog for a user
    */
   async getCatalog(userId: string, id: string): Promise<CatalogManifest | undefined> {
