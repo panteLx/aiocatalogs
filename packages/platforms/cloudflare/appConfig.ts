@@ -19,6 +19,12 @@ export const appConfig = {
      * @default 60
      */
     maxRequestsPerMinute: getEnvAsNumber('AIOCATALOGS_API_MAX_REQUESTS', 60),
+
+    /**
+     * Maximum number of fetched items for MDBList API
+     * @default 100
+     */
+    maxItemsMDBList: getEnvAsNumber('AIOCATALOGS_API_MAX_ITEMS_MDBLIST', 100),
   },
 
   /**

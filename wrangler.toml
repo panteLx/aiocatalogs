@@ -18,6 +18,8 @@ head_sampling_rate = 1
 [vars]
 AIOCATALOGS_API_RATE_LIMIT = true
 AIOCATALOGS_API_MAX_REQUESTS = 50 # requests per minute
+AIOCATALOGS_API_MAX_ITEMS_MDBLIST = 100 # maximum number of items fetched from MDBList API
+
 LOG_LEVEL = "info" # debug, info, warn, error, or none
 LOG_ENABLE_TIMESTAMPS = true
 LOG_TIMESTAMP_FORMAT = "dd.MM.yyyy HH:mm:ss"
@@ -38,6 +40,8 @@ migrations_dir = "./packages/platforms/cloudflare/migrations"
 [env.dev.vars]
 AIOCATALOGS_API_RATE_LIMIT = false
 AIOCATALOGS_API_MAX_REQUESTS = 5 # requests per minute
+AIOCATALOGS_API_MAX_ITEMS_MDBLIST = 10 # maximum number of items fetched from MDBList API
+
 LOG_LEVEL = "debug" # debug, info, warn, error, or none
 LOG_ENABLE_TIMESTAMPS = true
 LOG_TIMESTAMP_FORMAT = "dd.MM.yyyy HH:mm:ss"

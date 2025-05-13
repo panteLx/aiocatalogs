@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { appConfig } from '../../platforms/cloudflare/appConfig';
 
 /**
  * Represents an MDBList catalog
@@ -237,7 +238,7 @@ export async function fetchListItems(
   useSlug: boolean = false
 ): Promise<{ movies: MDBListItem[]; shows: MDBListItem[] }> {
   try {
-    logger.debug(`Fetching first 100 items for list ${identifier}`);
+    logger.debug(`Fetching first ${appConfig.api.maxItemsMDBList} items for list ${identifier}`);
 
     if (!isMDBListApiKeyValid(apiKey)) {
       logger.warn('MDBList API key not provided or invalid. Cannot fetch list items.');
@@ -247,8 +248,9 @@ export async function fetchListItems(
     // Determine endpoint based on whether we're using a slug or ID
     const endpoint = useSlug ? `/list/${identifier}` : `/lists/${identifier}/items`;
 
-    // Add limit=100 parameter to only fetch the first 100 items
-    const data = await fetchListsFromApi(endpoint, apiKey, { limit: '100' });
+    // Add limit=x parameter to only fetch the first x items
+    const limit = (appConfig.api.maxItemsMDBList ?? 100).toString();
+    const data = await fetchListsFromApi(endpoint, apiKey, { limit });
 
     // Handle different response formats from the API
     let items: any[] = [];

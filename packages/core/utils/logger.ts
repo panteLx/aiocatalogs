@@ -315,4 +315,7 @@ export function initLogger(appConfig?: any): void {
   logger.info(
     `Logger initialized with level: ${LogLevel[logger.getLevel()]}, Timestamps: ${timestampStatus}, Format: ${logger.getTimestampFormat()}, Timezone: ${logger.getTimezone()}`
   );
+  logger.debug(
+    `AIOCatalogs Settings: AIOCATALOGS_API_MAX_ITEMS_MDBLIST: ${appConfig.api.maxItemsMDBList}, AIOCATALOGS_API_MAX_REQUESTS: ${appConfig.api.maxRequestsPerMinute}, AIOCATALOGS_API_RATE_LIMIT: ${appConfig.api.rateLimit}`
+  );
 }
