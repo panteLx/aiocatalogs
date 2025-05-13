@@ -180,7 +180,7 @@ export abstract class BaseConfigManager {
       config.randomizedCatalogs.splice(index, 1);
       logger.debug(`Removed catalog ${id} from randomized list`);
     }
-    
+
     return await this.saveConfig(userId, config);
   }
 
