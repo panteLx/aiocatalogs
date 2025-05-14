@@ -78,7 +78,7 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
           </div>
         </div>
         <div id="rename-form-${catalog.id}" class="rename-form hidden mt-2 p-3 border border-border rounded-md bg-muted/30">
-          <form method="POST" action="/configure/${userId}/rename" class="flex items-center gap-2">
+          <form method="POST" action="/configure/${userId}/rename" class="flex items-center gap-2" accept-charset="UTF-8">
             <input type="hidden" name="catalogId" value="${catalog.id}">
             <div class="flex-grow">
               <input
