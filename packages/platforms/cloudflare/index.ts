@@ -180,6 +180,7 @@ app.post('/configure/:userId/toggleRandomize', async c => {
 });
 
 app.post('/configure/:userId/rename', async c => {
+  initConfigManager(c);
   return renameCatalog(c);
 });
 
