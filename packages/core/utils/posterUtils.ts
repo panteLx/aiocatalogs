@@ -37,11 +37,8 @@ export function getPosterUrl(
       return cachedItem.url;
     }
 
-    // Extract the IMDb ID from the media ID (removing any prefixes like 'tt' for IMDb)
-    let cleanMediaId = mediaId;
-
     // Construct the RPDB URL
-    const rpdbUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/imdb/poster-default/${cleanMediaId}.jpg?fallback=true`;
+    const rpdbUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/imdb/poster-default/${mediaId}.jpg?fallback=true`;
 
     logger.debug(`Replacing poster URL: ${originalUrl} with RPDB URL: ${rpdbUrl}`);
 

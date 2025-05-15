@@ -5,8 +5,8 @@ import { configManager } from '../../platforms/cloudflare/configManager';
 // Mock the configManager
 vi.mock('../../platforms/cloudflare/configManager', () => ({
   configManager: {
-    loadRPDBAApiKey: vi.fn(),
-    saveRPDBAApiKey: vi.fn(),
+    loadRPDBApiKey: vi.fn(),
+    saveRPDBApiKey: vi.fn(),
     userExists: vi.fn(),
     clearApiKeyCache: vi.fn(),
   },
@@ -38,19 +38,19 @@ describe('RPDB API Routes', () => {
   describe('loadUserRPDBApiKey', () => {
     it('should return API key when successfully loaded', async () => {
       const mockApiKey = 'test-api-key-123';
-      vi.mocked(configManager.loadRPDBAApiKey).mockResolvedValue(mockApiKey);
+      vi.mocked(configManager.loadRPDBApiKey).mockResolvedValue(mockApiKey);
 
       const result = await loadUserRPDBApiKey('user123');
       expect(result).toBe(mockApiKey);
-      expect(configManager.loadRPDBAApiKey).toHaveBeenCalledWith('user123');
+      expect(configManager.loadRPDBApiKey).toHaveBeenCalledWith('user123');
     });
 
     it('should return null when error occurs', async () => {
-      vi.mocked(configManager.loadRPDBAApiKey).mockRejectedValue(new Error('Database error'));
+      vi.mocked(configManager.loadRPDBApiKey).mockRejectedValue(new Error('Database error'));
 
       const result = await loadUserRPDBApiKey('user123');
       expect(result).toBeNull();
-      expect(configManager.loadRPDBAApiKey).toHaveBeenCalledWith('user123');
+      expect(configManager.loadRPDBApiKey).toHaveBeenCalledWith('user123');
     });
   });
 
@@ -101,7 +101,7 @@ describe('RPDB API Routes', () => {
         status: 200,
       } as Response);
 
-      vi.mocked(configManager.saveRPDBAApiKey).mockResolvedValue(true);
+      vi.mocked(configManager.saveRPDBApiKey).mockResolvedValue(true);
 
       const result = await saveRPDBConfig(ctx);
 
@@ -109,7 +109,7 @@ describe('RPDB API Routes', () => {
       expect(validateSpy).toHaveBeenCalledWith(
         expect.stringContaining(`https://api.ratingposterdb.com/${apiKey}/isValid`)
       );
-      expect(configManager.saveRPDBAApiKey).toHaveBeenCalledWith(userId, apiKey);
+      expect(configManager.saveRPDBApiKey).toHaveBeenCalledWith(userId, apiKey);
       expect(configManager.clearApiKeyCache).toHaveBeenCalledWith(userId);
       expect(result).toEqual({
         redirectUrl: `/configure/${userId}?message=RPDB API configuration saved successfully`,
@@ -151,7 +151,7 @@ describe('RPDB API Routes', () => {
       } as Response);
 
       // But database save fails
-      vi.mocked(configManager.saveRPDBAApiKey).mockResolvedValue(false);
+      vi.mocked(configManager.saveRPDBApiKey).mockResolvedValue(false);
 
       const result = await saveRPDBConfig(ctx);
 
@@ -174,7 +174,7 @@ describe('RPDB API Routes', () => {
       } as Response);
 
       // But database operation throws error
-      vi.mocked(configManager.saveRPDBAApiKey).mockRejectedValue(new Error('Database error'));
+      vi.mocked(configManager.saveRPDBApiKey).mockRejectedValue(new Error('Database error'));
 
       const result = await saveRPDBConfig(ctx);
 

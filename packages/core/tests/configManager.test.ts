@@ -70,12 +70,12 @@ class MockConfigManager extends BaseConfigManager {
     return this.mdbApiKeys.get(userId) || null;
   }
 
-  saveRPDBAApiKey(userId: string, apiKey: string): boolean {
+  saveRPDBApiKey(userId: string, apiKey: string): boolean {
     this.rpdbApiKeys.set(userId, apiKey);
     return true;
   }
 
-  loadRPDBAApiKey(userId: string): string | null {
+  loadRPDBApiKey(userId: string): string | null {
     return this.rpdbApiKeys.get(userId) || null;
   }
 

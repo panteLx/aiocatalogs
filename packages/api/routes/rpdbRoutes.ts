@@ -4,7 +4,7 @@ import { logger } from '../../core/utils/logger';
 // Helper function to load RPDB API key for a user
 export async function loadUserRPDBApiKey(userId: string): Promise<string | null> {
   try {
-    return await configManager.loadRPDBAApiKey(userId);
+    return await configManager.loadRPDBApiKey(userId);
   } catch (error) {
     logger.error('Error loading RPDB API key:', error);
     return null;
@@ -66,7 +66,7 @@ export const saveRPDBConfig = async (c: any) => {
     }
 
     // Save the API key to the database
-    const success = await configManager.saveRPDBAApiKey(userId, apiKey);
+    const success = await configManager.saveRPDBApiKey(userId, apiKey);
 
     if (!success) {
       logger.warn(`Database save failed for RPDB API key for user ${userId}`);

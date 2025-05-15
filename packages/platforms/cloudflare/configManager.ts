@@ -311,7 +311,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
   }
 
   // Save RPDB API key for a user
-  async saveRPDBAApiKey(userId: string, apiKey: string): Promise<boolean> {
+  async saveRPDBApiKey(userId: string, apiKey: string): Promise<boolean> {
     if (!this.database) {
       throw new Error('Database not initialized');
     }
@@ -370,7 +370,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
   }
 
   // Load RPDB API key for a user
-  async loadRPDBAApiKey(userId: string): Promise<string | null> {
+  async loadRPDBApiKey(userId: string): Promise<string | null> {
     // Check cache first
     if (this.rpdbApiKeyCache.has(userId)) {
       const cachedKey = this.rpdbApiKeyCache.get(userId);

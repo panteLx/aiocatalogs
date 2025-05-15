@@ -257,7 +257,7 @@ export const getConfigPage = async (c: any) => {
     // Load the RPDB API key from the database to display in the form
     let rpdbApiKey = '';
     try {
-      rpdbApiKey = (await configManager.loadRPDBAApiKey(userId)) || '';
+      rpdbApiKey = (await configManager.loadRPDBApiKey(userId)) || '';
       console.log(`Loaded RPDB API key for user ${userId} for config page`);
     } catch (apiKeyError) {
       console.warn(`Error loading RPDB API key for user ${userId}:`, apiKeyError);

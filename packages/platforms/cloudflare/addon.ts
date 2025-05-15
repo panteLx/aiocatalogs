@@ -80,7 +80,7 @@ async function processMDBListCatalog(args: any, userId: string): Promise<{ metas
 
     // Process posters if RPDB API key is available
     if (rpdbApiKey && result.metas) {
-      result.metas = processPosterUrls(result.metas, rpdbApiKey);
+      result.metas = processPosterUrls([...result.metas], rpdbApiKey);
     }
 
     return result;
@@ -164,7 +164,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 
       // Process posters if RPDB API key is available
       if (rpdbApiKey && result.metas) {
-        result.metas = processPosterUrls(result.metas, rpdbApiKey);
+        result.metas = processPosterUrls([...result.metas], rpdbApiKey);
       }
 
       return result;
@@ -209,7 +209,7 @@ export async function getAddonInterface(userId: string, db: D1Database) {
 
       // Process posters if RPDB API key is available
       if (rpdbApiKey && result.metas) {
-        result.metas = processPosterUrls(result.metas, rpdbApiKey);
+        result.metas = processPosterUrls([...result.metas], rpdbApiKey);
       }
 
       return result;
@@ -328,7 +328,7 @@ export async function handleAddonResource(request: any, userId: string) {
 
       // Process posters if RPDB API key is available
       if (rpdbApiKey && result.metas) {
-        result.metas = processPosterUrls(result.metas, rpdbApiKey);
+        result.metas = processPosterUrls([...result.metas], rpdbApiKey);
       }
 
       return new Response(JSON.stringify(result), {

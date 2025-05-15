@@ -328,10 +328,10 @@ export abstract class BaseConfigManager {
   /**
    * Save RPDB API key for a user
    */
-  abstract saveRPDBAApiKey(userId: string, apiKey: string): Promise<boolean> | boolean;
+  abstract saveRPDBApiKey(userId: string, apiKey: string): Promise<boolean> | boolean;
 
   /**
    * Load RPDB API key for a user
    */
-  abstract loadRPDBAApiKey(userId: string): Promise<string | null> | string | null;
+  abstract loadRPDBApiKey(userId: string): Promise<string | null> | string | null;
 }
