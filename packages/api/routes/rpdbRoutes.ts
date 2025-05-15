@@ -1,17 +1,12 @@
 import { configManager } from '../../platforms/cloudflare/configManager';
 import { logger } from '../../core/utils/logger';
 
-// Helper function to load the RPDB API key for a user
+// Helper function to load RPDB API key for a user
 export async function loadUserRPDBApiKey(userId: string): Promise<string | null> {
   try {
-    const apiKey = await configManager.loadRPDBAApiKey(userId);
-    if (apiKey) {
-      logger.debug(`Loaded RPDB API key for user ${userId}`);
-      return apiKey;
-    }
-    return null;
+    return await configManager.loadRPDBAApiKey(userId);
   } catch (error) {
-    logger.error(`Error loading RPDB API key for user ${userId}:`, error);
+    logger.error('Error loading RPDB API key:', error);
     return null;
   }
 }

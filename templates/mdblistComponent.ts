@@ -29,7 +29,7 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
                   <path d="M12 17h.01"></path>
                 </svg>
                 <span class="hidden group-hover:block absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-60 p-2 bg-card rounded shadow-lg text-xs text-muted-foreground border border-border">
-                  Required for RPDB poster functionality. Your API key will be stored securely and used only for retrieving posters.
+                  Required for MDBList search and Top 100 lists functionality. Your API key will be stored securely and used only for retrieving posters.
                 </span>
               </span>
             </label>

@@ -1,4 +1,12 @@
 import { logger } from './logger';
+import { appConfig } from '../../platforms/cloudflare/appConfig';
+
+// Cache for storing poster URLs to reduce API requests
+// Key format: `${mediaId}_${rpdbApiKey}`
+const posterUrlCache = new Map<string, { url: string; timestamp: number }>();
+
+// Cache expiration time in milliseconds (default: 7 days)
+const CACHE_EXPIRATION_TIME = (appConfig.api.cacheExpirationRPDB ?? 7) * 24 * 60 * 60 * 1000;
 
 /**
  * Returns the appropriate poster URL - either using RPDB or the original URL
@@ -19,6 +27,16 @@ export function getPosterUrl(
   }
 
   try {
+    // Check if we have this poster URL cached
+    const cacheKey = `${mediaId}_${rpdbApiKey}`;
+    const cachedItem = posterUrlCache.get(cacheKey);
+
+    // Use cached URL if it exists and hasn't expired
+    if (cachedItem && Date.now() - cachedItem.timestamp < CACHE_EXPIRATION_TIME) {
+      logger.debug(`Using cached RPDB URL for ${mediaId}`);
+      return cachedItem.url;
+    }
+
     // Extract the IMDb ID from the media ID (removing any prefixes like 'tt' for IMDb)
     let cleanMediaId = mediaId;
 
@@ -26,6 +44,12 @@ export function getPosterUrl(
     const rpdbUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/imdb/poster-default/${cleanMediaId}.jpg?fallback=true`;
 
     logger.debug(`Replacing poster URL: ${originalUrl} with RPDB URL: ${rpdbUrl}`);
+
+    // Cache the URL
+    posterUrlCache.set(cacheKey, {
+      url: rpdbUrl,
+      timestamp: Date.now(),
+    });
 
     return rpdbUrl;
   } catch (error) {
