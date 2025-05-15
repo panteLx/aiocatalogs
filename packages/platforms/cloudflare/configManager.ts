@@ -7,6 +7,7 @@ import { logger } from '../../core/utils/logger';
 export class CloudflareConfigManager extends BaseConfigManager {
   private database: D1Database | null = null;
   private apiKeyCache: Map<string, string> = new Map<string, string>();
+  private rpdbApiKeyCache: Map<string, string> = new Map();
 
   constructor() {
     super();
@@ -206,12 +207,11 @@ export class CloudflareConfigManager extends BaseConfigManager {
     }
   }
 
-  // Add a new method to explicitly clear API key cache for a user
+  // Clear the API key cache for a user
   clearApiKeyCache(userId: string): void {
-    if (this.apiKeyCache.has(userId)) {
-      logger.info(`Clearing API key cache for user ${userId}`);
-      this.apiKeyCache.delete(userId);
-    }
+    this.apiKeyCache.delete(userId);
+    this.rpdbApiKeyCache.delete(userId);
+    logger.debug(`Cleared API key cache for user ${userId}`);
   }
 
   // Save MDBList API key for a user
@@ -272,46 +272,141 @@ export class CloudflareConfigManager extends BaseConfigManager {
 
   // Load MDBList API key for a user
   async loadMDBListApiKey(userId: string): Promise<string | null> {
+    // Check cache first
+    if (this.apiKeyCache.has(userId)) {
+      const cachedKey = this.apiKeyCache.get(userId);
+      logger.debug(`Using cached MDBList API key for user ${userId}`);
+      return cachedKey || null;
+    }
+
     if (!this.database) {
       throw new Error('Database not initialized');
     }
 
     try {
-      // First check the memory cache
-      if (this.apiKeyCache.has(userId)) {
-        const cachedKey = this.apiKeyCache.get(userId);
-        logger.debug(`Retrieved MDBList API key for user ${userId} from memory cache`);
-        return cachedKey || null;
-      }
-
       // Initialize the database if not already done
       await this.initDatabase();
 
+      // Get the API key from the database
       const result = await this.database
         .prepare('SELECT api_key FROM mdblist_api_keys WHERE user_id = ?')
         .bind(userId)
         .first();
 
       if (result && result.api_key) {
+        const apiKey = result.api_key as string;
         logger.debug(`Loaded MDBList API key for user ${userId} from database`);
 
-        // Cache for future requests
-        this.apiKeyCache.set(userId, result.api_key as string);
+        // Store in cache for future use
+        this.apiKeyCache.set(userId, apiKey);
 
-        return result.api_key as string;
+        return apiKey;
       }
-
-      logger.info(`No MDBList API key found for user ${userId}`);
-      return null;
     } catch (error) {
-      // Improved error handling
-      if (error instanceof Error) {
-        logger.error(`Error loading MDBList API key for user ${userId}: ${error.message}`, error);
-      } else {
-        logger.error(`Unknown error loading MDBList API key for user ${userId}:`, error);
-      }
-      return null;
+      logger.error(`Error loading MDBList API key for user ${userId}:`, error);
     }
+
+    logger.debug(`No MDBList API key found for user ${userId}`);
+    return null;
+  }
+
+  // Save RPDB API key for a user
+  async saveRPDBAApiKey(userId: string, apiKey: string): Promise<boolean> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // Initialize the database if not already done
+      await this.initDatabase();
+
+      const now = Date.now();
+
+      // Check if an entry for this user already exists
+      const exists = await this.database
+        .prepare('SELECT 1 FROM rpdb_api_keys WHERE user_id = ?')
+        .bind(userId)
+        .first();
+
+      if (exists) {
+        // Update existing entry
+        await this.database
+          .prepare('UPDATE rpdb_api_keys SET api_key = ?, updated_at = ? WHERE user_id = ?')
+          .bind(apiKey, now, userId)
+          .run();
+      } else {
+        // Add new entry
+        await this.database
+          .prepare(
+            'INSERT INTO rpdb_api_keys (user_id, api_key, created_at, updated_at) VALUES (?, ?, ?, ?)'
+          )
+          .bind(userId, apiKey, now, now)
+          .run();
+      }
+
+      logger.info(`Saved RPDB API key for user ${userId}`);
+
+      // Update cache
+      this.rpdbApiKeyCache.set(userId, apiKey);
+      return true;
+    } catch (error) {
+      // Improved error handling with more detailed information
+      if (error instanceof Error) {
+        logger.error(`Error saving RPDB API key for user ${userId}: ${error.message}`, error);
+      } else {
+        logger.error(`Unknown error saving RPDB API key for user ${userId}:`, error);
+      }
+
+      // Try as fallback to store the API key in the in-memory cache
+      try {
+        this.rpdbApiKeyCache.set(userId, apiKey);
+        logger.info(`Saved RPDB API key for user ${userId} in memory cache as fallback`);
+        return true;
+      } catch (cacheError) {
+        logger.error(`Failed to save RPDB API key in memory cache: ${cacheError}`);
+        return false;
+      }
+    }
+  }
+
+  // Load RPDB API key for a user
+  async loadRPDBAApiKey(userId: string): Promise<string | null> {
+    // Check cache first
+    if (this.rpdbApiKeyCache.has(userId)) {
+      const cachedKey = this.rpdbApiKeyCache.get(userId);
+      logger.debug(`Using cached RPDB API key for user ${userId}`);
+      return cachedKey || null;
+    }
+
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // Initialize the database if not already done
+      await this.initDatabase();
+
+      // Get the API key from the database
+      const result = await this.database
+        .prepare('SELECT api_key FROM rpdb_api_keys WHERE user_id = ?')
+        .bind(userId)
+        .first();
+
+      if (result && result.api_key) {
+        const apiKey = result.api_key as string;
+        logger.debug(`Loaded RPDB API key for user ${userId} from database`);
+
+        // Store in cache for future use
+        this.rpdbApiKeyCache.set(userId, apiKey);
+
+        return apiKey;
+      }
+    } catch (error) {
+      logger.error(`Error loading RPDB API key for user ${userId}:`, error);
+    }
+
+    logger.debug(`No RPDB API key found for user ${userId}`);
+    return null;
   }
 }
 

@@ -4,16 +4,17 @@
  * This file contains HTML templates that can be used by Cloudflare and future implementations.
  * It serves as an integration point for the smaller, more maintainable component files.
  */
-import { getMDBListSearchFormHTML } from './mdblistTemplates';
+import { getHTMLHead, getBodyOpeningHTML, getBodyClosingHTML } from './pageStructureComponents';
 import { getConfigPageHeaderHTML } from './configPageHeader';
-import { getAddCatalogFormHTML } from './addCatalogComponent';
-import { getMDBListApiConfigHTML } from './mdblistComponent';
-import { getCatalogListHTML } from './catalogListComponent';
-import { getAddonInstallationHTML } from './addonInstallComponent';
 import { getSponsorBannerHTML } from './sponsorComponent';
+import { getAddCatalogFormHTML } from './addCatalogComponent';
+import { getCatalogListHTML } from './catalogListComponent';
+import { getMDBListApiConfigHTML } from './mdblistComponent';
+import { getMDBListSearchFormHTML } from './mdblistTemplates';
+import { getRPDBApiConfigHTML } from './rpdbComponent';
+import { getAddonInstallationHTML } from './addonInstallComponent';
 import { getFooterHTML } from './footerComponent';
 import { getPageScriptsHTML } from './pageScriptsComponent';
-import { getHTMLHead, getBodyOpeningHTML, getBodyClosingHTML } from './pageStructureComponents';
 import { getHomePageHTML } from './homePageTemplate';
 export { convertStremioUrl } from './utilities';
 
@@ -28,10 +29,11 @@ export function getConfigPageHTML(
   error: string = '',
   isCloudflare: boolean = false,
   packageVersion: string = '1.0.0',
-  apiKey: string = ''
+  mdblistApiKey: string = '',
+  rpdbApiKey: string = ''
 ) {
   // Add MDBList search form if API key is available
-  const mdblistSearchForm = apiKey ? getMDBListSearchFormHTML(userId) : '';
+  const mdblistSearchForm = mdblistApiKey ? getMDBListSearchFormHTML(userId) : '';
 
   // Build the page by combining the components
   return `
@@ -47,7 +49,8 @@ export function getConfigPageHTML(
           ${getCatalogListHTML(userId, catalogs)}
         </div>
         <div class="md:col-span-12 lg:col-span-4 space-y-6">
-          ${getMDBListApiConfigHTML(userId, apiKey)}
+          ${getMDBListApiConfigHTML(userId, mdblistApiKey)}
+          ${getRPDBApiConfigHTML(userId, rpdbApiKey)}
           ${mdblistSearchForm}
           ${getAddonInstallationHTML(userId, baseUrl)}
         </div>

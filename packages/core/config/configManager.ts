@@ -324,4 +324,14 @@ export abstract class BaseConfigManager {
    * Load MDBList API key for a user
    */
   abstract loadMDBListApiKey(userId: string): Promise<string | null> | string | null;
+
+  /**
+   * Save RPDB API key for a user
+   */
+  abstract saveRPDBAApiKey(userId: string, apiKey: string): Promise<boolean> | boolean;
+
+  /**
+   * Load RPDB API key for a user
+   */
+  abstract loadRPDBAApiKey(userId: string): Promise<string | null> | string | null;
 }

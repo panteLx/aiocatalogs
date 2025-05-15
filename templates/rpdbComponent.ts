@@ -1,26 +1,25 @@
 /**
- * MDBList API related components for the configuration page
+ * Component for the RPDB API key configuration form
  */
 
 /**
- * Creates the HTML for the MDBList API configuration form
+ * Creates the HTML for the RPDB API key configuration form
  */
-export function getMDBListApiConfigHTML(userId: string, apiKey: string): string {
+export function getRPDBApiConfigHTML(userId: string, apiKey: string): string {
   return `
-  <section>
-    <div class="rounded-lg border bg-card p-6 shadow-card">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h2 class="text-xl font-semibold flex items-center">
+  <section id="rpdbConfig" class="rounded-lg border bg-card shadow-card">
+    <div class="p-6">
+      <div class="flex items-center mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary mr-2">
             <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
           </svg>
-          MDBList Configuration
-        </h2>
+        <h2 class="text-xl font-semibold">RPDB Configuration</h2>
       </div>
-      <form method="POST" action="/configure/${userId}/mdblist/config" class="animate-enter">
-        <div class="grid gap-4">
+      
+      <form method="POST" action="/configure/${userId}/rpdb/config" class="space-y-4">
+        <div class="grid gap-3">
           <div class="grid gap-2">
-            <label for="apiKey" class="text-sm font-medium flex items-center">
+            <label for="rpdbApiKey" class="text-sm font-medium flex items-center">
               API Key
               <span class="relative ml-1.5 group">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground cursor-help">
@@ -34,12 +33,13 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
               </span>
             </label>
             <div class="relative">
-              <input
-                type="text"
-                id="apiKey"
-                name="apiKey"
+              <input 
+                type="text" 
+                id="rpdbApiKey" 
+                name="apiKey" 
+                autocomplete="off"
+                placeholder="Enter your RPDB API Key" 
                 value="${apiKey}"
-                placeholder="Enter your MDBList API Key"
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
               />
               <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
@@ -48,7 +48,8 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
               </div>
-            </div> 
+            </div>
+          </div>
             <p class="text-sm text-muted-foreground flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
                 <circle cx="12" cy="12" r="10"></circle>
@@ -56,15 +57,14 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
                 <path d="M12 8h.01"></path>
               </svg>
               Get your free API key from 
-              <a href="https://mdblist.com/preferences/" target="_blank" class="text-primary hover:underline inline-flex items-center">
-                MDBList 
+              <a href="https://ratingposterdb.com/" target="_blank" class="text-primary hover:underline inline-flex items-center">
+                RPDB 
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
                   <path d="M7 7h10v10"></path>
                   <path d="M7 17 17 7"></path>
                 </svg>
               </a>
             </p>
-          </div>
           <div class="flex justify-end">
             <button
               type="submit"

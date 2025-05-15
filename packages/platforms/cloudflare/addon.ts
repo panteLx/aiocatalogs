@@ -4,6 +4,8 @@ import packageJson from '../../../package.json';
 import { buildManifest, handleCatalogRequest } from '../../core/utils/manifestBuilder';
 import { logger } from '../../core/utils/logger';
 import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
+import { processPosterUrls } from '../../core/utils/posterUtils';
+import { loadUserRPDBApiKey } from '../../api/routes/rpdbRoutes';
 
 // Cache for builders to avoid multiple creations
 const addonCache = new Map();
@@ -71,6 +73,14 @@ async function processMDBListCatalog(args: any, userId: string): Promise<{ metas
         [metas[i], metas[j]] = [metas[j], metas[i]];
       }
       logger.debug(`Randomized ${metas.length} items for MDBList catalog ${catalogId}`);
+    }
+
+    // Get the user's RPDB API key
+    const rpdbApiKey = await loadUserRPDBApiKey(userId);
+
+    // Process posters if RPDB API key is available
+    if (rpdbApiKey && result.metas) {
+      result.metas = processPosterUrls(result.metas, rpdbApiKey);
     }
 
     return result;
@@ -147,7 +157,17 @@ export async function getAddonInterface(userId: string, db: D1Database) {
       }
 
       // Process regular catalogs
-      return handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
+      const result = await handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
+
+      // Get the user's RPDB API key
+      const rpdbApiKey = await loadUserRPDBApiKey(userId);
+
+      // Process posters if RPDB API key is available
+      if (rpdbApiKey && result.metas) {
+        result.metas = processPosterUrls(result.metas, rpdbApiKey);
+      }
+
+      return result;
     },
 
     // Meta handler - not implemented
@@ -182,7 +202,17 @@ export async function getAddonInterface(userId: string, db: D1Database) {
       const userConfig = await configManager.getConfig(userId);
       const randomizedCatalogs = userConfig.randomizedCatalogs || [];
 
-      return handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
+      const result = await handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
+
+      // Get the user's RPDB API key
+      const rpdbApiKey = await loadUserRPDBApiKey(userId);
+
+      // Process posters if RPDB API key is available
+      if (rpdbApiKey && result.metas) {
+        result.metas = processPosterUrls(result.metas, rpdbApiKey);
+      }
+
+      return result;
     },
   };
 
@@ -202,4 +232,117 @@ export function clearAddonCache(userId: string): void {
 export function clearAllAddonCache() {
   logger.debug('Clearing entire addon cache');
   addonCache.clear();
+}
+
+/**
+ * Helper function to parse catalog request parameters
+ */
+function parseCatalogRequest(path: string, request: any): CatalogRequest {
+  const parts = path.split('/');
+  const type = parts[0] || '';
+  const id = parts[1] || '';
+  const extra = parts[2] || '';
+
+  // Parse query parameters
+  const url = new URL(request.url);
+  const skip = parseInt(url.searchParams.get('skip') || '0', 10);
+  const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+  const genre = url.searchParams.get('genre') || undefined;
+  const search = url.searchParams.get('search') || undefined;
+
+  return {
+    type,
+    id,
+    extra,
+    skip,
+    limit,
+    genre,
+    search,
+  };
+}
+
+/**
+ * Get manifest for a specific user
+ */
+async function getManifest(userId: string): Promise<Response> {
+  try {
+    // Get the user's catalogs
+    const userCatalogs = await configManager.getAllCatalogs(userId);
+    logger.info(`Found ${userCatalogs.length} catalogs for user ${userId}`);
+
+    // Build the manifest
+    const manifest = buildManifest(userId, version, description, userCatalogs);
+
+    return new Response(JSON.stringify(manifest), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+  } catch (error) {
+    logger.error('Error getting manifest:', error);
+    return new Response('Server error', { status: 500 });
+  }
+}
+
+/**
+ * Main handler for addon requests
+ */
+export async function handleAddonResource(request: any, userId: string) {
+  try {
+    // Get the path from the request
+    const url = new URL(request.url);
+    const path = url.pathname.split(`/${userId}/`)[1];
+
+    // If no path, return the manifest
+    if (!path) {
+      return getManifest(userId);
+    }
+
+    // Handle catalog requests
+    if (path.startsWith('catalog/')) {
+      const catalogPath = path.replace('catalog/', '');
+      const catalogRequest = parseCatalogRequest(catalogPath, request);
+
+      // Check if it's a MDBList catalog request
+      if (catalogRequest.id && catalogRequest.id.startsWith('mdblist_')) {
+        const result = await processMDBListCatalog(catalogRequest, userId);
+
+        return new Response(JSON.stringify(result), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
+      // Handle regular catalog requests
+      const userCatalogs = await configManager.getAllCatalogs(userId);
+      const userConfig = await configManager.getConfig(userId);
+      const randomizedCatalogs = userConfig.randomizedCatalogs || [];
+
+      const result = await handleCatalogRequest(catalogRequest, userCatalogs, randomizedCatalogs);
+
+      // Get the user's RPDB API key
+      const rpdbApiKey = await loadUserRPDBApiKey(userId);
+
+      // Process posters if RPDB API key is available
+      if (rpdbApiKey && result.metas) {
+        result.metas = processPosterUrls(result.metas, rpdbApiKey);
+      }
+
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    // If no matching route, return 404
+    return new Response('Not found', { status: 404 });
+  } catch (error) {
+    logger.error('Error handling addon request:', error);
+    return new Response('Server error', { status: 500 });
+  }
 }

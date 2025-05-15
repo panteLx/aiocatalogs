@@ -245,12 +245,22 @@ export const getConfigPage = async (c: any) => {
     const catalogs = await configManager.getAllCatalogs(userId);
 
     // Load the MDBList API key from the database to display in the form
-    let apiKey = '';
+    let mdblistApiKey = '';
     try {
-      apiKey = (await configManager.loadMDBListApiKey(userId)) || '';
+      mdblistApiKey = (await configManager.loadMDBListApiKey(userId)) || '';
       console.log(`Loaded MDBList API key for user ${userId} for config page`);
     } catch (apiKeyError) {
       console.warn(`Error loading MDBList API key for user ${userId}:`, apiKeyError);
+      // Ignore errors here as it's not critical
+    }
+
+    // Load the RPDB API key from the database to display in the form
+    let rpdbApiKey = '';
+    try {
+      rpdbApiKey = (await configManager.loadRPDBAApiKey(userId)) || '';
+      console.log(`Loaded RPDB API key for user ${userId} for config page`);
+    } catch (apiKeyError) {
+      console.warn(`Error loading RPDB API key for user ${userId}:`, apiKeyError);
       // Ignore errors here as it's not critical
     }
 
@@ -262,7 +272,17 @@ export const getConfigPage = async (c: any) => {
 
     // Return HTML as text
     return c.html(
-      getConfigPageHTML(userId, catalogs, baseUrl, message, error, true, PACKAGE_VERSION, apiKey)
+      getConfigPageHTML(
+        userId,
+        catalogs,
+        baseUrl,
+        message,
+        error,
+        true,
+        PACKAGE_VERSION,
+        mdblistApiKey,
+        rpdbApiKey
+      )
     );
   } catch (error) {
     console.error('Error displaying config page:', error);

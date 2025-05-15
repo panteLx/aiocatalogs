@@ -6,12 +6,14 @@ import { UserConfig, CatalogManifest } from '../../types/index';
 class MockConfigManager extends BaseConfigManager {
   private configs: Map<string, UserConfig>;
   private mdbApiKeys: Map<string, string>;
+  private rpdbApiKeys: Map<string, string>;
   private users: Set<string>;
 
   constructor() {
     super();
     this.configs = new Map();
     this.mdbApiKeys = new Map();
+    this.rpdbApiKeys = new Map();
     this.users = new Set(['test-user']);
 
     // Set up initial test data
@@ -66,6 +68,15 @@ class MockConfigManager extends BaseConfigManager {
 
   loadMDBListApiKey(userId: string): string | null {
     return this.mdbApiKeys.get(userId) || null;
+  }
+
+  saveRPDBAApiKey(userId: string, apiKey: string): boolean {
+    this.rpdbApiKeys.set(userId, apiKey);
+    return true;
+  }
+
+  loadRPDBAApiKey(userId: string): string | null {
+    return this.rpdbApiKeys.get(userId) || null;
   }
 
   // Test helpers to access protected properties

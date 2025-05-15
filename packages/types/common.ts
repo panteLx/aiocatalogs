@@ -46,6 +46,10 @@ export interface CatalogRequest {
   type: string; // Content type (e.g. 'movie', 'series')
   id: string; // Catalog ID
   extra?: any; // Additional parameters
+  skip?: number; // Number of items to skip
+  limit?: number; // Maximum number of items to return
+  genre?: string; // Filter by genre
+  search?: string; // Search query
 }
 
 export interface CatalogResponse {

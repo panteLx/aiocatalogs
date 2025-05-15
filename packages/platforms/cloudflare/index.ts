@@ -9,6 +9,7 @@ import { rateLimit } from './middleware/rateLimit';
 import { logger, initLogger } from '../../core/utils/logger';
 import { appConfig } from './appConfig';
 import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
+import { saveRPDBConfig } from '../../api/routes/rpdbRoutes';
 
 // Configuration page (imported from separate file)
 import {
@@ -203,6 +204,12 @@ app.post('/configure/:userId/mdblist/add', async c => {
 app.post('/configure/:userId/mdblist/config', async c => {
   initConfigManager(c);
   return saveMDBListConfig(c);
+});
+
+// RPDB API configuration
+app.post('/configure/:userId/rpdb/config', async c => {
+  initConfigManager(c);
+  return saveRPDBConfig(c);
 });
 
 // MDBList manifest endpoint - needed for MDBList catalogs
