@@ -155,6 +155,19 @@ From now on, AIOCatalogs will no longer be possible to self-host via docker or f
 You can configure the addon using environment variables:
 
 - **Cloudflare Configuration**: Configure the D1 database in the `wrangler.toml` file
+- **Environment Variables**:
+
+  - `AIOCATALOGS_API_CACHE_EXPIRATION_MDBLIST`: Cache expiration time in minutes for MDBList API (default: 60)
+  - `AIOCATALOGS_API_CACHE_EXPIRATION_RPDB`: Cache expiration time in days for RPDB API (default: 7)
+  - `AIOCATALOGS_API_MAX_ITEMS_MDBLIST`: Maximum number of items to fetch from MDBList API (default: 100)
+  - `AIOCATALOGS_API_MAX_REQUESTS`: Maximum number of requests per minute (default: 60)
+  - `AIOCATALOGS_API_RATE_LIMIT`: Enable rate limiting (default: true)
+  - `AIOCATALOGS_TRUSTED_ORIGINS`: List of trusted origins for redirects (comma-separated URLs)
+
+  - `LOG_LEVEL`: Log level (default: info)
+  - `LOG_ENABLE_TIMESTAMPS`: Enable timestamps in logs (default: true)
+  - `LOG_TIMESTAMP_FORMAT`: Timestamp format (default: dd.MM.yyyy HH:mm:ss)
+  - `LOG_TIMEZONE`: Timezone for timestamps (default: Europe/Berlin)
 
 ### How do I add new catalog addons?
 

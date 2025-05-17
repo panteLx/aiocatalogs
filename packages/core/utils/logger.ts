@@ -313,9 +313,20 @@ export function initLogger(appConfig?: any): void {
   // Log initialization with configuration details
   const timestampStatus = logger.getTimestampEnabled() ? 'Enabled' : 'Disabled';
   logger.info(
-    `Logger initialized with level: ${LogLevel[logger.getLevel()]}, Timestamps: ${timestampStatus}, Format: ${logger.getTimestampFormat()}, Timezone: ${logger.getTimezone()}`
+    `Logger initialized:
+    • Level: ${LogLevel[logger.getLevel()]}
+    • Timestamps: ${timestampStatus}
+    • Format: ${logger.getTimestampFormat()}
+    • Timezone: ${logger.getTimezone()}`
   );
   logger.debug(
-    `AIOCatalogs Settings: AIOCATALOGS_API_MAX_ITEMS_MDBLIST: ${appConfig.api.maxItemsMDBList}, AIOCATALOGS_API_MAX_REQUESTS: ${appConfig.api.maxRequestsPerMinute}, AIOCATALOGS_API_RATE_LIMIT: ${appConfig.api.rateLimit}, AIOCATALOGS_TRUSTED_ORIGINS: ${appConfig.app.trustedOrigins}, AIOCATALOGS_API_CACHE_EXPIRATION_RPDB: ${appConfig.api.cacheExpirationRPDB}`
+    `AIOCatalogs Settings:
+    • MDBList Max Items: ${appConfig.api.maxItemsMDBList}
+    • API Max Requests: ${appConfig.api.maxRequestsPerMinute}/min
+    • Rate Limit: ${appConfig.api.rateLimit ? 'Enabled' : 'Disabled'}
+    • Trusted Origins: ${appConfig.app.trustedOrigins.join(', ')}
+    • Cache Expiration:
+      - RPDB: ${appConfig.api.cacheExpirationRPDB} days
+      - MDBList: ${appConfig.api.cacheExpirationMDBList} minutes`
   );
 }

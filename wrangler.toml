@@ -20,6 +20,7 @@ AIOCATALOGS_TRUSTED_ORIGINS = "https://aio.pantelx.com, https://aiocatalogs.jqrw
 AIOCATALOGS_API_RATE_LIMIT = true
 AIOCATALOGS_API_MAX_REQUESTS = 50 # requests per minute
 AIOCATALOGS_API_MAX_ITEMS_MDBLIST = 100 # maximum number of items fetched from MDBList API
+AIOCATALOGS_API_CACHE_EXPIRATION_MDBLIST = 60 # cache expiration time in minutes for MDBList API
 AIOCATALOGS_API_CACHE_EXPIRATION_RPDB = 30 # cache expiration time in days for RPDB API
 
 LOG_LEVEL = "info" # debug, info, warn, error, or none
@@ -44,6 +45,7 @@ AIOCATALOGS_TRUSTED_ORIGINS = "http://localhost:8787" # comma-separated list of 
 AIOCATALOGS_API_RATE_LIMIT = false
 AIOCATALOGS_API_MAX_REQUESTS = 5 # requests per minute
 AIOCATALOGS_API_MAX_ITEMS_MDBLIST = 10 # maximum number of items fetched from MDBList API
+AIOCATALOGS_API_CACHE_EXPIRATION_MDBLIST = 10 # cache expiration time in minutes for MDBList API
 AIOCATALOGS_API_CACHE_EXPIRATION_RPDB = 1 # cache expiration time in days for RPDB API
 
 LOG_LEVEL = "debug" # debug, info, warn, error, or none

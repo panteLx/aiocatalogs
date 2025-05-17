@@ -19,6 +19,7 @@ global.AbortSignal = {
 describe('MDBList Utilities', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    // Reset mocks before each test since we can't clear the cache directly
   });
 
   afterEach(() => {
@@ -72,7 +73,7 @@ describe('MDBList Utilities', () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await fetchTopLists('valid-api-key');
+      const result = await fetchTopLists('valid-api-key-1');
 
       // Verify the result
       expect(result).toHaveLength(2);
@@ -110,7 +111,8 @@ describe('MDBList Utilities', () => {
         json: () => Promise.resolve(mockDirectArrayResponse),
       });
 
-      const result = await fetchTopLists('valid-api-key');
+      // Use a unique API key to avoid cache
+      const result = await fetchTopLists('direct-array-test-key');
 
       // Verify the result
       expect(result).toHaveLength(1);
@@ -131,7 +133,7 @@ describe('MDBList Utilities', () => {
         status: 401,
       });
 
-      const result = await fetchTopLists('invalid-key');
+      const result = await fetchTopLists('invalid-key-test');
 
       // Should return empty array on error
       expect(result).toEqual([]);
@@ -141,7 +143,8 @@ describe('MDBList Utilities', () => {
       // Set up mock fetch implementation for network error
       (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await fetchTopLists('valid-api-key');
+      // Use a unique API key for this test
+      const result = await fetchTopLists('network-error-test-key');
 
       // Should return empty array on error
       expect(result).toEqual([]);
@@ -153,7 +156,8 @@ describe('MDBList Utilities', () => {
         Object.assign(new Error('The operation was aborted'), { name: 'AbortError' })
       );
 
-      const result = await fetchTopLists('valid-api-key');
+      // Use a unique API key for this test
+      const result = await fetchTopLists('timeout-error-test-key');
 
       // Should return empty array on timeout
       expect(result).toEqual([]);
@@ -196,6 +200,46 @@ describe('MDBList Utilities', () => {
         expect.stringMatching(/test[+%20]query/),
         expect.anything()
       );
+    });
+
+    it('should use cache for repeated requests', async () => {
+      // Using a unique query to avoid cache conflicts with other tests
+      const uniqueQuery = `cache-test-${Date.now()}`;
+
+      // Mock successful API response
+      const mockResponse = {
+        lists: [
+          {
+            id: 1,
+            name: 'Cached Result',
+            mediatype: 'movie',
+            user_id: 'user123',
+            user_name: 'testuser',
+            items: 100,
+            likes: 50,
+            slug: 'cached-result',
+          },
+        ],
+      };
+
+      // Set up mock fetch implementation
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      // First call should hit the API
+      const result1 = await searchLists(uniqueQuery, 'valid-api-key');
+      expect(result1).toHaveLength(1);
+      expect(result1[0].name).toBe('Cached Result');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      // Second call with same params should use cache
+      const result2 = await searchLists(uniqueQuery, 'valid-api-key');
+      expect(result2).toHaveLength(1);
+      expect(result2[0].name).toBe('Cached Result');
+      // Fetch should not be called again
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('should return empty array for empty query', async () => {

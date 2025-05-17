@@ -1,6 +1,13 @@
 import { logger } from './logger';
 import { appConfig } from '../../platforms/cloudflare/appConfig';
 
+// Cache for MDBList API responses to avoid rate limiting
+// Key format: `${endpoint}_${params}_${apiKey}`
+const mdblistApiCache = new Map<string, { data: any; timestamp: number }>();
+
+// Get cache expiration time in milliseconds
+const CACHE_EXPIRATION_TIME = (appConfig.api.cacheExpirationMDBList ?? 60) * 60 * 1000; // default: 60 minutes
+
 /**
  * Represents an MDBList catalog
  */
@@ -90,6 +97,20 @@ async function fetchListsFromApi(
     return { lists: [] };
   }
 
+  // Create a cache key based on the endpoint, params, and API key
+  const paramsString = Object.entries(params)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+  const cacheKey = `${endpoint}_${paramsString}_${apiKey}`;
+
+  // Check if we have a cached response that hasn't expired
+  const cachedResponse = mdblistApiCache.get(cacheKey);
+  if (cachedResponse && Date.now() - cachedResponse.timestamp < CACHE_EXPIRATION_TIME) {
+    logger.debug(`Using cached MDBList API response for: ${endpoint}`);
+    return cachedResponse.data;
+  }
+
   // Add API key to params
   const queryParams = new URLSearchParams({
     apikey: apiKey,
@@ -114,6 +135,13 @@ async function fetchListsFromApi(
     }
 
     const data = await response.json();
+
+    // Cache the successful response
+    mdblistApiCache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+    });
+
     return data;
   } catch (error) {
     // More detailed error message

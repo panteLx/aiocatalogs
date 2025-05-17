@@ -55,6 +55,12 @@ export const appConfig = {
      * @default 7
      */
     cacheExpirationRPDB: getEnvAsNumber('AIOCATALOGS_API_CACHE_EXPIRATION_RPDB', 7),
+
+    /**
+     * Cache expiration time in minutes for MDBList API
+     * @default 60
+     */
+    cacheExpirationMDBList: getEnvAsNumber('AIOCATALOGS_API_CACHE_EXPIRATION_MDBLIST', 60),
   },
 
   /**
