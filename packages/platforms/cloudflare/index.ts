@@ -10,6 +10,13 @@ import { logger, initLogger } from '../../core/utils/logger';
 import { appConfig } from './appConfig';
 import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
 import { saveRPDBConfig } from '../../api/routes/rpdbRoutes';
+import { saveTMDBConfig } from '../../api/routes/tmdbRoutes';
+import {
+  getPopularMoviesCatalog,
+  getTopRatedMoviesCatalog,
+  getPopularTVSeriesCatalog,
+  getTopRatedTVSeriesCatalog,
+} from '../../api/routes/tmdbCatalogRoutes';
 
 // Configuration page (imported from separate file)
 import {
@@ -212,6 +219,15 @@ app.post('/configure/:userId/rpdb/config', async c => {
   return saveRPDBConfig(c);
 });
 
+// TMDB API configuration
+app.post('/configure/:userId/tmdb/save', saveTMDBConfig);
+
+// TMDB catalog endpoints
+app.get('/configure/:userId/tmdb/popular/movies', getPopularMoviesCatalog);
+app.get('/configure/:userId/tmdb/top-rated/movies', getTopRatedMoviesCatalog);
+app.get('/configure/:userId/tmdb/popular/series', getPopularTVSeriesCatalog);
+app.get('/configure/:userId/tmdb/top-rated/series', getTopRatedTVSeriesCatalog);
+
 // MDBList manifest endpoint - needed for MDBList catalogs
 app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
   const userId = c.req.param('userId');
@@ -325,6 +341,107 @@ app.get('/configure/:userId/mdblist/:listId/manifest.json', async c => {
     return c.json(manifest);
   } catch (error) {
     console.error(`Error generating MDBList manifest for ${listId}:`, error);
+    return c.json({ error: 'Failed to generate manifest' }, 500);
+  }
+});
+
+// TMDB manifest endpoint - needed for TMDB catalogs
+app.get('/catalog/:userId/tmdb/:catalogType/catalog.json/manifest.json', async c => {
+  const userId = c.req.param('userId');
+  const catalogType = c.req.param('catalogType');
+
+  initConfigManager(c);
+
+  // Check if database is available
+  if (c.env && c.env.DB) {
+    configManager.setDatabase(c.env.DB);
+
+    // Load the user's API key directly from the database
+    const apiKey = await configManager.loadTMDBApiKey(userId);
+
+    if (!apiKey) {
+      logger.warn(`No TMDB API key found for user ${userId}`);
+      return c.json(
+        {
+          error: 'TMDB API key not configured',
+          message: 'Please configure your TMDB API key in the settings.',
+        },
+        403
+      );
+    }
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+
+  try {
+    // Create manifest based on catalog type
+    let catalogName = 'TMDB Catalog';
+    let catalogId = 'tmdb-catalog';
+
+    switch (catalogType) {
+      case 'popular-movies':
+        catalogName = 'TMDB Popular Movies';
+        catalogId = 'tmdb-popular-movies';
+        break;
+      case 'top-rated-movies':
+        catalogName = 'TMDB Top Rated Movies';
+        catalogId = 'tmdb-top-rated-movies';
+        break;
+      case 'popular-series':
+        catalogName = 'TMDB Popular TV Series';
+        catalogId = 'tmdb-popular-series';
+        break;
+      case 'top-rated-series':
+        catalogName = 'TMDB Top Rated TV Series';
+        catalogId = 'tmdb-top-rated-series';
+        break;
+    }
+
+    // Determine catalog type
+    const isMovies = catalogType.includes('movies');
+
+    // Create catalogs array based on catalog type
+    const catalogs = [
+      {
+        id: catalogId,
+        type: isMovies ? 'movie' : 'series',
+        name: catalogName,
+      },
+    ];
+
+    // Create a manifest for this TMDB catalog
+    const manifest = {
+      id: catalogId,
+      version: '1.0.0',
+      name: catalogName,
+      description: `${catalogName} - TMDB catalog`,
+      resources: [
+        {
+          name: 'catalog',
+          types: [isMovies ? 'movie' : 'series'],
+        },
+      ],
+      catalogs: catalogs,
+      // Store endpoint
+      endpoint: `/configure/${userId}/tmdb/${
+        catalogType === 'popular-movies'
+          ? 'popular/movies'
+          : catalogType === 'top-rated-movies'
+            ? 'top-rated/movies'
+            : catalogType === 'popular-series'
+              ? 'popular/series'
+              : 'top-rated/series'
+      }`,
+      // Tell Stremio to use our direct catalog endpoint
+      behaviorHints: {
+        configurable: false,
+        configurationRequired: false,
+      },
+    };
+
+    return c.json(manifest);
+  } catch (error) {
+    logger.error(`Error generating TMDB manifest for ${catalogType}:`, error);
     return c.json({ error: 'Failed to generate manifest' }, 500);
   }
 });
@@ -561,6 +678,65 @@ app.get('/configure/:userId/mdblist/:listId/catalog/:type/:id.json', async c => 
       return c.json(result);
     } catch (error) {
       console.error(`Error serving MDBList catalog: ${error}`);
+      return c.json({ error: 'Failed to generate catalog' }, 500);
+    }
+  } else {
+    return c.json({ error: 'Database not available' }, 500);
+  }
+});
+
+// Direct TMDB catalog endpoints
+app.get('/catalog/:userId/tmdb/:catalogType/catalog.json', async c => {
+  initConfigManager(c);
+  const userId = c.req.param('userId');
+  const catalogType = c.req.param('catalogType');
+
+  if (c.env && c.env.DB) {
+    try {
+      // Verify that the user exists
+      configManager.setDatabase(c.env.DB);
+      const exists = await configManager.userExists(userId);
+      if (!exists) {
+        return c.json({ error: 'User not found' }, 404);
+      }
+
+      // Map catalog type to the appropriate handler
+      let result;
+      switch (catalogType) {
+        case 'popular-movies':
+          result = await getPopularMoviesCatalog({
+            req: { param: () => userId, query: () => '1' },
+            json: (data: any, status?: number) => ({ data, status }),
+          });
+          break;
+        case 'top-rated-movies':
+          result = await getTopRatedMoviesCatalog({
+            req: { param: () => userId, query: () => '1' },
+            json: (data: any, status?: number) => ({ data, status }),
+          });
+          break;
+        case 'popular-series':
+          result = await getPopularTVSeriesCatalog({
+            req: { param: () => userId, query: () => '1' },
+            json: (data: any, status?: number) => ({ data, status }),
+          });
+          break;
+        case 'top-rated-series':
+          result = await getTopRatedTVSeriesCatalog({
+            req: { param: () => userId, query: () => '1' },
+            json: (data: any, status?: number) => ({ data, status }),
+          });
+          break;
+        default:
+          return c.json({ error: 'Invalid catalog type' }, 400);
+      }
+
+      // Return the result data with appropriate status code
+      if (result && result.data) {
+        return c.json(result.data, result.status || 200);
+      }
+    } catch (error) {
+      logger.error(`Error serving TMDB catalog: ${error}`);
       return c.json({ error: 'Failed to generate catalog' }, 500);
     }
   } else {

@@ -264,6 +264,16 @@ export const getConfigPage = async (c: any) => {
       // Ignore errors here as it's not critical
     }
 
+    // Load the TMDB API key from the database to display in the form
+    let tmdbApiKey = '';
+    try {
+      tmdbApiKey = (await configManager.loadTMDBApiKey(userId)) || '';
+      console.log(`Loaded TMDB API key for user ${userId} for config page`);
+    } catch (apiKeyError) {
+      console.warn(`Error loading TMDB API key for user ${userId}:`, apiKeyError);
+      // Ignore errors here as it's not critical
+    }
+
     const url = new URL(c.req.url);
     const baseUrlHost = url.host;
     const baseUrl = `${url.protocol}//${baseUrlHost}`;
@@ -281,7 +291,8 @@ export const getConfigPage = async (c: any) => {
         true,
         PACKAGE_VERSION,
         mdblistApiKey,
-        rpdbApiKey
+        rpdbApiKey,
+        tmdbApiKey
       )
     );
   } catch (error) {

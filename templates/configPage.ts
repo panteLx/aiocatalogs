@@ -16,6 +16,7 @@ import { getAddonInstallationHTML } from './addonInstallComponent';
 import { getFooterHTML } from './footerComponent';
 import { getPageScriptsHTML } from './pageScriptsComponent';
 import { getHomePageHTML } from './homePageTemplate';
+import { getTMDBConfigHTML } from './tmdbComponent';
 export { convertStremioUrl } from './utilities';
 
 /**
@@ -30,7 +31,8 @@ export function getConfigPageHTML(
   isCloudflare: boolean = false,
   packageVersion: string = '1.0.0',
   mdblistApiKey: string = '',
-  rpdbApiKey: string = ''
+  rpdbApiKey: string = '',
+  tmdbApiKey: string = ''
 ) {
   // Add MDBList search form if API key is available
   const mdblistSearchForm = mdblistApiKey ? getMDBListSearchFormHTML(userId) : '';
@@ -51,6 +53,7 @@ export function getConfigPageHTML(
         <div class="md:col-span-12 lg:col-span-4 space-y-6">
           ${getMDBListApiConfigHTML(userId, mdblistApiKey)}
           ${getRPDBApiConfigHTML(userId, rpdbApiKey)}
+          ${getTMDBConfigHTML(userId, tmdbApiKey)}
           ${mdblistSearchForm}
           ${getAddonInstallationHTML(userId, baseUrl)}
         </div>

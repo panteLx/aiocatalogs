@@ -334,4 +334,14 @@ export abstract class BaseConfigManager {
    * Load RPDB API key for a user
    */
   abstract loadRPDBApiKey(userId: string): Promise<string | null> | string | null;
+
+  /**
+   * Save TMDB API key for a user
+   */
+  abstract saveTMDBApiKey(userId: string, apiKey: string): Promise<boolean> | boolean;
+
+  /**
+   * Load TMDB API key for a user
+   */
+  abstract loadTMDBApiKey(userId: string): Promise<string | null> | string | null;
 }

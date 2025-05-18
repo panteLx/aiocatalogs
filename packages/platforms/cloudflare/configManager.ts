@@ -8,6 +8,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
   private database: D1Database | null = null;
   private apiKeyCache: Map<string, string> = new Map<string, string>();
   private rpdbApiKeyCache: Map<string, string> = new Map();
+  private tmdbApiKeyCache: Map<string, string> = new Map();
 
   constructor() {
     super();
@@ -211,6 +212,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
   clearApiKeyCache(userId: string): void {
     this.apiKeyCache.delete(userId);
     this.rpdbApiKeyCache.delete(userId);
+    this.tmdbApiKeyCache.delete(userId);
     logger.debug(`Cleared API key cache for user ${userId}`);
   }
 
@@ -406,6 +408,105 @@ export class CloudflareConfigManager extends BaseConfigManager {
     }
 
     logger.debug(`No RPDB API key found for user ${userId}`);
+    return null;
+  }
+
+  // Save TMDB API key for a user
+  async saveTMDBApiKey(userId: string, apiKey: string): Promise<boolean> {
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // Initialize the database if not already done
+      await this.initDatabase();
+
+      const now = Date.now();
+
+      // Check if an entry for this user already exists
+      const exists = await this.database
+        .prepare('SELECT 1 FROM tmdb_api_keys WHERE user_id = ?')
+        .bind(userId)
+        .first();
+
+      if (exists) {
+        // Update existing entry
+        await this.database
+          .prepare('UPDATE tmdb_api_keys SET api_key = ?, updated_at = ? WHERE user_id = ?')
+          .bind(apiKey, now, userId)
+          .run();
+      } else {
+        // Add new entry
+        await this.database
+          .prepare(
+            'INSERT INTO tmdb_api_keys (user_id, api_key, created_at, updated_at) VALUES (?, ?, ?, ?)'
+          )
+          .bind(userId, apiKey, now, now)
+          .run();
+      }
+
+      logger.info(`Saved TMDB API key for user ${userId}`);
+
+      // Update cache
+      this.tmdbApiKeyCache.set(userId, apiKey);
+      return true;
+    } catch (error) {
+      // Improved error handling with more detailed information
+      if (error instanceof Error) {
+        logger.error(`Error saving TMDB API key for user ${userId}: ${error.message}`, error);
+      } else {
+        logger.error(`Unknown error saving TMDB API key for user ${userId}:`, error);
+      }
+
+      // Try as fallback to store the API key in the in-memory cache
+      try {
+        this.tmdbApiKeyCache.set(userId, apiKey);
+        logger.info(`Saved TMDB API key for user ${userId} in memory cache as fallback`);
+        return true;
+      } catch (cacheError) {
+        logger.error(`Failed to save TMDB API key in memory cache: ${cacheError}`);
+        return false;
+      }
+    }
+  }
+
+  // Load TMDB API key for a user
+  async loadTMDBApiKey(userId: string): Promise<string | null> {
+    // Check cache first
+    if (this.tmdbApiKeyCache.has(userId)) {
+      const cachedKey = this.tmdbApiKeyCache.get(userId);
+      logger.debug(`Using cached TMDB API key for user ${userId}`);
+      return cachedKey || null;
+    }
+
+    if (!this.database) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // Initialize the database if not already done
+      await this.initDatabase();
+
+      // Get the API key from the database
+      const result = await this.database
+        .prepare('SELECT api_key FROM tmdb_api_keys WHERE user_id = ?')
+        .bind(userId)
+        .first();
+
+      if (result && result.api_key) {
+        const apiKey = result.api_key as string;
+        logger.debug(`Loaded TMDB API key for user ${userId} from database`);
+
+        // Store in cache for future use
+        this.tmdbApiKeyCache.set(userId, apiKey);
+
+        return apiKey;
+      }
+    } catch (error) {
+      logger.error(`Error loading TMDB API key for user ${userId}:`, error);
+    }
+
+    logger.debug(`No TMDB API key found for user ${userId}`);
     return null;
   }
 }
