@@ -157,7 +157,7 @@ export async function handleCatalogRequest(
   userCatalogs: CatalogManifest[],
   randomizedCatalogs: string[] = []
 ): Promise<any> {
-  logger.info(`Handling catalog request with args:`, args);
+  logger.debug(`Handling catalog request with args:`, args);
 
   // Find the target source catalog
   const catalogId = args.id.split('_')[1]; // Extract the original catalog ID

@@ -193,8 +193,13 @@ export async function getAddonInterface(userId: string, db: D1Database) {
       const userCatalogs = await configManager.getAllCatalogs(userId);
       logger.info(`Found ${userCatalogs.length} catalogs for user ${userId}`);
 
+      // Handle default catalog case
       if (!userCatalogs || userCatalogs.length === 0) {
-        logger.info(`User ${userId} has no catalogs configured or they couldn't be loaded`);
+        logger.info(`User ${userId} has no catalogs configured`);
+        if (args.id === 'aiocatalogs-default') {
+          return { metas: [] };
+        }
+        logger.error(`Source ${args.id} not found in user catalogs`);
         return { metas: [] };
       }
 

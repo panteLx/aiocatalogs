@@ -53,7 +53,7 @@ export class CloudflareConfigManager extends BaseConfigManager {
     const now = Date.now();
 
     if (cachedConfig && cachedConfig._cachedAt && now - cachedConfig._cachedAt < 30000) {
-      logger.info(
+      logger.debug(
         `Using cached config for user ${userId} (age: ${(now - cachedConfig._cachedAt) / 1000}s)`
       );
       return cachedConfig;
