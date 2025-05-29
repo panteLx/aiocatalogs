@@ -6,6 +6,7 @@ import { clearAddonCache } from '../../platforms/cloudflare/addon';
 // Direct reference to package.json for version
 // This works because all assets are bundled during the build process
 import packageJson from '../../../package.json';
+import { logger } from '@/core/utils/logger';
 const PACKAGE_VERSION = packageJson.version || 'unknown';
 
 // Helper functions for config page routes
@@ -47,7 +48,7 @@ export async function handleAddCatalog(
       message: `Successfully added catalog: ${manifest.name}`,
     };
   } catch (error) {
-    console.error('Error adding catalog:', error);
+    logger.error('Error adding catalog:', error);
     return {
       success: false,
       error: `Failed to add catalog: ${error}`,
@@ -80,7 +81,7 @@ export async function handleRemoveCatalog(
       message: 'Successfully removed catalog',
     };
   } catch (error) {
-    console.error('Error removing catalog:', error);
+    logger.error('Error removing catalog:', error);
     return {
       success: false,
       error: `Failed to remove catalog: ${error}`,
@@ -113,7 +114,7 @@ export async function handleMoveCatalogUp(
       message: 'Successfully moved catalog up',
     };
   } catch (error) {
-    console.error('Error moving catalog up:', error);
+    logger.error('Error moving catalog up:', error);
     return {
       success: false,
       error: `Failed to move catalog up: ${error}`,
@@ -146,7 +147,7 @@ export async function handleMoveCatalogDown(
       message: 'Successfully moved catalog down',
     };
   } catch (error) {
-    console.error('Error moving catalog down:', error);
+    logger.error('Error moving catalog down:', error);
     return {
       success: false,
       error: `Failed to move catalog down: ${error}`,
@@ -179,7 +180,7 @@ export async function handleToggleRandomize(
       message: 'Successfully toggled randomization',
     };
   } catch (error) {
-    console.error('Error toggling randomization:', error);
+    logger.error('Error toggling randomization:', error);
     return {
       success: false,
       error: `Failed to toggle randomization: ${error}`,
@@ -217,7 +218,7 @@ export async function handleRenameCatalog(
       message: 'Successfully renamed catalog',
     };
   } catch (error) {
-    console.error('Error renaming catalog:', error);
+    logger.error('Error renaming catalog:', error);
     return {
       success: false,
       error: `Failed to rename catalog: ${error}`,
@@ -248,9 +249,9 @@ export const getConfigPage = async (c: any) => {
     let mdblistApiKey = '';
     try {
       mdblistApiKey = (await configManager.loadMDBListApiKey(userId)) || '';
-      console.log(`Loaded MDBList API key for user ${userId} for config page`);
+      logger.debug(`Loaded MDBList API key for user ${userId} for config page`);
     } catch (apiKeyError) {
-      console.warn(`Error loading MDBList API key for user ${userId}:`, apiKeyError);
+      logger.warn(`Error loading MDBList API key for user ${userId}:`, apiKeyError);
       // Ignore errors here as it's not critical
     }
 
@@ -258,9 +259,9 @@ export const getConfigPage = async (c: any) => {
     let rpdbApiKey = '';
     try {
       rpdbApiKey = (await configManager.loadRPDBApiKey(userId)) || '';
-      console.log(`Loaded RPDB API key for user ${userId} for config page`);
+      logger.debug(`Loaded RPDB API key for user ${userId} for config page`);
     } catch (apiKeyError) {
-      console.warn(`Error loading RPDB API key for user ${userId}:`, apiKeyError);
+      logger.warn(`Error loading RPDB API key for user ${userId}:`, apiKeyError);
       // Ignore errors here as it's not critical
     }
 
@@ -285,7 +286,7 @@ export const getConfigPage = async (c: any) => {
       )
     );
   } catch (error) {
-    console.error('Error displaying config page:', error);
+    logger.error('Error displaying config page:', error);
     return c.redirect('/configure?error=Failed to load user configuration');
   }
 };

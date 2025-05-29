@@ -196,7 +196,8 @@ app.post('/configure/load', async c => {
 // Configuration endpoints
 app.get('/configure/:userId', async c => {
   initConfigManager(c);
-  return getConfigPage(c);
+  const userId = c.req.param('userId');
+  return withUserContext(userId, async () => getConfigPage(c));
 });
 
 app.post('/configure/:userId/add', async c => {
@@ -475,18 +476,20 @@ app.get('/:params/manifest.json', async c => {
   }
 
   if (c.env && c.env.DB) {
-    try {
-      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+    return withUserContext(userId, async () => {
+      try {
+        const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
 
-      c.header('Content-Type', 'application/json');
-      c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-      c.header('Pragma', 'no-cache');
-      c.header('Expires', '0');
-      return c.json(addonInterface.manifest);
-    } catch (error) {
-      console.error('Error generating manifest:', error);
-      return c.json({ error: 'Failed to generate manifest' }, 500);
-    }
+        c.header('Content-Type', 'application/json');
+        c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        c.header('Pragma', 'no-cache');
+        c.header('Expires', '0');
+        return c.json(addonInterface.manifest);
+      } catch (error) {
+        console.error('Error generating manifest:', error);
+        return c.json({ error: 'Failed to generate manifest' }, 500);
+      }
+    });
   } else {
     return c.json({ error: 'Database not available' }, 500);
   }
@@ -512,29 +515,31 @@ app.get('/:params/:resource/:type/:id\\.json', async c => {
   }
 
   if (c.env && c.env.DB) {
-    try {
-      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+    return withUserContext(userId, async () => {
+      try {
+        const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
 
-      // Handle different resource types
-      let result;
-      if (resource === 'catalog') {
-        result = await addonInterface.catalog({ type, id });
-      } else if (resource === 'meta') {
-        result = await addonInterface.meta();
-      } else if (resource === 'stream') {
-        result = await addonInterface.stream();
-      } else {
-        return c.json({ error: 'Resource not supported' }, 404);
+        // Handle different resource types
+        let result;
+        if (resource === 'catalog') {
+          result = await addonInterface.catalog({ type, id });
+        } else if (resource === 'meta') {
+          result = await addonInterface.meta();
+        } else if (resource === 'stream') {
+          result = await addonInterface.stream();
+        } else {
+          return c.json({ error: 'Resource not supported' }, 404);
+        }
+
+        c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        c.header('Pragma', 'no-cache');
+        c.header('Expires', '0');
+        return c.json(result);
+      } catch (error) {
+        console.error(`Error in ${resource} endpoint:`, error);
+        return c.json({ error: 'Internal server error' }, 500);
       }
-
-      c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-      c.header('Pragma', 'no-cache');
-      c.header('Expires', '0');
-      return c.json(result);
-    } catch (error) {
-      console.error(`Error in ${resource} endpoint:`, error);
-      return c.json({ error: 'Internal server error' }, 500);
-    }
+    });
   } else {
     return c.json({ error: 'Database not available' }, 500);
   }
@@ -588,25 +593,27 @@ app.get('/configure/:userId/mdblist/:listId/catalog/:type/:id.json', async c => 
   const userId = c.req.param('userId');
 
   if (c.env && c.env.DB) {
-    try {
-      // Verify that the user exists
-      configManager.setDatabase(c.env.DB);
-      const exists = await configManager.userExists(userId);
-      if (!exists) {
-        return c.json({ error: 'User not found' }, 404);
+    return withUserContext(userId, async () => {
+      try {
+        // Verify that the user exists
+        configManager.setDatabase(c.env.DB);
+        const exists = await configManager.userExists(userId);
+        if (!exists) {
+          return c.json({ error: 'User not found' }, 404);
+        }
+
+        const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
+
+        // Use the main catalog handler with the MDBList ID format that our addon understands
+        const catalogId = `mdblist_${listId}`;
+        const result = await addonInterface.handleCatalog(userId, { type, id: catalogId });
+
+        return c.json(result);
+      } catch (error) {
+        console.error(`Error serving MDBList catalog: ${error}`);
+        return c.json({ error: 'Failed to generate catalog' }, 500);
       }
-
-      const addonInterface = await getAddonInterface(userId, c.env.DB as D1Database);
-
-      // Use the main catalog handler with the MDBList ID format that our addon understands
-      const catalogId = `mdblist_${listId}`;
-      const result = await addonInterface.handleCatalog(userId, { type, id: catalogId });
-
-      return c.json(result);
-    } catch (error) {
-      console.error(`Error serving MDBList catalog: ${error}`);
-      return c.json({ error: 'Failed to generate catalog' }, 500);
-    }
+    });
   } else {
     return c.json({ error: 'Database not available' }, 500);
   }
@@ -622,6 +629,16 @@ app.onError((err, c) => {
   console.error('Error:', err);
   return c.text('Internal Server Error', 500);
 });
+
+// User context manager
+async function withUserContext<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+  logger.setUserId(userId);
+  try {
+    return await fn();
+  } finally {
+    logger.clearUserId();
+  }
+}
 
 // Worker export
 export default app;

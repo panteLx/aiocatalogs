@@ -20,6 +20,8 @@ interface LoggerConfig {
   // Timestamp format options
   timestampFormat?: string;
   timezone?: string;
+  // Context options
+  userId?: string;
 }
 
 // Default configurations for different environments
@@ -201,6 +203,20 @@ export class Logger {
   }
 
   /**
+   * Set the userId for the current context
+   */
+  public setUserId(userId: string): void {
+    this.config.userId = userId;
+  }
+
+  /**
+   * Clear the userId from the current context
+   */
+  public clearUserId(): void {
+    this.config.userId = undefined;
+  }
+
+  /**
    * Format a log message with timestamp and log level
    */
   private formatMessage(message: string, logLevel: LogLevel): string {
@@ -215,8 +231,13 @@ export class Logger {
       parts.push(`[${formattedDate}]`);
     }
 
-    // Add log level instead of prefix
+    // Add log level
     parts.push(`[${LogLevel[logLevel]}]`);
+
+    // Add userId if available
+    if (this.config.userId) {
+      parts.push(`[${this.config.userId}]`);
+    }
 
     parts.push(message);
     return parts.join(' ');
@@ -280,7 +301,7 @@ export class Logger {
       const actualError = args.find(arg => arg instanceof Error);
       const messageForDiscord = this.formatArgs(args.filter(arg => !(arg instanceof Error)));
 
-      logErrorToDiscord(messageForDiscord, actualError).catch((err: Error) => {
+      logErrorToDiscord(messageForDiscord, actualError, this.config.userId).catch((err: Error) => {
         console.error('Failed to send error to Discord:', err);
       });
     }

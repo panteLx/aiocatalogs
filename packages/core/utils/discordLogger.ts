@@ -5,15 +5,59 @@ interface DiscordLoggerConfig {
   channelId?: string;
   botName?: string;
   botAvatar?: string;
+  timestampFormat?: string;
+  timezone?: string;
 }
 
 class DiscordLogger {
   private config: DiscordLoggerConfig;
   private isEnabled: boolean = false;
+  private userId?: string;
 
   constructor(config: DiscordLoggerConfig) {
-    this.config = config;
+    this.config = {
+      ...config,
+      timestampFormat: config.timestampFormat || 'yyyy-MM-dd HH:mm:ss',
+      timezone: config.timezone || 'UTC',
+    };
     this.isEnabled = !!config.webhookUrl;
+  }
+
+  /**
+   * Set the user ID for the current context
+   */
+  public setUserId(userId: string): void {
+    this.userId = userId;
+  }
+
+  /**
+   * Format timestamp according to the specified format and timezone
+   */
+  private formatTimestamp(): string {
+    const now = new Date();
+    const localDate = new Date(now.toLocaleString('en-US', { timeZone: this.config.timezone }));
+
+    // Apply timezone offset difference
+    const timezoneOffsetDiff = now.getTimezoneOffset() - localDate.getTimezoneOffset();
+    localDate.setMinutes(localDate.getMinutes() + timezoneOffsetDiff);
+
+    let format = this.config.timestampFormat as string;
+    const year = String(localDate.getFullYear());
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    const hours = String(localDate.getHours()).padStart(2, '0');
+    const minutes = String(localDate.getMinutes()).padStart(2, '0');
+    const seconds = String(localDate.getSeconds()).padStart(2, '0');
+
+    let result = format;
+    result = result.replace(/yyyy|YYYY/g, year);
+    result = result.replace(/MM/g, month);
+    result = result.replace(/dd|DD/g, day);
+    result = result.replace(/HH|hh/g, hours);
+    result = result.replace(/mm/g, minutes);
+    result = result.replace(/ss/g, seconds);
+
+    return result;
   }
 
   /**
@@ -53,7 +97,10 @@ class DiscordLogger {
   public async logError(message: string, error?: any): Promise<void> {
     if (!this.isEnabled) return;
 
-    let formattedMessage = `\n\`\`\`\n${message}\n\`\`\``;
+    const timestamp = this.formatTimestamp();
+    const userIdStr = this.userId ? `[${this.userId}] ` : '';
+
+    let formattedMessage = `[${timestamp}] ${userIdStr}\n\`\`\`\n${message}\n\`\`\``;
 
     if (error) {
       const errorDetails =
@@ -74,7 +121,13 @@ let discordLoggerInstance: DiscordLogger | null = null;
  * Initialize the Discord logger with configuration
  */
 export async function initDiscordLogger(config: DiscordLoggerConfig): Promise<void> {
-  discordLoggerInstance = new DiscordLogger(config);
+  // Pass timestamp settings from main logger
+  const extendedConfig: DiscordLoggerConfig = {
+    ...config,
+    timestampFormat: logger.getTimestampFormat(),
+    timezone: logger.getTimezone(),
+  };
+  discordLoggerInstance = new DiscordLogger(extendedConfig);
   logger.debug('Discord logger initialized');
 
   // Send test message
@@ -101,8 +154,15 @@ export function getDiscordLogger(): DiscordLogger {
 /**
  * Log an error to Discord
  */
-export async function logErrorToDiscord(message: string, error?: any): Promise<void> {
+export async function logErrorToDiscord(
+  message: string,
+  error?: any,
+  userId?: string
+): Promise<void> {
   if (discordLoggerInstance) {
+    if (userId) {
+      discordLoggerInstance.setUserId(userId);
+    }
     await discordLoggerInstance.logError(message, error);
   }
 }
