@@ -94,4 +94,25 @@ export const appConfig = {
      */
     timezone: getEnv('LOG_TIMEZONE', 'UTC'),
   },
+
+  /**
+   * Discord configuration
+   */
+  discord: {
+    /**
+     * Discord webhook URL
+     * @default ''
+     */
+    webhookUrl: getEnv('DISCORD_WEBHOOK_URL', ''),
+    /**
+     * Discord bot name
+     * @default ''
+     */
+    botName: getEnv('DISCORD_BOT_NAME', 'AIOCatalogs - Error Logger'),
+    /**
+     * Discord bot avatar
+     * @default ''
+     */
+    botAvatar: getEnv('DISCORD_BOT_AVATAR', ''),
+  },
 };

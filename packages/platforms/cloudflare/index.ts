@@ -10,6 +10,7 @@ import { logger, initLogger } from '../../core/utils/logger';
 import { appConfig } from './appConfig';
 import { fetchMDBListCatalog, fetchListDetails } from '../../core/utils/mdblist';
 import { saveRPDBConfig } from '../../api/routes/rpdbRoutes';
+import { initDiscordLogger } from '../../core/utils/discordLogger';
 
 // Configuration page (imported from separate file)
 import {
@@ -35,6 +36,24 @@ initLogger(appConfig);
 
 // Create Hono App with Bindings type parameter
 const app = new Hono<{ Bindings: Env }>();
+
+// Initialize Discord logger in middleware
+let discordLoggerInitialized = false;
+app.use('*', async (c, next) => {
+  if (!discordLoggerInitialized) {
+    try {
+      await initDiscordLogger({
+        webhookUrl: appConfig.discord.webhookUrl || '',
+        botName: appConfig.discord.botName,
+        botAvatar: appConfig.discord.botAvatar,
+      });
+      discordLoggerInitialized = true;
+    } catch (error) {
+      logger.error('Failed to initialize Discord logger:', error);
+    }
+  }
+  await next();
+});
 
 // Enable CORS middleware
 app.use('*', cors());

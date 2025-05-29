@@ -2,6 +2,8 @@
  * Consolidated logger utility with configuration and initialization
  */
 
+import { logErrorToDiscord } from './discordLogger';
+
 // Log levels in order of severity
 export enum LogLevel {
   DEBUG = 0,
@@ -270,7 +272,17 @@ export class Logger {
    */
   public error(...args: any[]): void {
     if (this.config.level <= LogLevel.ERROR) {
-      console.error(this.formatMessage(this.formatArgs(args), LogLevel.ERROR));
+      const message = this.formatMessage(this.formatArgs(args), LogLevel.ERROR);
+      console.error(message);
+
+      // Send to Discord if available
+      // Extract error object and message separately
+      const actualError = args.find(arg => arg instanceof Error);
+      const messageForDiscord = this.formatArgs(args.filter(arg => !(arg instanceof Error)));
+
+      logErrorToDiscord(messageForDiscord, actualError).catch((err: Error) => {
+        console.error('Failed to send error to Discord:', err);
+      });
     }
   }
 }
