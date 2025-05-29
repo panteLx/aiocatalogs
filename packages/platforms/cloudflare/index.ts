@@ -632,11 +632,16 @@ app.onError((err, c) => {
 
 // User context manager
 async function withUserContext<T>(userId: string, fn: () => Promise<T>): Promise<T> {
-  logger.setUserId(userId);
+  // Only set user ID if the logger supports it
+  if (typeof logger.setUserId === 'function') {
+    logger.setUserId(userId);
+  }
   try {
     return await fn();
   } finally {
-    logger.clearUserId();
+    if (typeof logger.clearUserId === 'function') {
+      logger.clearUserId();
+    }
   }
 }
 

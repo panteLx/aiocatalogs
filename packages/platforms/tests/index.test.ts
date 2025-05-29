@@ -24,6 +24,36 @@ vi.mock('hono/cors', () => ({
   cors: vi.fn(() => vi.fn()),
 }));
 
+vi.mock('../../core/utils/logger', async () => {
+  const mockLogger = {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    setUserId: vi.fn(),
+    clearUserId: vi.fn(),
+    getLevel: vi.fn(),
+    setLevel: vi.fn(),
+    getTimestampFormat: vi.fn(),
+    setTimestampFormat: vi.fn(),
+    getTimezone: vi.fn(),
+    setTimezone: vi.fn(),
+    getTimestampEnabled: vi.fn(),
+    enableTimestamp: vi.fn(),
+  };
+  return {
+    logger: mockLogger,
+    LogLevel: {
+      DEBUG: 0,
+      INFO: 1,
+      WARN: 2,
+      ERROR: 3,
+      SILENT: 4,
+    },
+    initLogger: vi.fn(),
+  };
+});
+
 vi.mock('../cloudflare/configManager', () => ({
   configManager: {
     setDatabase: vi.fn(),
