@@ -97,6 +97,11 @@ app.get('/', async c => {
   return c.redirect('/configure');
 });
 
+app.get('/configure/default', async c => {
+  // Redirect from /configure/default to /configure
+  return c.redirect('/configure?noRedirect=true');
+});
+
 // Add redirection route for JSON-formatted userId parameter
 app.get('/:jsonParams/configure', async c => {
   try {

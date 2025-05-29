@@ -78,14 +78,14 @@ export async function initDiscordLogger(config: DiscordLoggerConfig): Promise<vo
   logger.debug('Discord logger initialized');
 
   // Send test message
-  if (discordLoggerInstance) {
-    try {
-      await discordLoggerInstance.logError('🔔 Test Message: Discord Logger Connection Successful');
-      logger.debug('Discord logger test message sent successfully');
-    } catch (error) {
-      console.error('Failed to send Discord logger test message:', error);
-    }
-  }
+  // if (discordLoggerInstance) {
+  //   try {
+  //     await discordLoggerInstance.logError('🔔 Test Message: Discord Logger Connection Successful');
+  //     logger.debug('Discord logger test message sent successfully');
+  //   } catch (error) {
+  //     console.error('Failed to send Discord logger test message:', error);
+  //   }
+  // }
 }
 
 /**

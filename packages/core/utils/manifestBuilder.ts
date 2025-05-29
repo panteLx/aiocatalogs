@@ -167,6 +167,9 @@ export async function handleCatalogRequest(
   const source = userCatalogs.find(c => c.id === sourceId);
 
   if (!source) {
+    if (sourceId == 'aiocatalogs-default') {
+      return { metas: [] };
+    }
     logger.error(`Source ${sourceId} not found in user catalogs`);
     return { metas: [] };
   }
