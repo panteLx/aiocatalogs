@@ -31,26 +31,46 @@ import {
   saveMDBListConfig,
 } from '../../api/routes/mdblistRoutes';
 
-// Initialize logger with appConfig
-initLogger(appConfig);
-
 // Create Hono App with Bindings type parameter
 const app = new Hono<{ Bindings: Env }>();
 
-// Initialize Discord logger in middleware
-let discordLoggerInitialized = false;
-app.use('*', async (c, next) => {
-  if (!discordLoggerInitialized) {
-    try {
+// Initialization state tracking
+let isInitialized = false;
+
+/**
+ * Initialize application services
+ * This ensures we only try to initialize services once at startup
+ */
+async function initializeServices() {
+  if (isInitialized) return;
+
+  try {
+    // Initialize core logger
+    initLogger(appConfig);
+
+    // Initialize Discord logger if configured
+    if (appConfig.discord.webhookUrl) {
       await initDiscordLogger({
-        webhookUrl: appConfig.discord.webhookUrl || '',
+        webhookUrl: appConfig.discord.webhookUrl,
         botName: appConfig.discord.botName,
         botAvatar: appConfig.discord.botAvatar,
       });
-      discordLoggerInitialized = true;
-    } catch (error) {
-      logger.error('Failed to initialize Discord logger:', error);
+    } else {
+      logger.warn('Discord logging is disabled - no webhook URL configured');
     }
+
+    isInitialized = true;
+    logger.info('Application services initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize application services:', error);
+    throw error; // Re-throw to handle in the request handler
+  }
+}
+
+// Main middleware to ensure initialization
+app.use('*', async (c, next) => {
+  if (!isInitialized) {
+    await initializeServices();
   }
   await next();
 });
