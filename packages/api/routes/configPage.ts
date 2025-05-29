@@ -6,7 +6,7 @@ import { clearAddonCache } from '../../platforms/cloudflare/addon';
 // Direct reference to package.json for version
 // This works because all assets are bundled during the build process
 import packageJson from '../../../package.json';
-import { logger } from '@/core/utils/logger';
+import { logger } from '../../core/utils/logger';
 const PACKAGE_VERSION = packageJson.version || 'unknown';
 
 // Helper functions for config page routes
