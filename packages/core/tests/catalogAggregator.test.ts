@@ -111,7 +111,7 @@ describe('BaseCatalogAggregator', () => {
       const result = await aggregator.fetchCatalogManifest('https://example.com/addon');
 
       expect(result?.catalogs).toHaveLength(1);
-      expect(result?.catalogs[0].id).toBe('movieCatalog');
+      expect(result?.catalogs[0].id).toBe('movieCatalog.movie');
     });
 
     it('should return null for a failed fetch', async () => {

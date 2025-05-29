@@ -112,7 +112,7 @@ describe('CatalogAggregator', () => {
 
       // Should have only one catalog (filtering out the two search catalogs)
       expect(result?.catalogs.length).toBe(1);
-      expect(result?.catalogs[0].id).toBe('movie_catalog');
+      expect(result?.catalogs[0].id).toBe('movie_catalog.movie');
     });
 
     it('should store provided context in the catalog manifest', async () => {
@@ -155,7 +155,7 @@ describe('CatalogAggregator', () => {
       expect(result?.description).toBe('Catalog from https://example.com/addon');
       expect(result?.version).toBe('0.0.1');
       expect(result?.resources).toEqual(['catalog']);
-      expect(result?.types).toEqual(['movie', 'series']);
+      expect(result?.types).toEqual(['movie']);
     });
 
     it('should handle failed fetch requests', async () => {
