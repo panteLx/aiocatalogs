@@ -26,7 +26,7 @@ export function getAddonInstallationHTML(userId: string, baseUrl: string): strin
             <polyline points="3.29 7 12 12 20.71 7"></polyline>
             <line x1="12" y1="22" x2="12" y2="12"></line>
           </svg>
-          Install Your Addon
+          Install your Addon
         </h2>
       </div>
 
@@ -59,10 +59,25 @@ export function getAddonInstallationHTML(userId: string, baseUrl: string): strin
                 ${manifestUrl}
               </div>
               <button
-                class="flex-shrink-0 inline-flex items-center justify-center whitespace-nowrap rounded-r-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-secondary hover:bg-accent hover:text-accent-foreground h-auto px-3"
+                class="flex-shrink-0 inline-flex items-center justify-center whitespace-nowrap rounded-r-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-secondary hover:bg-accent hover:text-accent-foreground h-auto px-3 relative group"
                 type="button"
-                onclick="navigator.clipboard.writeText('${manifestUrl}'); this.classList.add('bg-primary'); this.classList.add('text-primary-foreground'); setTimeout(() => {this.classList.remove('bg-primary'); this.classList.remove('text-primary-foreground');}, 1000)"
+                onclick="
+                  navigator.clipboard.writeText('${manifestUrl}');
+                  const tooltip = this.querySelector('.copy-tooltip');
+                  tooltip.classList.remove('hidden');
+                  tooltip.classList.add('opacity-100');
+                  this.classList.add('bg-primary', 'text-primary-foreground');
+                  setTimeout(() => {
+                    tooltip.classList.remove('opacity-100');
+                    tooltip.classList.add('opacity-0');
+                    this.classList.remove('bg-primary', 'text-primary-foreground');
+                    setTimeout(() => tooltip.classList.add('hidden'), 200);
+                  }, 1000)
+                "
               >
+                <div class="copy-tooltip hidden opacity-0 transition-opacity duration-200 absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-primary text-primary-foreground text-xs rounded shadow-lg whitespace-nowrap">
+                  Copied!
+                </div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
                   <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                   <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
