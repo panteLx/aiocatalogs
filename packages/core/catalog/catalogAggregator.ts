@@ -65,18 +65,32 @@ export abstract class BaseCatalogAggregator {
         return null;
       }
 
-      // Filter out catalogs with 'search' in their ID as they don't contain content
-      const filteredCatalogs = manifest.catalogs.filter(
-        (cat: { id: string }) => !cat.id.toLowerCase().includes('search')
-      );
+      // Filter out search catalogs and ensure both movie and series catalogs are preserved
+      // Also ensure unique IDs by combining id and type
+      const filteredCatalogs = manifest.catalogs
+        .filter((cat: { id: string; type: string }) => {
+          // Don't include search catalogs
+          if (cat.id.toLowerCase().includes('search')) {
+            return false;
+          }
+          // Include both movie and series catalogs
+          return cat.type === 'movie' || cat.type === 'series';
+        })
+        .map((cat: { id: string; type: string; name: string }) => ({
+          ...cat,
+          id: `${cat.id}.${cat.type}`, // Make ID unique by appending the type
+        }));
 
       if (manifest.catalogs.length !== filteredCatalogs.length) {
         logger.info(
-          `Filtered out ${manifest.catalogs.length - filteredCatalogs.length} search catalogs from ${manifest.name}`
+          `Filtered out ${manifest.catalogs.length - filteredCatalogs.length} catalogs from ${manifest.name}`
         );
       }
 
+      logger.debug(`Processed catalogs with unique IDs:`, filteredCatalogs);
+
       // Create a CatalogManifest object
+      const uniqueTypes = Array.from(new Set(filteredCatalogs.map(cat => cat.type)));
       const catalogManifest: CatalogManifest = {
         id: manifest.id,
         name: manifest.name,
@@ -84,7 +98,7 @@ export abstract class BaseCatalogAggregator {
         endpoint: endpoint,
         version: manifest.version || '0.0.1',
         resources: manifest.resources || ['catalog'],
-        types: manifest.types || ['movie', 'series'],
+        types: uniqueTypes.length > 0 ? uniqueTypes : ['movie', 'series'], // Use actual types from catalogs
         catalogs: filteredCatalogs,
         idPrefixes: manifest.idPrefixes,
         behaviorHints: manifest.behaviorHints,
