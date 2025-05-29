@@ -15,6 +15,7 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
       const isRandomized = catalog.randomize === true;
       const displayName = catalog.customName || catalog.name;
       const isCustomNamed = !!catalog.customName;
+      const TMDB_ADDON_ID = 'tmdb-addon';
 
       return `
     <div class="catalog-item flex items-start gap-3 group" data-draggable="true" data-catalog-id="${catalog.id}" data-catalog-index="${index}">
@@ -78,7 +79,7 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
           </div>
         </div>
         ${
-          catalog.id === 'tmdb-addon'
+          catalog.id === TMDB_ADDON_ID
             ? `
         <div class="mt-4 bg-destructive/10 rounded px-3 py-2 border border-destructive"> 
           <p class="text-sm text-muted-foreground">
