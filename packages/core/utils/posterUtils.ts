@@ -37,8 +37,14 @@ export function getPosterUrl(
       return cachedItem.url;
     }
 
+    // Determine if the ID is for TMDB or IMDB
+    const idType = mediaId.startsWith('tmdb') ? 'tmdb' : 'imdb';
+
+    // Remove the 'tmdb' prefix if it exists
+    const idValue = mediaId.startsWith('tmdb') ? mediaId.replace('tmdb:', '') : mediaId;
+
     // Construct the RPDB URL
-    const rpdbUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/imdb/poster-default/${mediaId}.jpg?fallback=true`;
+    const rpdbUrl = `https://api.ratingposterdb.com/${rpdbApiKey}/${idType}/poster-default/${idValue}.jpg?fallback=true`;
 
     logger.debug(`Replacing poster URL: ${originalUrl} with RPDB URL: ${rpdbUrl}`);
 

@@ -89,7 +89,7 @@ export function getAddonInstallationHTML(userId: string, baseUrl: string): strin
           </p>
         </div>
 
-        <div class="flex items-start gap-2 p-3 rounded-md bg-accent/10 border border-l-4 border-l-primary">
+        <div class="flex items-start gap-2 p-3 bg-destructive/10 rounded border border-destructive">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary mt-0.5">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" x2="12" y1="8" y2="12"></line>

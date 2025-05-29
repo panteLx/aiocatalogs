@@ -77,6 +77,19 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
             </form>
           </div>
         </div>
+        ${
+          catalog.id === 'tmdb-addon'
+            ? `
+        <div class="mt-4 bg-destructive/10 rounded px-3 py-2 border border-destructive"> 
+          <p class="text-sm text-muted-foreground">
+            <strong class="text-foreground">Important:</strong> You must have the <a target="_blank" class="text-primary hover:underline" href="https://94c8cb9f702d-tmdb-addon.baby-beamup.club/">TMDB addon</a> installed on your streaming platform <strong class="text-foreground">without</strong> activated catalogs for this catalog to work properly, as AIOCatalogs itself does not provide metadata.<br>
+            You can install the configured TMDB addon by copy pasting the link below:<br>
+            <a target="_blank" href="https://tmdb.elfhosted.com/%7B%22language%22%3A%22en-US%22%2C%22streaming%22%3A%5B%5D%2C%22catalogs%22%3A%5B%5D%2C%22searchEnabled%22%3A%22false%22%7D/manifest.json" class="text-primary hover:underline">TMDB addon manifest with all catalogs turned off</a>
+          </p>
+        </div>
+        `
+            : ''
+        }
         <div id="rename-form-${catalog.id}" class="rename-form hidden mt-2 p-3 border border-border rounded-md bg-muted/30">
           <form method="POST" action="/configure/${userId}/rename" class="flex items-center gap-2" accept-charset="UTF-8">
             <input type="hidden" name="catalogId" value="${catalog.id}">
