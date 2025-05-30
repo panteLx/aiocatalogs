@@ -79,11 +79,9 @@ export abstract class BaseConfigManager {
     }
 
     // Add randomize flag to catalogs
-    if (config.randomizedCatalogs && config.randomizedCatalogs.length > 0) {
+    if (config.randomizedCatalogs) {
       for (const catalog of config.catalogs) {
-        if (config.randomizedCatalogs.includes(catalog.id)) {
-          (catalog as any).randomize = true;
-        }
+        (catalog as any).randomize = config.randomizedCatalogs.includes(catalog.id);
       }
     }
 

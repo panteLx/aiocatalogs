@@ -58,10 +58,17 @@ export function getCatalogListHTML(userId: string, catalogs: any[]): string {
             `
                 : ''
             }
+
+            ${
+              catalog.id !== TMDB_ADDON_ID
+                ? `
             <button type="button" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-3 py-2" onclick="toggleRenameForm('${catalog.id}')">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
               Rename
             </button>
+            `
+                : ''
+            }
             <form method="POST" action="/configure/${userId}/toggleRandomize" class="flex-shrink-0">
               <input type="hidden" name="catalogId" value="${catalog.id}">
               <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${isRandomized ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'} h-9 px-3 py-2">
