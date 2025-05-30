@@ -6,7 +6,7 @@
  */
 import { getHTMLHead, getBodyOpeningHTML, getBodyClosingHTML } from './pageStructureComponents';
 import { getConfigPageHeaderHTML } from './configPageHeader';
-import { getFeaturedBannerHTML } from './featureComponent';
+import { getFeaturedBannerHTML } from './featuredComponent';
 import { getAddCatalogFormHTML } from './addCatalogComponent';
 import { getCatalogListHTML } from './catalogListComponent';
 import { getMDBListApiConfigHTML } from './mdblistComponent';
