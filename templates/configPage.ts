@@ -6,7 +6,7 @@
  */
 import { getHTMLHead, getBodyOpeningHTML, getBodyClosingHTML } from './pageStructureComponents';
 import { getConfigPageHeaderHTML } from './configPageHeader';
-import { getSponsorBannerHTML } from './sponsorComponent';
+import { getFeaturedBannerHTML } from './featureComponent';
 import { getAddCatalogFormHTML } from './addCatalogComponent';
 import { getCatalogListHTML } from './catalogListComponent';
 import { getMDBListApiConfigHTML } from './mdblistComponent';
@@ -41,8 +41,8 @@ export function getConfigPageHTML(
     ${getBodyOpeningHTML(userId)}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       ${getConfigPageHeaderHTML(userId)}
-      ${getSponsorBannerHTML()}
-      
+      ${getFeaturedBannerHTML()}
+
       <div class="grid gap-8 md:grid-cols-12">
         <div class="md:col-span-12 lg:col-span-8 space-y-6">
           ${getAddCatalogFormHTML(userId)}

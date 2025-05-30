@@ -1,11 +1,11 @@
 /**
- * Sponsor banner component for the configuration page
+ * Featured banner component for the configuration page
  */
 
 /**
- * Creates the HTML for the sponsor banner section with alternating content
+ * Creates the HTML for the featured banner section with alternating content
  */
-export function getSponsorBannerHTML(): string {
+export function getFeaturedBannerHTML(): string {
   return `
   <style>
     .banner-container > div {
