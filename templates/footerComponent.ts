@@ -7,11 +7,19 @@ import { appConfig } from '../packages/platforms/cloudflare/appConfig';
  * Creates the HTML for the footer section
  */
 export function getFooterHTML(packageVersion: string): string {
+  // Sanitize configuration values to prevent script injection
+  const sanitizedBaseUrl = appConfig.chatwoot.baseUrl
+    ? appConfig.chatwoot.baseUrl.replace(/['"<>]/g, '')
+    : '';
+  const sanitizedWebsiteToken = appConfig.chatwoot.websiteToken
+    ? appConfig.chatwoot.websiteToken.replace(/['"<>]/g, '')
+    : '';
+
   const chatwootScript = `
   <script>
     window.chatwootSettings = {"position":"right","type":"expanded_bubble","launcherTitle":"Chat with us"};
     (function(d,t) {
-      var BASE_URL="${appConfig.chatwoot.baseUrl}";
+      var BASE_URL="${sanitizedBaseUrl}";
       var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
       g.src=BASE_URL+"/packs/js/sdk.js";
       g.defer = true;
@@ -19,7 +27,7 @@ export function getFooterHTML(packageVersion: string): string {
       s.parentNode.insertBefore(g,s);
       g.onload=function(){
         window.chatwootSDK.run({
-          websiteToken: '${appConfig.chatwoot.websiteToken}',
+          websiteToken: '${sanitizedWebsiteToken}',
           baseUrl: BASE_URL
         })
       }
