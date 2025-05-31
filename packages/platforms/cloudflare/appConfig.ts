@@ -115,4 +115,27 @@ export const appConfig = {
      */
     botAvatar: getEnv('DISCORD_BOT_AVATAR', ''),
   },
+
+  /**
+   * Chatwoot configuration
+   */
+  chatwoot: {
+    /**
+     * Enable Chatwoot integration
+     * @default false
+     */
+    enabled: getEnvAsBoolean('CHATWOOT_ENABLED', false),
+
+    /**
+     * Chatwoot base URL
+     * @default 'https://support.example.com'
+     */
+    baseUrl: getEnv('CHATWOOT_BASE_URL', 'https://support.example.com'),
+
+    /**
+     * Chatwoot website token
+     * @default 'xxx-xxx-xxx-xxx'
+     */
+    websiteToken: getEnv('CHATWOOT_WEBSITE_TOKEN', 'xxx-xxx-xxx-xxx'),
+  },
 };

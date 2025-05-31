@@ -35,6 +35,10 @@ LOG_TIMEZONE = "Europe/Berlin"
 DISCORD_BOT_NAME = "AIOCatalogs - Error Logger" # Optional: Custom name for the bot
 DISCORD_BOT_AVATAR = "https://i.imgur.com/fRPYeIV.png" # Optional: Custom avatar URL
 
+CHATWOOT_ENABLED = "true" # Enable Chatwoot Live Support chat
+CHATWOOT_BASE_URL= "https://support.pantelx.com" # Chatwoot Support Base URL
+# CHATWOOT_WEBSITE_TOKEN= "" # Add encrypted value to your Cloudflare worker instance
+
 # D1-Database for the production environment
 [[d1_databases]]
 binding = "DB"
@@ -63,6 +67,10 @@ LOG_TIMEZONE = "Europe/Berlin"
 # DISCORD_WEBHOOK_URL = "" # Add encrypted value to your Cloudflare worker instance
 DISCORD_BOT_NAME = "AIOCatalogs - Error Logger" # Optional: Custom name for the bot
 DISCORD_BOT_AVATAR = "https://i.imgur.com/fRPYeIV.png" # Optional: Custom avatar URL
+
+CHATWOOT_ENABLED = "true" # Enable Chatwoot Live Support chat
+CHATWOOT_BASE_URL= "https://support.pantelx.com" # Chatwoot Support Base URL
+# CHATWOOT_WEBSITE_TOKEN= "" # Add encrypted value to your Cloudflare worker instance
 
 # D1-Database for the development environment
 [[env.dev.d1_databases]]
