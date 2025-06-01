@@ -1,10 +1,22 @@
-name = "aiocatalogs"
-pages_build_output_dir = ".vercel/output/static"
+name = "aiocatalogs-v2"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
+main = ".open-next/worker.js"
+workers_dev = false
+
+[observability]
+enabled = true
+head_sampling_rate = 1 
+
+[placement]
+mode = "smart"
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 
 [[ d1_databases ]]
 binding = "DB"
 database_name = ""
 database_id = ""
-migrations_dir = "drizzle"
+migrations_dir = "migrations"

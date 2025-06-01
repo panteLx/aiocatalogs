@@ -22,9 +22,21 @@ import { ZodError } from "zod";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
+import { type D1Database } from '@cloudflare/workers-types';
+import { D1Service } from '~/server/db/d1';
+
+export const createTRPCContext = async (opts: { 
+  headers: Headers;
+  env?: {
+    DB: D1Database;
+  };
+}) => {
+  // Initialize D1 service if DB is available in the environment
+  const d1Service = opts.env?.DB ? new D1Service(opts.env.DB) : undefined;
+  
   return {
     ...opts,
+    d1Service,
   };
 };
 
