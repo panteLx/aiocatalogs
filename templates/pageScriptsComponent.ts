@@ -49,6 +49,70 @@ export function getPageScriptsHTML(message: string = '', error: string = ''): st
       ${message ? `showToast("${message}", "success");` : ''}
       ${error ? `showToast("${error}", "error");` : ''}
 
+      const importWatchlistBtn = document.getElementById('importMDBListWatchlistBtn');
+      const mdblistApiKeyInput = document.getElementById('mdblistApiKeyInput');
+
+      if (importWatchlistBtn && mdblistApiKeyInput) {
+        // Enable/disable import button based on API key input presence
+        function toggleImportWatchlistButtonState() {
+          if (mdblistApiKeyInput.value.trim() !== '') {
+            importWatchlistBtn.disabled = false;
+            importWatchlistBtn.title = '';
+          } else {
+            importWatchlistBtn.disabled = true;
+            importWatchlistBtn.title = 'Enter and save an MDBList API key first to import watchlist.';
+          }
+        }
+
+        // Initial state check
+        toggleImportWatchlistButtonState();
+        // Check on keyup as well
+        mdblistApiKeyInput.addEventListener('keyup', toggleImportWatchlistButtonState);
+
+
+        importWatchlistBtn.addEventListener('click', async function() {
+          if (!userId) {
+            showToast('User ID not found. Cannot import watchlist.', 'error');
+            return;
+          }
+          // Check if API key is present in the input field, as it might have been entered but not saved
+          const currentApiKey = mdblistApiKeyInput.value.trim();
+          if (!currentApiKey) {
+            showToast('MDBList API key is required to import watchlist. Please enter and save it first.', 'error');
+            return;
+          }
+
+          this.disabled = true; // Disable button during processing
+          this.innerHTML = '<svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">...</svg>Importing...'; // Basic loading indicator
+
+          try {
+            const response = await fetch(\`/configure/\${userId}/mdblist/import-watchlist\`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+                // No body needed if API key is read from server-side config
+              },
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+              showToast(result.message || 'Watchlist imported successfully! Reloading to see changes.', 'success');
+              // Consider a less disruptive update if possible, but reload is simplest for now
+              setTimeout(() => window.location.reload(), 2000);
+            } else {
+              showToast(result.error || 'Failed to import watchlist.', 'error');
+            }
+          } catch (err) {
+            showToast('An error occurred while trying to import the watchlist.', 'error');
+            console.error('Import watchlist error:', err);
+          } finally {
+            this.disabled = false; // Re-enable button
+            this.innerHTML = '<svg>...</svg>Import Watchlist'; // Restore original button text/icon
+          }
+        });
+      }
+
       // Check if it's a mobile device
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
       
