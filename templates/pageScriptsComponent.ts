@@ -107,8 +107,8 @@ export function getPageScriptsHTML(message: string = '', error: string = ''): st
             showToast('An error occurred while trying to import the watchlist.', 'error');
             console.error('Import watchlist error:', err);
           } finally {
-            this.disabled = false; // Re-enable button
-            this.innerHTML = '<svg>...</svg>Import Watchlist'; // Restore original button text/icon
+            this.disabled = true;
+            this.innerHTML = 'Imported Successfully';
           }
         });
       }

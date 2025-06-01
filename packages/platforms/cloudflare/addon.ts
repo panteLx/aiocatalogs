@@ -45,10 +45,10 @@ async function processMDBListCatalog(
       } else if (typeSegment === 'series') {
         filteredMetas = watchlistData.metas.filter(m => m.type === 'series');
       } else {
-        // If type segment is unknown, maybe return all or log a warning
         logger.warn(
-          `Unknown type segment '${typeSegment}' for watchlist. Returning all watchlist items.`
+          `Invalid type segment '${typeSegment}' for watchlist. Expected 'movies' or 'series'. Returning empty metas.`
         );
+        return { metas: [] };
       }
 
       const rpdbApiKey = await loadUserRPDBApiKey(userId);
