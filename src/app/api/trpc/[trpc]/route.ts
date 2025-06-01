@@ -31,6 +31,4 @@ const handler = (req: NextRequest) =>
         : undefined,
   });
 
-export const runtime = "edge";
-
 export { handler as GET, handler as POST };

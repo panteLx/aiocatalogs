@@ -11,11 +11,14 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.1.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-query": "^5.69.0",
     "@trpc/client": "^11.0.0",
@@ -30,7 +33,6 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.12",
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.0.15",
     "@types/node": "^20.14.10",
@@ -45,7 +47,8 @@
     "tailwindcss": "^4.0.15",
     "tsx": "^4.19.4",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.27.0"
+    "typescript-eslint": "^8.27.0",
+    "wrangler": "^4.18.0"
   },
   "ct3aMetadata": {
     "initVersion": "7.39.3"
