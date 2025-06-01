@@ -1,0 +1,10 @@
+name = "aiocatalogs"
+pages_build_output_dir = ".vercel/output/static"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[[ d1_databases ]]
+binding = "DB"
+database_name = ""
+database_id = ""
+migrations_dir = "drizzle"

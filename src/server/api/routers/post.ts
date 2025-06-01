@@ -1,7 +1,18 @@
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { posts } from "~/server/db/schema";
+
+// Mocked DB
+interface Post {
+  id: number;
+  name: string;
+}
+const posts: Post[] = [
+  {
+    id: 1,
+    name: "Hello World",
+  },
+];
 
 export const postRouter = createTRPCRouter({
   hello: publicProcedure
@@ -14,17 +25,16 @@ export const postRouter = createTRPCRouter({
 
   create: publicProcedure
     .input(z.object({ name: z.string().min(1) }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db.insert(posts).values({
+    .mutation(async ({ input }) => {
+      const post: Post = {
+        id: posts.length + 1,
         name: input.name,
-      });
+      };
+      posts.push(post);
+      return post;
     }),
 
-  getLatest: publicProcedure.query(async ({ ctx }) => {
-    const post = await ctx.db.query.posts.findFirst({
-      orderBy: (posts, { desc }) => [desc(posts.createdAt)],
-    });
-
-    return post ?? null;
+  getLatest: publicProcedure.query(() => {
+    return posts.at(-1) ?? null;
   }),
 });
