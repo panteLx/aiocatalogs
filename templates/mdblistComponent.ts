@@ -17,7 +17,7 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
           MDBList Configuration
         </h2>
       </div>
-      <form method="POST" action="/configure/${userId}/mdblist/config" class="animate-enter">
+      <form method="POST" action="/configure/${userId}/mdblist/config" class="animate-enter" id="mdblistApiConfigForm">
         <div class="grid gap-4">
           <div class="grid gap-2">
             <label for="apiKey" class="text-sm font-medium flex items-center">
@@ -29,14 +29,14 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
                   <path d="M12 17h.01"></path>
                 </svg>
                 <span class="hidden group-hover:block absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-60 p-2 bg-card rounded shadow-lg text-xs text-muted-foreground border border-border">
-                  Required for MDBList search and Top 100 lists functionality. Your API key will be stored securely and used only for retrieving posters.
+                  Required for MDBList search, Top 100 lists, and Watchlist import. Your API key will be stored securely.
                 </span>
               </span>
             </label>
             <div class="relative">
               <input
                 type="password"
-                id="apiKey"
+                id="mdblistApiKeyInput" // Added ID for JS access
                 name="apiKey"
                 value="${apiKey}"
                 placeholder="Enter your MDBList API Key"
@@ -48,16 +48,16 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
               </div>
-            </div> 
+            </div>
             <p class="text-sm text-muted-foreground flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="M12 16v-4"></path>
                 <path d="M12 8h.01"></path>
               </svg>
-              Get your free API key from 
+              Get your free API key from
               <a href="https://mdblist.com/preferences/" target="_blank" class="text-primary hover:underline inline-flex items-center">
-                MDBList 
+                MDBList
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
                   <path d="M7 7h10v10"></path>
                   <path d="M7 17 17 7"></path>
@@ -65,7 +65,20 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
               </a>
             </p>
           </div>
-          <div class="flex justify-end">
+          <div class="flex flex-col sm:flex-row justify-end gap-2">
+            <button
+              type="button" 
+              id="importMDBListWatchlistBtn" // New button ID
+              class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2 shadow-subtle"
+              ${!apiKey ? 'disabled title="Enter and save API key first"' : ''} // Disable if no API key is currently saved
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                <path d="M19 7V4a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>
+                <path d="M20 10h-5"/>
+                <path d="m15 8-2 2 2 2"/>
+              </svg>
+              Import Watchlist
+            </button>
             <button
               type="submit"
               class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-subtle"

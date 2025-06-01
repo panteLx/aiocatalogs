@@ -217,6 +217,51 @@ export async function fetchTopLists(apiKey: string): Promise<MDBListCatalog[]> {
 }
 
 /**
+ * Fetches the watchlist from MDBList
+ */
+export async function fetchMyMDBListWatchlist(apiKey: string): Promise<{ metas: StremioMeta[] }> {
+  logger.debug(`Fetching MDBList watchlist for API key.`);
+  if (!isMDBListApiKeyValid(apiKey)) {
+    logger.warn('MDBList API key not provided or invalid for fetching watchlist.');
+    return { metas: [] };
+  }
+
+  try {
+    const rawWatchlistData = await fetchListsFromApi('/watchlist/items', apiKey);
+    let mdbListItems: MDBListItem[] = [];
+    if (rawWatchlistData && Array.isArray(rawWatchlistData.items)) {
+        mdbListItems = rawWatchlistData.items;
+    } else if (rawWatchlistData && Array.isArray(rawWatchlistData)) {
+        mdbListItems = rawWatchlistData;
+    } else if (rawWatchlistData && (Array.isArray(rawWatchlistData.movies) || Array.isArray(rawWatchlistData.shows))) {
+        const movies = Array.isArray(rawWatchlistData.movies) ? rawWatchlistData.movies : [];
+        const shows = Array.isArray(rawWatchlistData.shows) ? rawWatchlistData.shows : [];
+        mdbListItems = [...movies, ...shows];
+    } else {
+        logger.warn('Unexpected data structure from MDBList watchlist API or watchlist is empty.');
+        return { metas: [] };
+    }
+    
+    if (mdbListItems.length === 0) {
+        logger.info('MDBList watchlist is empty.');
+        return { metas: [] };
+    }
+
+    const groupedItems: { movies: MDBListItem[]; shows: MDBListItem[] } = {
+      movies: mdbListItems.filter(item => item.mediatype === 'movie'),
+      shows: mdbListItems.filter(item => item.mediatype === 'show'),
+    };
+
+    const metas = convertToStremioMeta(groupedItems);
+    logger.debug(`Successfully fetched and converted ${metas.length} items from MDBList watchlist.`);
+    return { metas };
+  } catch (error) {
+    logger.error(`Error fetching MDBList watchlist:`, error);
+    return { metas: [] };
+  }
+}
+
+/**
  * Searches for lists on MDBList
  */
 export async function searchLists(query: string, apiKey: string): Promise<MDBListCatalog[]> {

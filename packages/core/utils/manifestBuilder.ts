@@ -153,74 +153,83 @@ export function buildManifest(
  * @returns Catalog response
  */
 export async function handleCatalogRequest(
-  args: any,
-  userCatalogs: CatalogManifest[],
+  args: any, // e.g., args.id is "aiocatalogs_mdb_user_watchlist_movies"
+  userCatalogs: CatalogManifest[], // Array of "source" manifests from user config
   randomizedCatalogs: string[] = []
 ): Promise<any> {
   logger.debug(`Handling catalog request with args:`, args);
 
-  // Find the target source catalog
-  const catalogId = args.id.split('_')[1]; // Extract the original catalog ID
-  const sourceId = args.id.split('_')[0]; // Extract the source addon ID
+  let foundSource: CatalogManifest | undefined = undefined;
+  let innerCatalogIdToFetch: string | undefined = undefined; // This is the ID like "movies" or "series"
 
-  // Find the source catalog from user's catalogs
-  const source = userCatalogs.find(c => c.id === sourceId);
+  // Iterate through each configured source manifest
+  for (const sourceCfg of userCatalogs) {
+    // sourceCfg.id is e.g., "aiocatalogs_mdb_user_watchlist"
+    // sourceCfg.catalogs contains inner definitions like { id: "movies", type: "movie", ... }
 
-  if (!source) {
-    if (sourceId == 'aiocatalogs-default') {
-      return { metas: [] };
+    if (args.id.startsWith(sourceCfg.id + "_")) {
+      const potentialInnerId = args.id.substring((sourceCfg.id + "_").length);
+      // Now check if this potentialInnerId actually matches one of the inner catalogs for this source
+      const matchingInnerCatalog = sourceCfg.catalogs.find(
+        (innerCat: any) => innerCat.id === potentialInnerId && innerCat.type === args.type
+      );
+      if (matchingInnerCatalog) {
+        foundSource = sourceCfg;
+        innerCatalogIdToFetch = matchingInnerCatalog.id;
+        break;
+      }
     }
-    logger.error(`Source ${sourceId} not found in user catalogs`);
+  }
+
+  if (!foundSource || !innerCatalogIdToFetch) {
+    // Handle default catalog case more robustly if needed, or just log error
+    if (args.id === 'aiocatalogs-default' && userCatalogs.length === 0 && args.type === 'movie') {
+        logger.info('Serving empty metas for aiocatalogs-default (movie type) as no catalogs are configured.');
+        return { metas: [] };
+    }
+    logger.error(`Source or inner catalog not found for args.id: ${args.id} of type ${args.type}`);
     return { metas: [] };
   }
 
-  // Find the specific catalog within the source
-  const catalog = source.catalogs.find((c: any) => c.type === args.type && c.id === catalogId);
-
-  if (!catalog) {
-    logger.error(`Catalog ${catalogId} of type ${args.type} not found in source ${sourceId}`);
-    return { metas: [] };
+  if (foundSource.endpoint.startsWith('internal://')) {
+      logger.warn(`Internal source ${foundSource.id} was not handled by specific logic and fell through to generic handleCatalogRequest. This might indicate a routing issue in addon.ts.`);
+      return { metas: [] };
   }
 
-  // Create catalog endpoint
-  const endpoint = source.endpoint.endsWith('/') ? source.endpoint.slice(0, -1) : source.endpoint;
-  const url = `${endpoint}/catalog/${args.type}/${catalogId}.json`;
-  logger.debug(`Fetching catalog from: ${url}`);
+  // Original logic for fetching from external addon manifests:
+  const endpoint = foundSource.endpoint.endsWith('/') ? foundSource.endpoint.slice(0, -1) : foundSource.endpoint;
+  // Use innerCatalogIdToFetch for the specific catalog ID within the source
+  const url = `${endpoint}/catalog/${args.type}/${innerCatalogIdToFetch}.json`;
+  logger.debug(`Fetching (external) catalog from: ${url} (Source: ${foundSource.id}, Catalog: ${innerCatalogIdToFetch})`);
 
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
-      logger.error(`Error fetching catalog: ${response.statusText}`);
+      logger.error(`Error fetching catalog: ${response.statusText} from ${url}`);
       return { metas: [] };
     }
 
     const data = (await response.json()) as { metas?: any[] };
-    const metas = data.metas || [];
+    let metas = data.metas || [];
 
-    // Add source to each item
     if (Array.isArray(metas)) {
       metas.forEach((item: any) => {
-        item.sourceAddon = sourceId;
+        item.sourceAddon = foundSource!.id; // foundSource is guaranteed to be defined here
       });
 
-      // Check if this catalog should be randomized
-      const shouldRandomize = randomizedCatalogs.includes(source.id);
-
+      const shouldRandomize = randomizedCatalogs.includes(foundSource!.id);
       if (shouldRandomize && metas.length > 1) {
-        logger.debug(`Randomizing catalog items for ${source.id}`);
-        // Fisher-Yates shuffle algorithm
+        logger.debug(`Randomizing catalog items for ${foundSource!.id}`);
         for (let i = metas.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [metas[i], metas[j]] = [metas[j], metas[i]];
         }
-        logger.debug(`Randomized ${metas.length} items for catalog ${source.id}`);
       }
     }
-
     return { metas };
   } catch (error) {
-    logger.error(`Error fetching catalog:`, error);
+    logger.error(`Exception fetching catalog from ${url}:`, error);
     return { metas: [] };
   }
 }
