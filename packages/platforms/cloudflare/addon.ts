@@ -62,11 +62,7 @@ async function processMDBListCatalog(
         filteredMetas.length > 1
       ) {
         logger.debug(`Randomizing MDBList watchlist items for ${MDBLIST_WATCHLIST_SOURCE_ID}`);
-        // Fisher-Yates shuffle
-        for (let i = filteredMetas.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [filteredMetas[i], filteredMetas[j]] = [filteredMetas[j], filteredMetas[i]];
-        }
+        filteredMetas = shuffleArray(filteredMetas);
       }
       return { metas: filteredMetas };
     } else if (args.id && args.id.startsWith('mdblist_')) {
@@ -91,11 +87,7 @@ async function processMDBListCatalog(
           userConfig.randomizedCatalogs?.includes(`mdblist_${potentialNumericId}`) &&
           finalMetas.length > 1
         ) {
-          // Shuffle
-          for (let i = finalMetas.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [finalMetas[i], finalMetas[j]] = [finalMetas[j], finalMetas[i]];
-          }
+          finalMetas = shuffleArray(finalMetas);
         }
         return { metas: finalMetas };
       }
@@ -382,4 +374,15 @@ export async function handleAddonResource(request: any, userId: string) {
     logger.error('Error handling addon request:', error);
     return new Response('Server error', { status: 500 });
   }
+}
+
+/**
+ * Helper function to perform Fisher-Yates shuffle on an array in place
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
