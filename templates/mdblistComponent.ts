@@ -67,19 +67,6 @@ export function getMDBListApiConfigHTML(userId: string, apiKey: string): string 
           </div>
           <div class="flex flex-col sm:flex-row justify-end gap-2">
             <button
-              type="button" 
-              id="importMDBListWatchlistBtn" // New button ID
-              class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2 shadow-subtle"
-              ${!apiKey ? 'disabled title="Enter and save API key first"' : ''} // Disable if no API key is currently saved
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                <path d="M19 7V4a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/>
-                <path d="M20 10h-5"/>
-                <path d="m15 8-2 2 2 2"/>
-              </svg>
-              Import Watchlist
-            </button>
-            <button
               type="submit"
               class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-subtle"
             >

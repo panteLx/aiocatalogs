@@ -48,6 +48,17 @@ export function getMDBListSearchFormHTML(userId: string): string {
           View Top 100 Lists
         </a>
       </div>
+      <div class="mt-4">
+        <a 
+          class="text-primary hover:text-primary/80 hover:cursor-pointer text-sm flex items-center"
+          id="importMDBListWatchlistBtn"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+            <path d="M12 2v20M2 12h20"></path>
+          </svg>
+          Import Watchlist
+        </a>
+      </div>
     </div>
   `;
 }
