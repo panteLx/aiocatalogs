@@ -167,8 +167,8 @@ export async function handleCatalogRequest(
     // sourceCfg.id is e.g., "aiocatalogs_mdb_user_watchlist"
     // sourceCfg.catalogs contains inner definitions like { id: "movies", type: "movie", ... }
 
-    if (args.id.startsWith(sourceCfg.id + "_")) {
-      const potentialInnerId = args.id.substring((sourceCfg.id + "_").length);
+    if (args.id.startsWith(sourceCfg.id + '_')) {
+      const potentialInnerId = args.id.substring((sourceCfg.id + '_').length);
       // Now check if this potentialInnerId actually matches one of the inner catalogs for this source
       const matchingInnerCatalog = sourceCfg.catalogs.find(
         (innerCat: any) => innerCat.id === potentialInnerId && innerCat.type === args.type
@@ -184,23 +184,31 @@ export async function handleCatalogRequest(
   if (!foundSource || !innerCatalogIdToFetch) {
     // Handle default catalog case more robustly if needed, or just log error
     if (args.id === 'aiocatalogs-default' && userCatalogs.length === 0 && args.type === 'movie') {
-        logger.info('Serving empty metas for aiocatalogs-default (movie type) as no catalogs are configured.');
-        return { metas: [] };
+      logger.info(
+        'Serving empty metas for aiocatalogs-default (movie type) as no catalogs are configured.'
+      );
+      return { metas: [] };
     }
     logger.error(`Source or inner catalog not found for args.id: ${args.id} of type ${args.type}`);
     return { metas: [] };
   }
 
   if (foundSource.endpoint.startsWith('internal://')) {
-      logger.warn(`Internal source ${foundSource.id} was not handled by specific logic and fell through to generic handleCatalogRequest. This might indicate a routing issue in addon.ts.`);
-      return { metas: [] };
+    logger.warn(
+      `Internal source ${foundSource.id} was not handled by specific logic and fell through to generic handleCatalogRequest. This might indicate a routing issue in addon.ts.`
+    );
+    return { metas: [] };
   }
 
   // Original logic for fetching from external addon manifests:
-  const endpoint = foundSource.endpoint.endsWith('/') ? foundSource.endpoint.slice(0, -1) : foundSource.endpoint;
+  const endpoint = foundSource.endpoint.endsWith('/')
+    ? foundSource.endpoint.slice(0, -1)
+    : foundSource.endpoint;
   // Use innerCatalogIdToFetch for the specific catalog ID within the source
   const url = `${endpoint}/catalog/${args.type}/${innerCatalogIdToFetch}.json`;
-  logger.debug(`Fetching (external) catalog from: ${url} (Source: ${foundSource.id}, Catalog: ${innerCatalogIdToFetch})`);
+  logger.debug(
+    `Fetching (external) catalog from: ${url} (Source: ${foundSource.id}, Catalog: ${innerCatalogIdToFetch})`
+  );
 
   try {
     const response = await fetch(url);

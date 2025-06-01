@@ -4,7 +4,7 @@ import {
   isMDBListApiKeyValid,
   fetchMDBListCatalog,
   fetchListDetails,
-  fetchMyMDBListWatchlist
+  fetchMyMDBListWatchlist,
 } from '../../core/utils/mdblist';
 import {
   getMDBListSearchResultsHTML,
@@ -16,7 +16,7 @@ import { logger } from '../../core/utils/logger';
 import { appConfig } from '../../platforms/cloudflare/appConfig';
 import { CatalogManifest } from '../../types';
 
-const MDBLIST_WATCHLIST_NAME = "MDBList Watchlist";
+const MDBLIST_WATCHLIST_NAME = 'MDBList Watchlist';
 
 export const importUserWatchlist = async (c: any /* Hono Context */) => {
   const userId = c.req.param('userId');
@@ -26,7 +26,13 @@ export const importUserWatchlist = async (c: any /* Hono Context */) => {
   const apiKey = await configManager.loadMDBListApiKey(userId);
   if (!apiKey || !isMDBListApiKeyValid(apiKey)) {
     logger.warn(`MDBList API key not found or invalid for user ${userId} during watchlist import.`);
-    return c.json({ success: false, error: 'MDBList API key not configured or invalid. Please save a valid API key first.' }, 400);
+    return c.json(
+      {
+        success: false,
+        error: 'MDBList API key not configured or invalid. Please save a valid API key first.',
+      },
+      400
+    );
   }
 
   try {
@@ -34,7 +40,7 @@ export const importUserWatchlist = async (c: any /* Hono Context */) => {
 
     const watchlistSourceManifest: CatalogManifest = {
       id: 'aiocatalogs_mdb_user_watchlist',
-      name: "MDBList Watchlist",
+      name: 'MDBList Watchlist',
       description: 'Your personal MDBList Watchlist.',
       endpoint: `internal://mdblist_watchlist/${userId}`, // Internal routing hint
       version: '1.0.0',
@@ -49,40 +55,71 @@ export const importUserWatchlist = async (c: any /* Hono Context */) => {
 
     if (hasMovies) {
       watchlistSourceManifest.types.push('movie');
-      watchlistSourceManifest.catalogs.push({ id: 'movies', type: 'movie', name: `${MDBLIST_WATCHLIST_NAME} (Movies)` });
+      watchlistSourceManifest.catalogs.push({
+        id: 'movies',
+        type: 'movie',
+        name: `${MDBLIST_WATCHLIST_NAME} (Movies)`,
+      });
     }
     if (hasSeries) {
       watchlistSourceManifest.types.push('series');
-      watchlistSourceManifest.catalogs.push({ id: 'series', type: 'series', name: `${MDBLIST_WATCHLIST_NAME} (Series)` });
+      watchlistSourceManifest.catalogs.push({
+        id: 'series',
+        type: 'series',
+        name: `${MDBLIST_WATCHLIST_NAME} (Series)`,
+      });
     }
 
     if (watchlistSourceManifest.catalogs.length === 0) {
       if (watchlistFetchResult.metas.length > 0) {
-          logger.info(`Watchlist for ${userId} contains items, but no movies or series. Adding generic placeholders.`);
+        logger.info(
+          `Watchlist for ${userId} contains items, but no movies or series. Adding generic placeholders.`
+        );
       } else {
-          logger.info(`Watchlist for ${userId} is empty. Adding placeholder catalog entries.`);
+        logger.info(`Watchlist for ${userId} is empty. Adding placeholder catalog entries.`);
       }
       // Add default placeholder if watchlist is empty or types are not movie/series
-      if (!watchlistSourceManifest.types.includes('movie')) watchlistSourceManifest.types.push('movie');
-      watchlistSourceManifest.catalogs.push({ id: 'movies', type: 'movie', name: `${MDBLIST_WATCHLIST_NAME} (Movies)` });
-      if (!watchlistSourceManifest.types.includes('series')) watchlistSourceManifest.types.push('series'); // Ensure series type is also added if no content
-      watchlistSourceManifest.catalogs.push({ id: 'series', type: 'series', name: `${MDBLIST_WATCHLIST_NAME} (Series)` });
+      if (!watchlistSourceManifest.types.includes('movie'))
+        watchlistSourceManifest.types.push('movie');
+      watchlistSourceManifest.catalogs.push({
+        id: 'movies',
+        type: 'movie',
+        name: `${MDBLIST_WATCHLIST_NAME} (Movies)`,
+      });
+      if (!watchlistSourceManifest.types.includes('series'))
+        watchlistSourceManifest.types.push('series'); // Ensure series type is also added if no content
+      watchlistSourceManifest.catalogs.push({
+        id: 'series',
+        type: 'series',
+        name: `${MDBLIST_WATCHLIST_NAME} (Series)`,
+      });
     }
-    
+
     const addSuccess = await configManager.addCatalog(userId, watchlistSourceManifest);
     if (!addSuccess) {
       logger.error(`Failed to save watchlist catalog to configuration for user ${userId}.`);
-      return c.json({ success: false, error: 'Failed to add watchlist to AIOCatalogs configuration.' }, 500);
+      return c.json(
+        { success: false, error: 'Failed to add watchlist to AIOCatalogs configuration.' },
+        500
+      );
     }
 
     clearAddonCache(userId);
     configManager.clearCache(userId);
     logger.info(`Successfully imported MDBList watchlist catalog for user ${userId}.`);
-    return c.json({ success: true, message: 'MDBList Watchlist imported successfully as a new catalog!' });
-
+    return c.json({
+      success: true,
+      message: 'MDBList Watchlist imported successfully as a new catalog!',
+    });
   } catch (err) {
     logger.error(`Error importing MDBList watchlist for ${userId}:`, err);
-    return c.json({ success: false, error: `Failed to import watchlist: ${err instanceof Error ? err.message : 'Unknown error'}` }, 500);
+    return c.json(
+      {
+        success: false,
+        error: `Failed to import watchlist: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      },
+      500
+    );
   }
 };
 
@@ -419,35 +456,51 @@ export const saveMDBListConfig = async (c: any) => {
     let isValidApiKey = false;
     try {
       const testResult = await fetchTopLists(apiKey);
-      if (testResult) { // Check if testResult is not null/undefined
-        isValidApiKey = true; // Or based on a more specific success condition from fetchTopLists
-        logger.info(`Successfully validated MDBList API key for user ${userId} during save.`);
+      // Check if we got a valid response array and at least one list
+      // This verifies both API key validity and proper API response format
+      if (
+        Array.isArray(testResult) &&
+        testResult.length > 0 &&
+        testResult[0] && // Check first element exists
+        'name' in testResult[0] && // Verify it has required MDBListCatalog properties
+        'type' in testResult[0] &&
+        'user' in testResult[0]
+      ) {
+        isValidApiKey = true;
+        logger.info(
+          `Successfully validated MDBList API key for user ${userId} during save. Found ${testResult.length} lists.`
+        );
       } else {
-         logger.warn(`MDBList API key validation failed for user ${userId}: fetchTopLists returned no result or error.`);
+        logger.warn(
+          `MDBList API key validation failed for user ${userId}: invalid or empty response structure`
+        );
       }
     } catch (validationError) {
       logger.error(`MDBList API key validation call failed for user ${userId}:`, validationError);
     }
     if (!isValidApiKey) {
-        return c.redirect(`/configure/${userId}?error=Invalid MDBList API key - please check and try again, or service might be temporarily unavailable.`);
+      return c.redirect(
+        `/configure/${userId}?error=Invalid MDBList API key - please check and try again, or service might be temporarily unavailable.`
+      );
     }
-
 
     const success = await configManager.saveMDBListApiKey(userId, apiKey);
 
     if (!success) {
       logger.warn(`Database save failed for MDBList API key for user ${userId}`);
-      return c.redirect(`/configure/${userId}?error=Could not save MDBList API key. Please try again.`);
+      return c.redirect(
+        `/configure/${userId}?error=Could not save MDBList API key. Please try again.`
+      );
     }
 
     configManager.clearApiKeyCache(userId);
 
-
     logger.info(`MDBList API key configuration saved successfully for user ${userId}.`);
     return c.redirect(`/configure/${userId}?message=MDBList API configuration saved successfully`);
-
   } catch (error) {
     logger.error(`Error saving MDBList API configuration for user ${userId}:`, error);
-    return c.redirect(`/configure/${userId}?error=Failed to save MDBList API configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return c.redirect(
+      `/configure/${userId}?error=Failed to save MDBList API configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 };

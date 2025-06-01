@@ -29,7 +29,7 @@ import {
   getMDBListTop100,
   addMDBListCatalog,
   saveMDBListConfig,
-  importUserWatchlist
+  importUserWatchlist,
 } from '../../api/routes/mdblistRoutes';
 
 // Create Hono App with Bindings type parameter
@@ -258,7 +258,8 @@ app.post('/configure/:userId/mdblist/config', async c => {
   return saveMDBListConfig(c);
 });
 
-app.post('/configure/:userId/mdblist/import-watchlist', async (c) => { // New Route
+app.post('/configure/:userId/mdblist/import-watchlist', async c => {
+  // New Route
   initConfigManager(c);
   return importUserWatchlist(c);
 });

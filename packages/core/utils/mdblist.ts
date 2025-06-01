@@ -230,21 +230,24 @@ export async function fetchMyMDBListWatchlist(apiKey: string): Promise<{ metas: 
     const rawWatchlistData = await fetchListsFromApi('/watchlist/items', apiKey);
     let mdbListItems: MDBListItem[] = [];
     if (rawWatchlistData && Array.isArray(rawWatchlistData.items)) {
-        mdbListItems = rawWatchlistData.items;
+      mdbListItems = rawWatchlistData.items;
     } else if (rawWatchlistData && Array.isArray(rawWatchlistData)) {
-        mdbListItems = rawWatchlistData;
-    } else if (rawWatchlistData && (Array.isArray(rawWatchlistData.movies) || Array.isArray(rawWatchlistData.shows))) {
-        const movies = Array.isArray(rawWatchlistData.movies) ? rawWatchlistData.movies : [];
-        const shows = Array.isArray(rawWatchlistData.shows) ? rawWatchlistData.shows : [];
-        mdbListItems = [...movies, ...shows];
+      mdbListItems = rawWatchlistData;
+    } else if (
+      rawWatchlistData &&
+      (Array.isArray(rawWatchlistData.movies) || Array.isArray(rawWatchlistData.shows))
+    ) {
+      const movies = Array.isArray(rawWatchlistData.movies) ? rawWatchlistData.movies : [];
+      const shows = Array.isArray(rawWatchlistData.shows) ? rawWatchlistData.shows : [];
+      mdbListItems = [...movies, ...shows];
     } else {
-        logger.warn('Unexpected data structure from MDBList watchlist API or watchlist is empty.');
-        return { metas: [] };
+      logger.warn('Unexpected data structure from MDBList watchlist API or watchlist is empty.');
+      return { metas: [] };
     }
-    
+
     if (mdbListItems.length === 0) {
-        logger.info('MDBList watchlist is empty.');
-        return { metas: [] };
+      logger.info('MDBList watchlist is empty.');
+      return { metas: [] };
     }
 
     const groupedItems: { movies: MDBListItem[]; shows: MDBListItem[] } = {
@@ -253,7 +256,9 @@ export async function fetchMyMDBListWatchlist(apiKey: string): Promise<{ metas: 
     };
 
     const metas = convertToStremioMeta(groupedItems);
-    logger.debug(`Successfully fetched and converted ${metas.length} items from MDBList watchlist.`);
+    logger.debug(
+      `Successfully fetched and converted ${metas.length} items from MDBList watchlist.`
+    );
     return { metas };
   } catch (error) {
     logger.error(`Error fetching MDBList watchlist:`, error);

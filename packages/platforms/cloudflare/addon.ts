@@ -3,7 +3,11 @@ import { configManager } from './configManager';
 import packageJson from '../../../package.json';
 import { buildManifest, handleCatalogRequest } from '../../core/utils/manifestBuilder';
 import { logger } from '../../core/utils/logger';
-import { fetchMDBListCatalog, fetchListDetails, fetchMyMDBListWatchlist } from '../../core/utils/mdblist';
+import {
+  fetchMDBListCatalog,
+  fetchListDetails,
+  fetchMyMDBListWatchlist,
+} from '../../core/utils/mdblist';
 import { processPosterUrls } from '../../core/utils/posterUtils';
 import { loadUserRPDBApiKey } from '../../api/routes/rpdbRoutes';
 
@@ -13,20 +17,26 @@ const { version, description } = packageJson;
 /**
  * Helper function to process MDBList catalog requests
  */
-async function processMDBListCatalog(args: CatalogRequest, userId: string): Promise<{ metas: MetaItem[] }> {
-
+async function processMDBListCatalog(
+  args: CatalogRequest,
+  userId: string
+): Promise<{ metas: MetaItem[] }> {
   const MDBLIST_WATCHLIST_SOURCE_ID = 'aiocatalogs_mdb_user_watchlist';
   try {
     const apiKey = await configManager.loadMDBListApiKey(userId);
     if (!apiKey) {
-      logger.warn(`No MDBList API key found for user ${userId} while processing catalog ${args.id}.`);
+      logger.warn(
+        `No MDBList API key found for user ${userId} while processing catalog ${args.id}.`
+      );
       return { metas: [] };
     }
 
-    if (args.id.startsWith(MDBLIST_WATCHLIST_SOURCE_ID + "_")) {
-      const typeSegment = args.id.substring((MDBLIST_WATCHLIST_SOURCE_ID + "_").length); // "movies" or "series"
-      logger.debug(`Processing MDBList watchlist request for user: ${userId}, type segment: ${typeSegment}`);
-      
+    if (args.id.startsWith(MDBLIST_WATCHLIST_SOURCE_ID + '_')) {
+      const typeSegment = args.id.substring((MDBLIST_WATCHLIST_SOURCE_ID + '_').length); // "movies" or "series"
+      logger.debug(
+        `Processing MDBList watchlist request for user: ${userId}, type segment: ${typeSegment}`
+      );
+
       const watchlistData = await fetchMyMDBListWatchlist(apiKey);
       let filteredMetas = watchlistData.metas;
 
@@ -36,56 +46,68 @@ async function processMDBListCatalog(args: CatalogRequest, userId: string): Prom
         filteredMetas = watchlistData.metas.filter(m => m.type === 'series');
       } else {
         // If type segment is unknown, maybe return all or log a warning
-        logger.warn(`Unknown type segment '${typeSegment}' for watchlist. Returning all watchlist items.`);
+        logger.warn(
+          `Unknown type segment '${typeSegment}' for watchlist. Returning all watchlist items.`
+        );
       }
-      
+
       const rpdbApiKey = await loadUserRPDBApiKey(userId);
       if (rpdbApiKey && filteredMetas) {
         filteredMetas = processPosterUrls([...filteredMetas], rpdbApiKey);
       }
 
       const userConfig = await configManager.getConfig(userId);
-      if (userConfig.randomizedCatalogs?.includes(MDBLIST_WATCHLIST_SOURCE_ID) && filteredMetas.length > 1) {
-          logger.debug(`Randomizing MDBList watchlist items for ${MDBLIST_WATCHLIST_SOURCE_ID}`);
-          // Fisher-Yates shuffle
-          for (let i = filteredMetas.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [filteredMetas[i], filteredMetas[j]] = [filteredMetas[j], filteredMetas[i]];
-          }
+      if (
+        userConfig.randomizedCatalogs?.includes(MDBLIST_WATCHLIST_SOURCE_ID) &&
+        filteredMetas.length > 1
+      ) {
+        logger.debug(`Randomizing MDBList watchlist items for ${MDBLIST_WATCHLIST_SOURCE_ID}`);
+        // Fisher-Yates shuffle
+        for (let i = filteredMetas.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [filteredMetas[i], filteredMetas[j]] = [filteredMetas[j], filteredMetas[i]];
+        }
       }
       return { metas: filteredMetas };
-
     } else if (args.id && args.id.startsWith('mdblist_')) {
       const potentialNumericId = args.id.substring('mdblist_'.length).split('_')[0];
       if (/^\d+$/.test(potentialNumericId)) {
-          logger.debug(`Processing regular MDBList catalog request for MDBList ID: ${potentialNumericId}, full ID: ${args.id}`);
-          const result = await fetchMDBListCatalog(potentialNumericId, apiKey);
-          // ... (filtering by args.type, randomization, RPDB logic as before for regular lists)
-          let finalMetas = result.metas;
-          if (args.type === 'movie') finalMetas = result.metas.filter(item => item.type === 'movie');
-          else if (args.type === 'series') finalMetas = result.metas.filter(item => item.type === 'series');
-          
-          const rpdbApiKey = await loadUserRPDBApiKey(userId);
-          if (rpdbApiKey && finalMetas) {
-            finalMetas = processPosterUrls([...finalMetas], rpdbApiKey);
+        logger.debug(
+          `Processing regular MDBList catalog request for MDBList ID: ${potentialNumericId}, full ID: ${args.id}`
+        );
+        const result = await fetchMDBListCatalog(potentialNumericId, apiKey);
+        // ... (filtering by args.type, randomization, RPDB logic as before for regular lists)
+        let finalMetas = result.metas;
+        if (args.type === 'movie') finalMetas = result.metas.filter(item => item.type === 'movie');
+        else if (args.type === 'series')
+          finalMetas = result.metas.filter(item => item.type === 'series');
+
+        const rpdbApiKey = await loadUserRPDBApiKey(userId);
+        if (rpdbApiKey && finalMetas) {
+          finalMetas = processPosterUrls([...finalMetas], rpdbApiKey);
+        }
+        const userConfig = await configManager.getConfig(userId);
+        if (
+          userConfig.randomizedCatalogs?.includes(`mdblist_${potentialNumericId}`) &&
+          finalMetas.length > 1
+        ) {
+          // Shuffle
+          for (let i = finalMetas.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [finalMetas[i], finalMetas[j]] = [finalMetas[j], finalMetas[i]];
           }
-          const userConfig = await configManager.getConfig(userId);
-          if (userConfig.randomizedCatalogs?.includes(`mdblist_${potentialNumericId}`) && finalMetas.length > 1) {
-            // Shuffle
-            for (let i = finalMetas.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [finalMetas[i], finalMetas[j]] = [finalMetas[j], finalMetas[i]];
-            }
-          }
-          return { metas: finalMetas };
+        }
+        return { metas: finalMetas };
       }
     }
-    
+
     logger.warn(`processMDBListCatalog could not determine handler for ID: ${args.id}`);
     return { metas: [] }; // Fallback
-
   } catch (error) {
-    logger.error(`Error processing MDBList catalog/watchlist for ID ${args.id} (User: ${userId}):`, error);
+    logger.error(
+      `Error processing MDBList catalog/watchlist for ID ${args.id} (User: ${userId}):`,
+      error
+    );
     return { metas: [] };
   }
 }
@@ -155,13 +177,17 @@ export async function getAddonInterface(userId: string, db: D1Database) {
       if (args.id.startsWith('aiocatalogs_mdb_user_watchlist_')) {
         logger.debug(`Routing to processMDBListCatalog for watchlist: ${args.id}`);
         return processMDBListCatalog(args, userId); // Ensure this function handles watchlist IDs correctly
-    }
-    // Check for regular MDBList catalogs (identified by mdblist_ followed by a numeric list ID)
-    else if (args.id.startsWith('mdblist_') && args.id.split('_')[1] && /^\d+$/.test(args.id.split('_')[1])) {
+      }
+      // Check for regular MDBList catalogs (identified by mdblist_ followed by a numeric list ID)
+      else if (
+        args.id.startsWith('mdblist_') &&
+        args.id.split('_')[1] &&
+        /^\d+$/.test(args.id.split('_')[1])
+      ) {
         logger.debug(`Routing to processMDBListCatalog for regular MDBList: ${args.id}`);
         return processMDBListCatalog(args, userId);
-    }
-    
+      }
+
       // Process regular catalogs
       const result = await handleCatalogRequest(args, userCatalogs, randomizedCatalogs);
 
