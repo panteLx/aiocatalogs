@@ -15,19 +15,16 @@ export const createTable = sqliteTableCreator(
   (name) => `t3-cloudflare_${name}`,
 );
 
-export const posts = createTable(
-  "post",
+export const userConfigs = createTable(
+  "user_configs",
   {
     id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    name: text("name", { length: 256 }),
+    userId: text("user_id").notNull().unique(),
     createdAt: int("created_at", { mode: "timestamp" })
       .default(sql`(unixepoch())`)
       .notNull(),
-    updatedAt: int("updated_at", { mode: "timestamp" })
-      .default(sql`(unixepoch())`)
-      .$onUpdate(() => new Date()),
   },
-  (example) => ({
-    nameIndex: index("name_idx").on(example.name),
+  (table) => ({
+    userIdIndex: index("user_id_idx").on(table.userId),
   }),
 );
