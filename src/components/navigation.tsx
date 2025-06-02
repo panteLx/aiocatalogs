@@ -5,9 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Home, Menu, X } from "lucide-react";
-import packageJson from "../../package.json";
 
 interface NavigationProps {
   className?: string;
@@ -38,14 +36,8 @@ export function Navigation({ className }: NavigationProps) {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
+          <Link href="/" className="flex items-center space-x-2">
             <div className="gradient-text text-2xl font-bold">AIO</div>
-            <Badge
-              variant="secondary"
-              className="rounded-full border-blue-500/20 bg-gradient-to-r from-blue-500/10 to-purple-500/10 px-2 py-1 text-xs font-medium tracking-wide text-blue-400 shadow-sm transition-shadow duration-200 hover:cursor-default hover:shadow-md"
-            >
-              v{packageJson.version}
-            </Badge>
           </Link>
 
           {/* Desktop Navigation */}

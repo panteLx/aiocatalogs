@@ -11,10 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { UserPlus, LogIn, ArrowRight, Shield, Loader2, X } from "lucide-react";
 import { api } from "@/trpc/react";
 import { toast } from "@/hooks/use-toast";
 import { generateUserId, validateUserId } from "@/lib/user-utils";
+import packageJson from "../../package.json";
 
 export default function Home() {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
@@ -131,9 +133,20 @@ export default function Home() {
 
       <div className="container relative flex flex-col items-center justify-center gap-12 px-4 py-16">
         <div className="space-y-6 text-center">
-          <h1 className="bg-gradient-to-r from-foreground via-primary to-foreground/60 bg-clip-text text-6xl font-extrabold tracking-tight text-transparent sm:text-[6rem] lg:text-[8rem]">
-            AIOCatalogs
-          </h1>
+          <div className="relative inline-block">
+            <h1 className="bg-gradient-to-r from-foreground via-primary to-foreground/60 bg-clip-text text-6xl font-extrabold tracking-tight text-transparent sm:text-[6rem] lg:text-[8rem]">
+              AIOCatalogs
+            </h1>
+            {/* Version Badge - positioned at top right of the logo */}
+            <div className="absolute -right-4 -top-2 sm:-right-8 sm:-top-4 lg:-right-12 lg:-top-6">
+              <Badge
+                variant="secondary"
+                className="transform rounded-full border-blue-400/30 bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-2 py-1 text-xs font-bold tracking-wide text-blue-300 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl sm:px-3 sm:py-1.5 sm:text-sm lg:px-4 lg:py-2 lg:text-base"
+              >
+                v{packageJson.version}
+              </Badge>
+            </div>
+          </div>
           <p className="max-w-2xl text-xl text-muted-foreground">
             Choose how you want to get started with your supercharged catalog
             experience
