@@ -19,7 +19,7 @@ export function NewUserForm() {
         description: `Your new user ID is: ${variables.userId}`,
       });
       // Prefetch the user existence check to warm the cache
-      utils.user.exists.prefetch({ userId: variables.userId });
+      void utils.user.exists.prefetch({ userId: variables.userId });
       router.replace(`/${variables.userId}`);
       setIsLoading(false);
     },

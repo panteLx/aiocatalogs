@@ -1,10 +1,10 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { AuthLayout } from "@/app/auth/_components/auth-layout";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const userId = searchParams.get("userId");
@@ -26,5 +26,21 @@ export default function DashboardPage() {
         <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary opacity-50"></div>
       </div>
     </AuthLayout>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthLayout title="Loading..." description="">
+          <div className="flex items-center justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary opacity-50"></div>
+          </div>
+        </AuthLayout>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
