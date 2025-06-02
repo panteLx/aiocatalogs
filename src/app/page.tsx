@@ -1,13 +1,55 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { UserPlus, LogIn, ArrowRight, Shield } from "lucide-react";
+import { UserPlus, LogIn, ArrowRight, Shield, Loader2 } from "lucide-react";
+import { api } from "@/trpc/react";
+import { toast } from "@/hooks/use-toast";
+import { generateUserId } from "@/lib/user-utils";
 
 export default function Home() {
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const router = useRouter();
+  const utils = api.useUtils();
+
+  const createUserMutation = api.user.create.useMutation({
+    onSuccess: (data, variables) => {
+      toast({
+        title: "User created successfully",
+        description: `Your new user ID is: ${variables.userId}`,
+      });
+      // Prefetch the user existence check to warm the cache
+      void utils.user.exists.prefetch({ userId: variables.userId });
+      router.replace(`/${variables.userId}`);
+      setIsCreatingUser(false);
+    },
+    onError: (error) => {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create user. Please try again.";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      setIsCreatingUser(false);
+    },
+  });
+
+  const handleCreateNewUser = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsCreatingUser(true);
+    const userId = generateUserId();
+    createUserMutation.mutate({ userId });
+  };
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
       {/* Modern animated background */}
@@ -31,27 +73,33 @@ export default function Home() {
         </div>
 
         <div className="grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-2">
-          <Link href="/auth/new" className="group no-underline">
-            <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-card/70 hover:shadow-2xl">
-              <CardHeader className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="rounded-full border border-primary/20 bg-primary/10 p-3">
+          <Card
+            className="group h-full cursor-pointer border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-card/70 hover:shadow-2xl"
+            onClick={handleCreateNewUser}
+          >
+            <CardHeader className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="rounded-full border border-primary/20 bg-primary/10 p-3">
+                  {isCreatingUser ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  ) : (
                     <UserPlus className="h-6 w-6 text-primary" />
-                  </div>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <CardTitle className="text-2xl font-bold">
-                    Create New User
-                  </CardTitle>
-                  <CardDescription className="text-base">
-                    Generate a new unique user ID and start fresh with a new
-                    configuration
-                  </CardDescription>
-                </div>
-              </CardHeader>
-            </Card>
-          </Link>
+                <ArrowRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+              </div>
+              <div className="space-y-2">
+                <CardTitle className="text-2xl font-bold">
+                  {isCreatingUser ? "Creating User..." : "Create New User"}
+                </CardTitle>
+                <CardDescription className="text-base">
+                  {isCreatingUser
+                    ? "Generating your unique user ID..."
+                    : "Generate a new unique user ID and start fresh with a new configuration"}
+                </CardDescription>
+              </div>
+            </CardHeader>
+          </Card>
 
           <Link href="/auth/existing" className="group no-underline">
             <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-card/70 hover:shadow-2xl">
