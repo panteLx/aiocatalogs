@@ -1,0 +1,22 @@
+name = "aiocatalogs-v2"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+main = ".open-next/worker.js"
+workers_dev = false
+
+[observability]
+enabled = true
+head_sampling_rate = 1 
+
+[placement]
+mode = "smart"
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[ d1_databases ]]
+binding = "DB"
+database_name = "aiocatalogs-v2"
+database_id = "679a6922-39ec-4a9e-bdba-faaead638214"
+migrations_dir = "migrations"
