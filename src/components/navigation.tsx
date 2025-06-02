@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Home, User, Settings, Menu, X } from "lucide-react";
@@ -10,8 +11,14 @@ interface NavigationProps {
 
 export function Navigation({ className }: NavigationProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const router = useRouter();
 
   const toggleMenu = () => setIsOpen(!isOpen);
+
+  const handleDashboardHover = () => {
+    // Prefetch the dashboard route for instant navigation
+    router.prefetch("/dashboard");
+  };
 
   return (
     <nav
@@ -39,6 +46,7 @@ export function Navigation({ className }: NavigationProps) {
             <Link
               href="/dashboard"
               className="flex items-center space-x-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onMouseEnter={handleDashboardHover}
             >
               <User className="h-4 w-4" />
               <span>Dashboard</span>
@@ -72,6 +80,7 @@ export function Navigation({ className }: NavigationProps) {
                 href="/dashboard"
                 className="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 onClick={() => setIsOpen(false)}
+                onMouseEnter={handleDashboardHover}
               >
                 <User className="h-4 w-4" />
                 <span>Dashboard</span>

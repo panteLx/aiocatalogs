@@ -10,6 +10,7 @@ import { AuthButton } from "./auth-button";
 export function NewUserForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const utils = api.useUtils();
 
   const createUserMutation = api.user.create.useMutation({
     onSuccess: (data, variables) => {
@@ -17,7 +18,9 @@ export function NewUserForm() {
         title: "User created successfully",
         description: `Your new user ID is: ${variables.userId}`,
       });
-      router.push(`/dashboard?userId=${variables.userId}`);
+      // Prefetch the user existence check to warm the cache
+      utils.user.exists.prefetch({ userId: variables.userId });
+      router.replace(`/dashboard?userId=${variables.userId}`);
       setIsLoading(false);
     },
     onError: (error) => {

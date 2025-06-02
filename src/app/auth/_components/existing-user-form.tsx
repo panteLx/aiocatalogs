@@ -45,7 +45,9 @@ export function ExistingUserForm() {
       const exists = await utils.user.exists.fetch({ userId: trimmedUserId });
 
       if (exists) {
-        router.push(`/dashboard?userId=${trimmedUserId}`);
+        // Prefetch the user data again to warm the cache for instant dashboard load
+        utils.user.exists.prefetch({ userId: trimmedUserId });
+        router.replace(`/dashboard?userId=${trimmedUserId}`);
       } else {
         toast({
           title: "User not found",
