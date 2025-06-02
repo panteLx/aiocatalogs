@@ -20,7 +20,7 @@
     "lint": "pnpm with-env next lint",
     "dev:worker": "wrangler dev",
     "build:worker": "pnpm with-env cloudflare",
-    "preview": "pnpm build:worker && wrangler dev",
+    "preview": "pnpm build:worker && wrangler versions upload",
     "deploy": "pnpm build:worker && wrangler deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
     "bindings": "cf-bindings-proxy",
