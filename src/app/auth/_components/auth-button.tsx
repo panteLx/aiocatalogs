@@ -21,7 +21,7 @@ export function AuthButton({
     <ShadcnButton
       disabled={isLoading || disabled}
       className={cn(
-        "w-full border-0 bg-white/10 text-white hover:bg-white/20",
+        "w-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 hover:bg-primary/90 hover:shadow-xl",
         className,
       )}
       {...props}

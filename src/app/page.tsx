@@ -5,59 +5,83 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { UserPlus, LogIn, ArrowRight, Shield } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+      {/* Modern animated background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
+        <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
+        <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      </div>
 
-      <div className="container relative flex flex-col items-center justify-center gap-8 px-4 py-16">
-        <div className="space-y-4 text-center">
-          <h1 className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-[5rem]">
+      <div className="container relative flex flex-col items-center justify-center gap-12 px-4 py-16">
+        <div className="space-y-6 text-center">
+          <h1 className="bg-gradient-to-r from-foreground via-primary to-foreground/60 bg-clip-text text-6xl font-extrabold tracking-tight text-transparent sm:text-[6rem] lg:text-[8rem]">
             AIoCatalogs
           </h1>
-          <p className="text-lg text-white/80">
-            Choose how you want to get started
+          <p className="max-w-2xl text-xl text-muted-foreground">
+            Choose how you want to get started with your modern catalog
+            experience
           </p>
         </div>
 
-        <div className="grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
-          <Link
-            href="/auth/new"
-            className="no-underline transition-transform hover:scale-[1.02]"
-          >
-            <Card className="h-full border-0 bg-white/10 shadow-lg transition-colors hover:bg-white/20">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between text-2xl font-bold text-white">
-                  Create New User
-                  <span className="text-lg text-white/60">→</span>
-                </CardTitle>
-                <CardDescription className="text-lg text-white/90">
-                  Generate a new unique user ID and start fresh with a new
-                  configuration
-                </CardDescription>
+        <div className="grid w-full max-w-4xl grid-cols-1 gap-8 sm:grid-cols-2">
+          <Link href="/auth/new" className="group no-underline">
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-card/70 hover:shadow-2xl">
+              <CardHeader className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-full border border-primary/20 bg-primary/10 p-3">
+                    <UserPlus className="h-6 w-6 text-primary" />
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <CardTitle className="text-2xl font-bold">
+                    Create New User
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Generate a new unique user ID and start fresh with a new
+                    configuration
+                  </CardDescription>
+                </div>
               </CardHeader>
             </Card>
           </Link>
 
-          <Link
-            href="/auth/existing"
-            className="no-underline transition-transform hover:scale-[1.02]"
-          >
-            <Card className="h-full border-0 bg-white/10 shadow-lg transition-colors hover:bg-white/20">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between text-2xl font-bold text-white">
-                  Use Existing ID
-                  <span className="text-lg text-white/60">→</span>
-                </CardTitle>
-                <CardDescription className="text-lg text-white/90">
-                  Already have a user ID? Enter it here to continue with your
-                  existing configuration
-                </CardDescription>
+          <Link href="/auth/existing" className="group no-underline">
+            <Card className="h-full border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:bg-card/70 hover:shadow-2xl">
+              <CardHeader className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="rounded-full border border-secondary/20 bg-secondary/10 p-3">
+                    <LogIn className="h-6 w-6 text-secondary-foreground" />
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <CardTitle className="text-2xl font-bold">
+                    Use Existing ID
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    Already have a user ID? Enter it to access your existing
+                    configuration
+                  </CardDescription>
+                </div>
               </CardHeader>
             </Card>
           </Link>
+        </div>
+
+        {/* Additional info section */}
+        <div className="mt-12 space-y-4 text-center">
+          <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+            <Shield className="h-4 w-4" />
+            <span>Secure • Fast • Modern</span>
+          </div>
         </div>
       </div>
     </main>

@@ -21,7 +21,7 @@ export default async function DashboardPage({
   }
 
   return (
-    <AuthLayout title="Dashboard" description="Welcome to your dashboard">
+    <AuthLayout title="Dashboard" description="">
       <DashboardContent userId={userId} />
     </AuthLayout>
   );

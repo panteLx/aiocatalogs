@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${GeistSans.variable}`}>
-      <body>
+    <html lang="en" className={`${GeistSans.variable} dark`}>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <Toaster />
       </body>
