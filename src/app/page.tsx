@@ -210,7 +210,7 @@ export default function Home() {
         <div className="mt-12 space-y-4 text-center">
           <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
             <Shield className="h-4 w-4" />
-            <span>Secure • Fast • Modern</span>
+            <span>Secure • Fast • Supercharged</span>
           </div>
         </div>
       </div>
