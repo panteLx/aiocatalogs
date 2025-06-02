@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Home, Menu, X } from "lucide-react";
@@ -14,6 +14,7 @@ interface NavigationProps {
 export function Navigation({ className }: NavigationProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -21,6 +22,9 @@ export function Navigation({ className }: NavigationProps) {
     // Prefetch the home route for instant navigation
     router.prefetch("/");
   };
+
+  // Only show home link if not on home page
+  const shouldShowHome = pathname !== "/";
 
   return (
     <nav
@@ -38,14 +42,16 @@ export function Navigation({ className }: NavigationProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden items-center space-x-6 md:flex">
-            <Link
-              href="/"
-              className="flex items-center space-x-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              onMouseEnter={handleHomeHover}
-            >
-              <Home className="h-4 w-4" />
-              <span>Home</span>
-            </Link>
+            {shouldShowHome && (
+              <Link
+                href="/"
+                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                onMouseEnter={handleHomeHover}
+              >
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -63,15 +69,17 @@ export function Navigation({ className }: NavigationProps) {
         {isOpen && (
           <div className="animate-fade-in border-t border-border py-4 md:hidden">
             <div className="flex flex-col space-y-2">
-              <Link
-                href="/"
-                className="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                onClick={() => setIsOpen(false)}
-                onMouseEnter={handleHomeHover}
-              >
-                <Home className="h-4 w-4" />
-                <span>Home</span>
-              </Link>
+              {shouldShowHome && (
+                <Link
+                  href="/"
+                  className="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  onClick={() => setIsOpen(false)}
+                  onMouseEnter={handleHomeHover}
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Home</span>
+                </Link>
+              )}
             </div>
           </div>
         )}
