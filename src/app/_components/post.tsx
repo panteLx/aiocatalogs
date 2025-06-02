@@ -19,7 +19,9 @@ export function LatestPost() {
   return (
     <div className="w-full max-w-xs">
       {latestPost ? (
-        <p className="truncate">Your most recent post: {latestPost.name}</p>
+        <p className="truncate text-white">
+          Your most recent post: {latestPost.name}
+        </p>
       ) : (
         <p>You have no posts yet.</p>
       )}
@@ -39,7 +41,7 @@ export function LatestPost() {
         />
         <button
           type="submit"
-          className="rounded-full bg-white/10 px-10 py-3 font-semibold transition hover:bg-white/20"
+          className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white transition hover:bg-white/20"
           disabled={createPost.isPending}
         >
           {createPost.isPending ? "Submitting..." : "Submit"}
