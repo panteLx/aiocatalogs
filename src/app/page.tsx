@@ -9,7 +9,7 @@ import { UserPlus, LogIn, ArrowRight, Shield } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
       {/* Modern animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
@@ -22,10 +22,10 @@ export default function Home() {
       <div className="container relative flex flex-col items-center justify-center gap-12 px-4 py-16">
         <div className="space-y-6 text-center">
           <h1 className="bg-gradient-to-r from-foreground via-primary to-foreground/60 bg-clip-text text-6xl font-extrabold tracking-tight text-transparent sm:text-[6rem] lg:text-[8rem]">
-            AIoCatalogs
+            AIOCatalogs
           </h1>
           <p className="max-w-2xl text-xl text-muted-foreground">
-            Choose how you want to get started with your modern catalog
+            Choose how you want to get started with your supercharged catalog
             experience
           </p>
         </div>

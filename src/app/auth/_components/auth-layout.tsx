@@ -14,7 +14,7 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ title, description, children }: AuthLayoutProps) {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+    <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
       {/* Modern animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5"></div>
