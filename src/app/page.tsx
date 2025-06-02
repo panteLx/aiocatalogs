@@ -138,10 +138,10 @@ export default function Home() {
               AIOCatalogs
             </h1>
             {/* Version Badge - positioned at top right of the logo */}
-            <div className="absolute -right-4 -top-2 sm:-right-8 sm:-top-4 lg:-right-12 lg:-top-6">
+            <div className="absolute -right-2 -top-5 sm:-right-6 sm:-top-3 lg:-right-10 lg:-top-5">
               <Badge
                 variant="secondary"
-                className="transform rounded-full border-blue-400/30 bg-gradient-to-r from-blue-500/20 to-purple-500/20 px-2 py-1 text-xs font-bold tracking-wide text-blue-300 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl sm:px-3 sm:py-1.5 sm:text-sm lg:px-4 lg:py-2 lg:text-base"
+                className="transform rounded-full border-primary/30 bg-gradient-to-r from-primary/20 to-foreground/10 px-1.5 py-0.5 text-xs font-bold tracking-wide text-primary/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:text-primary hover:shadow-xl sm:px-2.5 sm:py-1 sm:text-sm lg:px-4 lg:py-2 lg:text-base"
               >
                 v{packageJson.version}
               </Badge>
