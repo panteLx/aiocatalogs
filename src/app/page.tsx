@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LatestPost } from "@/app/_components/post";
 import { ToastButton } from "@/app/_components/toast-button";
 import { api, HydrateClient } from "@/trpc/server";
+import { Button } from "@/components/ui/button";
 
 export default async function Home() {
   const hello = await api.post.hello({ text: "from tRPC" });
@@ -16,7 +17,9 @@ export default async function Home() {
           <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">
             Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
           </h1>
-
+          <Button className="bg-white/10 px-4 py-2 font-semibold text-white hover:bg-white/20">
+            Click me
+          </Button>
           <ToastButton />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
