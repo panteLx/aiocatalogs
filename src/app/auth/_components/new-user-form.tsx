@@ -20,7 +20,7 @@ export function NewUserForm() {
       });
       // Prefetch the user existence check to warm the cache
       utils.user.exists.prefetch({ userId: variables.userId });
-      router.replace(`/dashboard?userId=${variables.userId}`);
+      router.replace(`/${variables.userId}`);
       setIsLoading(false);
     },
     onError: (error) => {

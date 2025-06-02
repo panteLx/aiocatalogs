@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Home, User, Settings, Menu, X } from "lucide-react";
+import { Home, Menu, X } from "lucide-react";
 
 interface NavigationProps {
   className?: string;
@@ -15,9 +15,9 @@ export function Navigation({ className }: NavigationProps) {
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
-  const handleDashboardHover = () => {
-    // Prefetch the dashboard route for instant navigation
-    router.prefetch("/dashboard");
+  const handleHomeHover = () => {
+    // Prefetch the home route for instant navigation
+    router.prefetch("/");
   };
 
   return (
@@ -39,17 +39,10 @@ export function Navigation({ className }: NavigationProps) {
             <Link
               href="/"
               className="flex items-center space-x-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onMouseEnter={handleHomeHover}
             >
               <Home className="h-4 w-4" />
               <span>Home</span>
-            </Link>
-            <Link
-              href="/dashboard"
-              className="flex items-center space-x-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              onMouseEnter={handleDashboardHover}
-            >
-              <User className="h-4 w-4" />
-              <span>Dashboard</span>
             </Link>
           </div>
 
@@ -72,18 +65,10 @@ export function Navigation({ className }: NavigationProps) {
                 href="/"
                 className="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 onClick={() => setIsOpen(false)}
+                onMouseEnter={handleHomeHover}
               >
                 <Home className="h-4 w-4" />
                 <span>Home</span>
-              </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                onClick={() => setIsOpen(false)}
-                onMouseEnter={handleDashboardHover}
-              >
-                <User className="h-4 w-4" />
-                <span>Dashboard</span>
               </Link>
             </div>
           </div>

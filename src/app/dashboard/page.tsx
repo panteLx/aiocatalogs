@@ -1,44 +1,27 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { AuthLayout } from "@/app/auth/_components/auth-layout";
-import { DashboardContent } from "@/app/dashboard/_components/dashboard-content";
-import { useUserValidation } from "@/hooks/use-user-validation";
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const userId = searchParams.get("userId");
 
-  const { isValidating, isValid, showLoader } = useUserValidation({
-    userId,
-    redirectOnInvalid: true,
-    showToastOnError: true,
-  });
+  useEffect(() => {
+    // Redirect to new userId-based route
+    if (userId) {
+      router.replace(`/${userId}`);
+    } else {
+      // If no userId, redirect to auth page
+      router.replace("/");
+    }
+  }, [userId, router]);
 
-  // Show loading state only if validation takes time
-  if (isValidating && showLoader) {
-    return (
-      <AuthLayout title="Dashboard" description="">
-        <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-        </div>
-      </AuthLayout>
-    );
-  }
-
-  // Show dashboard if user is valid
-  if (isValid && userId) {
-    return (
-      <AuthLayout title="Dashboard" description="">
-        <DashboardContent userId={userId} />
-      </AuthLayout>
-    );
-  }
-
-  // This shouldn't render as redirects happen in the hook,
-  // but show a minimal loader for the brief moment before redirect
+  // Show minimal loading state during redirect
   return (
-    <AuthLayout title="Dashboard" description="">
+    <AuthLayout title="Redirecting..." description="">
       <div className="flex items-center justify-center py-12">
         <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary opacity-50"></div>
       </div>
