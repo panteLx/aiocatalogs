@@ -37,7 +37,7 @@ export async function GET(): Promise<NextResponse> {
     version: packageJson.version,
     name: `AIOCatalogs`,
     description: packageJson.description,
-    logo: "https://i.imgur.com/fRPYeIV.png",
+    logo: "https://cdn.ssx.si/u/LSXKCT.png",
     background: "https://i.imgur.com/QPPXf5T.jpeg",
     resources: ["catalog"],
     types: ["movie", "series"],
