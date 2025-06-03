@@ -16,5 +16,5 @@ export default {
   dbCredentials: {
     url: `file:${env.LOCAL_DB_PATH}`,
   },
-  tablesFilter: [`t3-cloudflare_*`],
+  tablesFilter: [`cloudflare_*`],
 } satisfies Config;

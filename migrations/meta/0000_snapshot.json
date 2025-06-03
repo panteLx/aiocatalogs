@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7800293f-c78f-4b58-8988-da550bcf36d6",
+  "id": "4a3e96fc-4169-40b5-aaab-77458ec4a21b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "t3-cloudflare_catalogs": {
-      "name": "t3-cloudflare_catalogs",
+    "cloudflare_catalogs": {
+      "name": "cloudflare_catalogs",
       "columns": {
         "id": {
           "name": "id",
@@ -112,8 +112,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "t3-cloudflare_user_configs": {
-      "name": "t3-cloudflare_user_configs",
+    "cloudflare_user_configs": {
+      "name": "cloudflare_user_configs",
       "columns": {
         "id": {
           "name": "id",
@@ -139,8 +139,8 @@
         }
       },
       "indexes": {
-        "t3-cloudflare_user_configs_user_id_unique": {
-          "name": "t3-cloudflare_user_configs_user_id_unique",
+        "cloudflare_user_configs_user_id_unique": {
+          "name": "cloudflare_user_configs_user_id_unique",
           "columns": [
             "user_id"
           ],

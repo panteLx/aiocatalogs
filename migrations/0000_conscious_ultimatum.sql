@@ -1,4 +1,4 @@
-CREATE TABLE `t3-cloudflare_catalogs` (
+CREATE TABLE `cloudflare_catalogs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`user_id` text NOT NULL,
 	`manifest_url` text NOT NULL,
@@ -12,13 +12,13 @@ CREATE TABLE `t3-cloudflare_catalogs` (
 	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `t3-cloudflare_user_configs` (
+CREATE TABLE `cloudflare_user_configs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`user_id` text NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX `catalog_user_id_idx` ON `t3-cloudflare_catalogs` (`user_id`);--> statement-breakpoint
-CREATE INDEX `catalog_order_idx` ON `t3-cloudflare_catalogs` (`user_id`,`order`);--> statement-breakpoint
-CREATE UNIQUE INDEX `t3-cloudflare_user_configs_user_id_unique` ON `t3-cloudflare_user_configs` (`user_id`);--> statement-breakpoint
-CREATE INDEX `user_id_idx` ON `t3-cloudflare_user_configs` (`user_id`);
+CREATE INDEX `catalog_user_id_idx` ON `cloudflare_catalogs` (`user_id`);--> statement-breakpoint
+CREATE INDEX `catalog_order_idx` ON `cloudflare_catalogs` (`user_id`,`order`);--> statement-breakpoint
+CREATE UNIQUE INDEX `cloudflare_user_configs_user_id_unique` ON `cloudflare_user_configs` (`user_id`);--> statement-breakpoint
+CREATE INDEX `user_id_idx` ON `cloudflare_user_configs` (`user_id`);
