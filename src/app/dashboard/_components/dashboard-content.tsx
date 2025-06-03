@@ -44,14 +44,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const [isAddingCatalog, setIsAddingCatalog] = useState(false);
   const dragCounter = useRef(0);
 
-  // Check if user exists and create if necessary
+  // Check if user exists (do not auto-create)
   const { data: userExists } = api.user.exists.useQuery({ userId });
-  const createUserMutation = api.user.create.useMutation();
-
-  // Auto-create user if they don't exist
-  if (userExists === false && !createUserMutation.isPending) {
-    createUserMutation.mutate({ userId });
-  }
 
   // TRPC queries and mutations
   const {
@@ -63,7 +57,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       userId,
     },
     {
-      enabled: userExists !== false, // Only fetch catalogs if user exists
+      enabled: userExists === true, // Only fetch catalogs if user exists
     },
   );
 
@@ -72,11 +66,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       void refetchCatalogs();
       setCatalogUrl("");
       setIsAddingCatalog(false);
-      toast({
-        title: "Catalog Added",
-        description:
-          "The catalog has been successfully added to your collection.",
-      });
     },
     onError: (error) => {
       setIsAddingCatalog(false);
@@ -91,10 +80,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const updateCatalogMutation = api.catalog.update.useMutation({
     onSuccess: () => {
       void refetchCatalogs();
-      toast({
-        title: "Catalog Updated",
-        description: "The catalog has been updated successfully.",
-      });
     },
     onError: (error) => {
       toast({
@@ -108,10 +93,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const removeCatalogMutation = api.catalog.remove.useMutation({
     onSuccess: () => {
       void refetchCatalogs();
-      toast({
-        title: "Catalog Removed",
-        description: "The catalog has been removed from your collection.",
-      });
     },
     onError: (error) => {
       toast({
@@ -125,10 +106,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const reorderCatalogsMutation = api.catalog.reorder.useMutation({
     onSuccess: () => {
       void refetchCatalogs();
-      toast({
-        title: "Catalog Moved",
-        description: "Your catalog order has been updated.",
-      });
     },
     onError: (error) => {
       toast({
@@ -143,17 +120,38 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     if (!catalogUrl.trim() || isAddingCatalog) return;
 
     setIsAddingCatalog(true);
-    addCatalogMutation.mutate({
-      userId,
-      manifestUrl: catalogUrl.trim(),
-    });
+    addCatalogMutation.mutate(
+      {
+        userId,
+        manifestUrl: catalogUrl.trim(),
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Catalog Added",
+            description:
+              "The catalog has been successfully added to your collection.",
+          });
+        },
+      },
+    );
   };
 
   const handleRemoveCatalog = (catalogId: number) => {
-    removeCatalogMutation.mutate({
-      catalogId,
-      userId,
-    });
+    removeCatalogMutation.mutate(
+      {
+        catalogId,
+        userId,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Catalog Removed",
+            description: "The catalog has been removed from your collection.",
+          });
+        },
+      },
+    );
   };
 
   const handleRandomizeCatalogContent = (
@@ -164,16 +162,23 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     if (!catalog) return;
 
     const newRandomizedState = !catalog.randomized;
-    updateCatalogMutation.mutate({
-      catalogId,
-      userId,
-      randomized: newRandomizedState,
-    });
-
-    toast({
-      title: newRandomizedState ? "Catalog Randomized" : "Catalog Unrandomized",
-      description: `${catalogName} content has been ${newRandomizedState ? "randomized" : "restored to original order"}.`,
-    });
+    updateCatalogMutation.mutate(
+      {
+        catalogId,
+        userId,
+        randomized: newRandomizedState,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: newRandomizedState
+              ? "Catalog Randomized"
+              : "Catalog Unrandomized",
+            description: `${catalogName} content has been ${newRandomizedState ? "randomized" : "restored to original order"}.`,
+          });
+        },
+      },
+    );
   };
 
   const handleToggleCatalogStatus = (catalogId: number) => {
@@ -181,16 +186,21 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     if (!catalog) return;
 
     const newStatus = catalog.status === "active" ? "inactive" : "active";
-    updateCatalogMutation.mutate({
-      catalogId,
-      userId,
-      status: newStatus,
-    });
-
-    toast({
-      title: "Catalog Status Updated",
-      description: `Catalog is now ${newStatus}.`,
-    });
+    updateCatalogMutation.mutate(
+      {
+        catalogId,
+        userId,
+        status: newStatus,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Catalog Status Updated",
+            description: `Catalog is now ${newStatus}.`,
+          });
+        },
+      },
+    );
   };
 
   const handleStartEditing = (id: number, currentName: string) => {
@@ -200,16 +210,21 @@ export function DashboardContent({ userId }: DashboardContentProps) {
 
   const handleSaveEdit = () => {
     if (editingId && editingName.trim()) {
-      updateCatalogMutation.mutate({
-        catalogId: editingId,
-        userId,
-        name: editingName.trim(),
-      });
-
-      toast({
-        title: "Catalog Renamed",
-        description: "The catalog name has been updated.",
-      });
+      updateCatalogMutation.mutate(
+        {
+          catalogId: editingId,
+          userId,
+          name: editingName.trim(),
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Catalog Renamed",
+              description: "The catalog name has been updated.",
+            });
+          },
+        },
+      );
     }
     setEditingId(null);
     setEditingName("");
@@ -261,10 +276,20 @@ export function DashboardContent({ userId }: DashboardContentProps) {
 
           // Update order in database
           const catalogIds = newOrder.map((c) => c.id);
-          reorderCatalogsMutation.mutate({
-            userId,
-            catalogIds,
-          });
+          reorderCatalogsMutation.mutate(
+            {
+              userId,
+              catalogIds,
+            },
+            {
+              onSuccess: () => {
+                toast({
+                  title: "Catalog Moved",
+                  description: "Your catalog order has been updated.",
+                });
+              },
+            },
+          );
         }
       }
     }
@@ -279,6 +304,45 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       description: "The URL has been copied to your clipboard.",
     });
   };
+
+  // Show error if user doesn't exist
+  if (userExists === false) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-2 text-center">
+          <h1 className="bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-3xl font-bold text-transparent">
+            User Not Found
+          </h1>
+          <p className="text-muted-foreground">
+            The user ID &quot;{userId}&quot; does not exist.
+          </p>
+        </div>
+
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-red-500" />
+              <div className="space-y-2">
+                <h3 className="font-semibold text-red-800 dark:text-red-200">
+                  Invalid User ID
+                </h3>
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  This user ID doesn&apos;t exist in our system. Please check
+                  the URL or create a new user account.
+                </p>
+                <Button
+                  onClick={() => (window.location.href = "/")}
+                  className="mt-4 bg-red-600 text-white hover:bg-red-700"
+                >
+                  Go to Homepage
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
