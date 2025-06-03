@@ -123,7 +123,7 @@ export async function GET(
           let catalogToAdd = {
             ...catalogDef,
             id: uniqueCatalogId,
-            name: `${catalog.name} - ${catalogDef.name}`,
+            name: `${catalog.name}`,
           };
 
           // Apply randomization if enabled for this catalog
