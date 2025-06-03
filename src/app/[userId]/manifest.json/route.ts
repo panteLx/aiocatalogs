@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/server/db";
 import { catalogs, userConfigs } from "@/server/db/schema";
+import packageJson from "../../../../package.json";
 
 interface StremioManifest {
   id: string;
@@ -10,9 +11,14 @@ interface StremioManifest {
   name: string;
   description: string;
   logo?: string;
+  background?: string;
   resources: string[];
   types: string[];
   idPrefixes?: string[];
+  behaviorHints?: {
+    configurable?: boolean;
+    configurationRequired?: boolean;
+  };
   catalogs: Array<{
     type: string;
     id: string;
@@ -68,17 +74,35 @@ export async function GET(
       .get();
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        {
-          status: 404,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
+      // Create user not found catalog manifest
+      const unifiedManifest: StremioManifest = {
+        id: `${packageJson.name}-${userId}-user-not-found`,
+        version: packageJson.version,
+        name: `AIOCatalogs - User Not Found`,
+        description:
+          "User not found. Please visit https://aio.pantelx.com to create an account. If you need help, join our Discord: https://discord.com/invite/Ma4SnagqwE",
+        logo: "https://i.imgur.com/fRPYeIV.png",
+        background: "https://i.imgur.com/QPPXf5T.jpeg",
+        resources: [],
+        types: [],
+        idPrefixes: [],
+        catalogs: [],
+        behaviorHints: {
+          configurable: true,
+          configurationRequired: true,
         },
-      );
+      };
+      return NextResponse.json(unifiedManifest, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
     }
 
     // Get all active catalogs for this user
@@ -89,17 +113,36 @@ export async function GET(
       .orderBy(catalogs.order);
 
     if (activeCatalogs.length === 0) {
-      return NextResponse.json(
-        { error: "No active catalogs found" },
-        {
-          status: 404,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
+      // Create no active catalog manifest
+      const unifiedManifest: StremioManifest = {
+        id: `${packageJson.name}-${userId}-no-catalogs`,
+        version: packageJson.version,
+        name: `AIOCatalogs - No Active Catalogs`,
+        description:
+          "You have no active catalogs. Please visit https://aio.pantelx.com to add some or active them. If you need help, join our Discord: https://discord.com/invite/Ma4SnagqwE",
+        logo: "https://i.imgur.com/fRPYeIV.png",
+        background: "https://i.imgur.com/QPPXf5T.jpeg",
+        resources: [],
+        types: [],
+        idPrefixes: [],
+        catalogs: [],
+        behaviorHints: {
+          configurable: true,
+          configurationRequired: true,
         },
-      );
+      };
+
+      return NextResponse.json(unifiedManifest, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
     }
 
     // Combine all catalogs into one unified manifest
@@ -141,15 +184,20 @@ export async function GET(
 
     // Create unified manifest
     const unifiedManifest: StremioManifest = {
-      id: `aiocatalogs-unified-${userId}`,
-      version: "1.0.0",
-      name: "AIO Catalogs - Unified",
-      description: `Unified catalog combining ${activeCatalogs.length} addon${activeCatalogs.length > 1 ? "s" : ""}`,
-      logo: "https://via.placeholder.com/256x256/6366f1/ffffff?text=AIO",
+      id: `${packageJson.name}-${userId}`,
+      version: packageJson.version,
+      name: "AIOCatalogs",
+      description: packageJson.description,
+      logo: "https://i.imgur.com/fRPYeIV.png",
+      background: "https://i.imgur.com/QPPXf5T.jpeg",
       resources: ["catalog"],
       types: Array.from(allTypes),
       idPrefixes: Array.from(allIdPrefixes),
       catalogs: combinedCatalogs,
+      behaviorHints: {
+        configurable: true,
+        configurationRequired: false,
+      },
     };
 
     return NextResponse.json(unifiedManifest, {
