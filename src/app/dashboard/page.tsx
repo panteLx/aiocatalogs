@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, Suspense } from "react";
-import { AuthLayout } from "@/app/auth/_components/auth-layout";
+import { PageLayout } from "@/components/page-layout";
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -21,11 +21,11 @@ function DashboardContent() {
 
   // Show minimal loading state during redirect
   return (
-    <AuthLayout title="Redirecting..." description="">
+    <PageLayout title="Redirecting..." description="">
       <div className="flex items-center justify-center py-12">
         <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary opacity-50"></div>
       </div>
-    </AuthLayout>
+    </PageLayout>
   );
 }
 
@@ -33,11 +33,11 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <AuthLayout title="Loading..." description="">
+        <PageLayout title="Loading..." description="">
           <div className="flex items-center justify-center py-12">
             <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary opacity-50"></div>
           </div>
-        </AuthLayout>
+        </PageLayout>
       }
     >
       <DashboardContent />
