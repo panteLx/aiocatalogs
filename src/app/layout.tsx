@@ -9,6 +9,8 @@ import packageJson from "../../package.json";
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
+  // TODO: Update metadataBase with production url
+  metadataBase: new URL("https://v2-aio.pantelx.com"),
   title: "AIOCatalogs",
   description: packageJson.description,
   keywords: [
