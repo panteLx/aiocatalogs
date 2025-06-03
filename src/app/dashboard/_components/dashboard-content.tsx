@@ -868,8 +868,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                           <Globe className="h-4 w-4 text-primary" />
                           <span className="break-all font-mono text-xs">
                             {typeof window !== "undefined"
-                              ? `${window.location.origin}/api/manifest/${userId}`
-                              : `/api/manifest/${userId}`}
+                              ? `${window.location.origin}/${userId}/manifest.json`
+                              : `/${userId}/manifest.json`}
                           </span>
                         </div>
                         <Button
@@ -878,8 +878,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                           onClick={() =>
                             handleCopyUrl(
                               typeof window !== "undefined"
-                                ? `${window.location.origin}/api/manifest/${userId}`
-                                : `/api/manifest/${userId}`,
+                                ? `${window.location.origin}/${userId}/manifest.json`
+                                : `/${userId}/manifest.json`,
                             )
                           }
                           className="w-full"
