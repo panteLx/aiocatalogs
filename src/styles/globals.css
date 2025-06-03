@@ -154,4 +154,20 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* Prevent mobile zoom on input focus by ensuring minimum 16px font size */
+  @media screen and (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+
+    /* Ensure Tailwind's responsive text sizing doesn't interfere */
+    input[class*="text-sm"],
+    textarea[class*="text-sm"],
+    select[class*="text-sm"] {
+      font-size: 16px !important;
+    }
+  }
 }

@@ -469,7 +469,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                     {catalogs.map((catalog) => (
                       <div
                         key={catalog.id}
-                        className={`flex items-center justify-between rounded-lg border border-border/50 bg-background/30 p-4 transition-all ${
+                        className={`rounded-lg border border-border/50 bg-background/30 transition-all ${
                           draggedItem === catalog.id ? "opacity-50" : ""
                         }`}
                         draggable
@@ -480,14 +480,16 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, catalog.id)}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div className="cursor-move text-muted-foreground/50 hover:text-muted-foreground">
-                            <GripVertical className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0 flex-1 space-y-1">
-                            <div className="flex items-center space-x-2">
-                              {editingId === catalog.id ? (
-                                <div className="flex items-center space-x-2">
+                        {/* Mobile Layout */}
+                        <div className="block md:hidden">
+                          <div className="space-y-2 p-3">
+                            {/* Header Row */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="cursor-move text-muted-foreground/50 hover:text-muted-foreground">
+                                  <GripVertical className="h-4 w-4" />
+                                </div>
+                                {editingId === catalog.id ? (
                                   <input
                                     type="text"
                                     value={editingName}
@@ -500,23 +502,26 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                         handleCancelEdit();
                                     }}
                                     onBlur={handleSaveEdit}
-                                    className="rounded border border-border/50 bg-background px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    className="flex-1 rounded border border-border/50 bg-background px-2 py-1 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 md:text-sm"
                                     autoFocus
                                   />
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() =>
-                                    handleStartEditing(catalog.id, catalog.name)
-                                  }
-                                  className="group flex items-center space-x-1 rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-muted/50"
-                                >
-                                  <span className="truncate">
-                                    {catalog.name}
-                                  </span>
-                                  <Edit2 className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                                </button>
-                              )}
+                                ) : (
+                                  <button
+                                    onClick={() =>
+                                      handleStartEditing(
+                                        catalog.id,
+                                        catalog.name,
+                                      )
+                                    }
+                                    className="group flex items-center space-x-1 rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-muted/50"
+                                  >
+                                    <span className="truncate">
+                                      {catalog.name}
+                                    </span>
+                                    <Edit2 className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                                  </button>
+                                )}
+                              </div>
                               <Badge
                                 variant={
                                   catalog.status === "active"
@@ -532,63 +537,186 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                 {catalog.status}
                               </Badge>
                             </div>
-                            <p className="truncate text-xs text-muted-foreground">
+
+                            {/* Description */}
+                            <p className="text-xs text-muted-foreground">
                               {catalog.description}
                             </p>
+
+                            {/* URL Row */}
                             <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                              <Globe className="h-3 w-3" />
+                              <Globe className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate font-mono">
                                 {catalog.url}
                               </span>
                             </div>
+
+                            {/* Action Buttons Row */}
+                            <div className="flex items-center justify-end space-x-2 pt-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleRandomizeCatalogContent(
+                                    catalog.id,
+                                    catalog.name,
+                                  )
+                                }
+                                className={`h-9 w-9 p-0 ${
+                                  catalog.randomized
+                                    ? "bg-purple-500/20 text-purple-500 hover:bg-purple-500/30"
+                                    : "hover:bg-muted"
+                                }`}
+                                title={`${catalog.randomized ? "Disable" : "Enable"} catalog randomization`}
+                              >
+                                <Shuffle className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleToggleCatalogStatus(catalog.id)
+                                }
+                                className={`h-9 w-9 p-0 ${
+                                  catalog.status === "active"
+                                    ? "bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                                    : "bg-gray-500/20 text-gray-500 hover:bg-gray-500/30"
+                                }`}
+                                title={`${catalog.status === "active" ? "Deactivate" : "Activate"} catalog`}
+                              >
+                                {catalog.status === "active" ? (
+                                  <Pause className="h-4 w-4" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveCatalog(catalog.id)}
+                                className="h-9 w-9 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        <div className="ml-4 flex items-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleRandomizeCatalogContent(
-                                catalog.id,
-                                catalog.name,
-                              )
-                            }
-                            className={`h-8 w-8 p-0 ${
-                              catalog.randomized
-                                ? "bg-purple-500/20 text-purple-500 hover:bg-purple-500/30"
-                                : "hover:bg-muted"
-                            }`}
-                            title={`${catalog.randomized ? "Disable" : "Enable"} catalog randomization`}
-                          >
-                            <Shuffle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleToggleCatalogStatus(catalog.id)
-                            }
-                            className={`h-8 w-8 p-0 ${
-                              catalog.status === "active"
-                                ? "bg-green-500/20 text-green-500 hover:bg-green-500/30"
-                                : "bg-gray-500/20 text-gray-500 hover:bg-gray-500/30"
-                            }`}
-                            title={`${catalog.status === "active" ? "Deactivate" : "Activate"} catalog`}
-                          >
-                            {catalog.status === "active" ? (
-                              <Pause className="h-4 w-4" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveCatalog(catalog.id)}
-                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden items-center justify-between p-4 md:flex">
+                          <div className="flex items-center space-x-3">
+                            <div className="cursor-move text-muted-foreground/50 hover:text-muted-foreground">
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center space-x-2">
+                                {editingId === catalog.id ? (
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="text"
+                                      value={editingName}
+                                      onChange={(e) =>
+                                        setEditingName(e.target.value)
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleSaveEdit();
+                                        if (e.key === "Escape")
+                                          handleCancelEdit();
+                                      }}
+                                      onBlur={handleSaveEdit}
+                                      className="rounded border border-border/50 bg-background px-2 py-1 text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 md:text-sm"
+                                      autoFocus
+                                    />
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() =>
+                                      handleStartEditing(
+                                        catalog.id,
+                                        catalog.name,
+                                      )
+                                    }
+                                    className="group flex items-center space-x-1 rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-muted/50"
+                                  >
+                                    <span className="truncate">
+                                      {catalog.name}
+                                    </span>
+                                    <Edit2 className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                                  </button>
+                                )}
+                                <Badge
+                                  variant={
+                                    catalog.status === "active"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                  className={
+                                    catalog.status === "active"
+                                      ? "border-green-500/20 bg-green-500/10 text-green-500"
+                                      : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
+                                  }
+                                >
+                                  {catalog.status}
+                                </Badge>
+                              </div>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {catalog.description}
+                              </p>
+                              <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                                <Globe className="h-3 w-3" />
+                                <span className="truncate font-mono">
+                                  {catalog.url}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="ml-4 flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleRandomizeCatalogContent(
+                                  catalog.id,
+                                  catalog.name,
+                                )
+                              }
+                              className={`h-8 w-8 p-0 ${
+                                catalog.randomized
+                                  ? "bg-purple-500/20 text-purple-500 hover:bg-purple-500/30"
+                                  : "hover:bg-muted"
+                              }`}
+                              title={`${catalog.randomized ? "Disable" : "Enable"} catalog randomization`}
+                            >
+                              <Shuffle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleToggleCatalogStatus(catalog.id)
+                              }
+                              className={`h-8 w-8 p-0 ${
+                                catalog.status === "active"
+                                  ? "bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                                  : "bg-gray-500/20 text-gray-500 hover:bg-gray-500/30"
+                              }`}
+                              title={`${catalog.status === "active" ? "Deactivate" : "Activate"} catalog`}
+                            >
+                              {catalog.status === "active" ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveCatalog(catalog.id)}
+                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
