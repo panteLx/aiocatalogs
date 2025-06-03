@@ -18,6 +18,10 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    // GitHub Repository Configuration for Changelog
+    GITHUB_REPO_OWNER: z.string().default("your-github-username"),
+    GITHUB_REPO_NAME: z.string().default("aiocatalogs-v2"),
+    GITHUB_TOKEN: z.string().optional(), // Optional GitHub token for higher rate limits
   },
 
   /**
@@ -39,6 +43,9 @@ export const env = createEnv({
     CLOUDFLARE_D1_DATABASE_ID: process.env.CLOUDFLARE_D1_DATABASE_ID,
     CLOUDFLARE_TOKEN: process.env.CLOUDFLARE_TOKEN,
     NODE_ENV: process.env.NODE_ENV,
+    GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER,
+    GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**

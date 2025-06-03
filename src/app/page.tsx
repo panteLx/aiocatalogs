@@ -16,6 +16,8 @@ import { UserPlus, LogIn, ArrowRight, Shield, Loader2, X } from "lucide-react";
 import { api } from "@/trpc/react";
 import { toast } from "@/hooks/use-toast";
 import { generateUserId, validateUserId } from "@/lib/user-utils";
+import { changelogConfig } from "@/lib/changelog-config";
+import { Changelog } from "@/components/changelog";
 import packageJson from "../../package.json";
 
 export default function Home() {
@@ -205,6 +207,11 @@ export default function Home() {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Changelog Section */}
+        <Changelog
+          includePrerelease={changelogConfig.display.includePrerelease}
+        />
 
         {/* Additional info section */}
         <div className="mt-12 space-y-4 text-center">

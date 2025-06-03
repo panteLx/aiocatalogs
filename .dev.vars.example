@@ -1,3 +1,9 @@
 CLOUDFLARE_ACCOUNT_ID='x'
 CLOUDFLARE_D1_DATABASE_ID='x'
 CLOUDFLARE_TOKEN='x'
+
+# GitHub Repository Configuration for Changelog
+GITHUB_REPO_OWNER='your-github-username'
+GITHUB_REPO_NAME='aiocatalogs-v2'
+# Optional: Add a GitHub Personal Access Token for higher rate limits
+# GITHUB_TOKEN='your-github-personal-access-token'

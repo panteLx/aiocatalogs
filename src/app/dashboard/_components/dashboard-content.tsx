@@ -116,16 +116,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     });
   };
 
-  const handleRandomizeCatalogs = () => {
-    const shuffled = [...catalogs].sort(() => Math.random() - 0.5);
-    setCatalogs(shuffled);
-
-    toast({
-      title: "Catalogs Randomized",
-      description: "Your catalog order has been randomized.",
-    });
-  };
-
   const handleRandomizeCatalogContent = (
     catalogId: string,
     catalogName: string,
