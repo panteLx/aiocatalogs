@@ -18,8 +18,14 @@ import {
   MessageCircle,
   Github,
   Star,
+  Shuffle,
+  Edit2,
+  GripVertical,
+  Info,
+  Play,
+  Pause,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 interface DashboardContentProps {
@@ -34,6 +40,7 @@ const mockCatalogs = [
     url: "https://torrentio.strem.fun/manifest.json",
     description: "Provides torrent streams from various sources",
     status: "active",
+    randomized: false,
     addedAt: "2025-06-01T10:00:00Z",
   },
   {
@@ -42,6 +49,7 @@ const mockCatalogs = [
     url: "https://tpb-plus.herokuapp.com/manifest.json",
     description: "Enhanced Pirate Bay addon with improved search",
     status: "active",
+    randomized: true,
     addedAt: "2025-06-02T14:30:00Z",
   },
   {
@@ -50,6 +58,7 @@ const mockCatalogs = [
     url: "https://opensubtitles-v3.strem.io/manifest.json",
     description: "Subtitle provider for movies and TV shows",
     status: "inactive",
+    randomized: false,
     addedAt: "2025-06-03T09:15:00Z",
   },
 ];
@@ -57,6 +66,10 @@ const mockCatalogs = [
 export function DashboardContent({ userId }: DashboardContentProps) {
   const [catalogUrl, setCatalogUrl] = useState("");
   const [catalogs, setCatalogs] = useState(mockCatalogs);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const dragCounter = useRef(0);
 
   const handleAddCatalog = () => {
     if (!catalogUrl.trim()) return;
@@ -68,6 +81,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       url: catalogUrl,
       description: "Newly added catalog",
       status: "active" as const,
+      randomized: false,
       addedAt: new Date().toISOString(),
     };
 
@@ -100,6 +114,139 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       title: "URL Copied",
       description: "The URL has been copied to your clipboard.",
     });
+  };
+
+  const handleRandomizeCatalogs = () => {
+    const shuffled = [...catalogs].sort(() => Math.random() - 0.5);
+    setCatalogs(shuffled);
+
+    toast({
+      title: "Catalogs Randomized",
+      description: "Your catalog order has been randomized.",
+    });
+  };
+
+  const handleRandomizeCatalogContent = (
+    catalogId: string,
+    catalogName: string,
+  ) => {
+    // Toggle randomized state
+    setCatalogs(
+      catalogs.map((catalog) =>
+        catalog.id === catalogId
+          ? { ...catalog, randomized: !catalog.randomized }
+          : catalog,
+      ),
+    );
+
+    const catalog = catalogs.find((c) => c.id === catalogId);
+    const newState = !catalog?.randomized;
+
+    toast({
+      title: newState ? "Catalog Randomized" : "Catalog Unrandomized",
+      description: `${catalogName} content has been ${newState ? "randomized" : "restored to original order"}.`,
+    });
+  };
+
+  const handleToggleCatalogStatus = (catalogId: string) => {
+    setCatalogs(
+      catalogs.map((catalog) =>
+        catalog.id === catalogId
+          ? {
+              ...catalog,
+              status: catalog.status === "active" ? "inactive" : "active",
+            }
+          : catalog,
+      ),
+    );
+
+    const catalog = catalogs.find((c) => c.id === catalogId);
+    const newStatus = catalog?.status === "active" ? "inactive" : "active";
+
+    toast({
+      title: "Catalog Status Updated",
+      description: `Catalog is now ${newStatus}.`,
+    });
+  };
+
+  const handleStartEditing = (id: string, currentName: string) => {
+    setEditingId(id);
+    setEditingName(currentName);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingId && editingName.trim()) {
+      setCatalogs(
+        catalogs.map((catalog) =>
+          catalog.id === editingId
+            ? { ...catalog, name: editingName.trim() }
+            : catalog,
+        ),
+      );
+
+      toast({
+        title: "Catalog Renamed",
+        description: "The catalog name has been updated.",
+      });
+    }
+    setEditingId(null);
+    setEditingName("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingName("");
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedItem(id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    dragCounter.current = 0;
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+  };
+
+  const handleDragLeave = () => {
+    dragCounter.current--;
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+
+    if (draggedItem && draggedItem !== targetId) {
+      const draggedIndex = catalogs.findIndex((c) => c.id === draggedItem);
+      const targetIndex = catalogs.findIndex((c) => c.id === targetId);
+
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const newCatalogs = [...catalogs];
+        const removedItems = newCatalogs.splice(draggedIndex, 1);
+        const removed = removedItems[0];
+
+        if (removed) {
+          newCatalogs.splice(targetIndex, 0, removed);
+          setCatalogs(newCatalogs);
+
+          toast({
+            title: "Catalog Moved",
+            description: "Your catalog order has been updated.",
+          });
+        }
+      }
+    }
+    setDraggedItem(null);
   };
 
   return (
@@ -322,54 +469,117 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                     {catalogs.map((catalog) => (
                       <div
                         key={catalog.id}
-                        className="flex items-center justify-between rounded-lg border border-border/50 bg-background/30 p-4"
+                        className={`flex items-center justify-between rounded-lg border border-border/50 bg-background/30 p-4 transition-all ${
+                          draggedItem === catalog.id ? "opacity-50" : ""
+                        }`}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, catalog.id)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, catalog.id)}
                       >
-                        <div className="min-w-0 flex-1 space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="truncate text-sm font-medium">
-                              {catalog.name}
-                            </h4>
-                            <Badge
-                              variant={
-                                catalog.status === "active"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className={
-                                catalog.status === "active"
-                                  ? "border-green-500/20 bg-green-500/10 text-green-500"
-                                  : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
-                              }
-                            >
-                              {catalog.status}
-                            </Badge>
+                        <div className="flex items-center space-x-3">
+                          <div className="cursor-move text-muted-foreground/50 hover:text-muted-foreground">
+                            <GripVertical className="h-4 w-4" />
                           </div>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {catalog.description}
-                          </p>
-                          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                            <Globe className="h-3 w-3" />
-                            <span className="truncate font-mono">
-                              {catalog.url}
-                            </span>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center space-x-2">
+                              {editingId === catalog.id ? (
+                                <div className="flex items-center space-x-2">
+                                  <input
+                                    type="text"
+                                    value={editingName}
+                                    onChange={(e) =>
+                                      setEditingName(e.target.value)
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") handleSaveEdit();
+                                      if (e.key === "Escape")
+                                        handleCancelEdit();
+                                    }}
+                                    onBlur={handleSaveEdit}
+                                    className="rounded border border-border/50 bg-background px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    autoFocus
+                                  />
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() =>
+                                    handleStartEditing(catalog.id, catalog.name)
+                                  }
+                                  className="group flex items-center space-x-1 rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-muted/50"
+                                >
+                                  <span className="truncate">
+                                    {catalog.name}
+                                  </span>
+                                  <Edit2 className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                                </button>
+                              )}
+                              <Badge
+                                variant={
+                                  catalog.status === "active"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className={
+                                  catalog.status === "active"
+                                    ? "border-green-500/20 bg-green-500/10 text-green-500"
+                                    : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
+                                }
+                              >
+                                {catalog.status}
+                              </Badge>
+                            </div>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {catalog.description}
+                            </p>
+                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                              <Globe className="h-3 w-3" />
+                              <span className="truncate font-mono">
+                                {catalog.url}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <div className="ml-4 flex items-center space-x-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleCopyUrl(catalog.url)}
-                            className="h-8 w-8 p-0"
+                            onClick={() =>
+                              handleRandomizeCatalogContent(
+                                catalog.id,
+                                catalog.name,
+                              )
+                            }
+                            className={`h-8 w-8 p-0 ${
+                              catalog.randomized
+                                ? "bg-purple-500/20 text-purple-500 hover:bg-purple-500/30"
+                                : "hover:bg-muted"
+                            }`}
+                            title={`${catalog.randomized ? "Disable" : "Enable"} catalog randomization`}
                           >
-                            <Copy className="h-4 w-4" />
+                            <Shuffle className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(catalog.url, "_blank")}
-                            className="h-8 w-8 p-0"
+                            onClick={() =>
+                              handleToggleCatalogStatus(catalog.id)
+                            }
+                            className={`h-8 w-8 p-0 ${
+                              catalog.status === "active"
+                                ? "bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                                : "bg-gray-500/20 text-gray-500 hover:bg-gray-500/30"
+                            }`}
+                            title={`${catalog.status === "active" ? "Deactivate" : "Activate"} catalog`}
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            {catalog.status === "active" ? (
+                              <Pause className="h-4 w-4" />
+                            ) : (
+                              <Play className="h-4 w-4" />
+                            )}
                           </Button>
                           <Button
                             variant="ghost"
@@ -407,6 +617,18 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                       {catalogs.filter((c) => c.status === "active").length}{" "}
                       active catalogs
                     </p>
+
+                    <div className="flex items-start space-x-2 rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
+                      <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+                      <div className="text-xs text-blue-600 dark:text-blue-400">
+                        <p className="font-medium">Important Note</p>
+                        <p className="mt-1">
+                          You need to reinstall the addon after adding or
+                          removing catalogs.
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="rounded-lg border border-border/50 bg-background/30 p-3">
                       <div className="space-y-3">
                         <div className="flex items-center space-x-2">
