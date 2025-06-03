@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   Card,
   CardHeader,
@@ -101,31 +102,107 @@ function formatDate(dateString: string): string {
   });
 }
 
-function ChangelogFeatureItem({ text }: { text: string }) {
-  // Parse code blocks and links from the text
-  const parts = text.split(/(`[^`]+`)/g);
+// Custom Markdown content renderer with proper styling
+function MarkdownContent({ content }: { content: string }) {
+  // Replace @username with styled username with avatar
+  const processedContent = content.replace(
+    /\s@([a-zA-Z0-9_-]+)/g,
+    (match, username) => {
+      return `[@${username}](https://github.com/${username})`;
+    },
+  );
 
+  // Replace issue links with proper formatting
+  const enhancedContent = processedContent.replace(
+    /(https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/(\d+))/g,
+    (match, url, issueNumber) => {
+      return `[#${issueNumber}](${url})`;
+    },
+  );
+
+  // Remove <samp> tags and properly format commit hashes
+  let modifiedContent = enhancedContent.replace(
+    /<samp>\(([a-f0-9]{5,7})\)<\/samp>/g,
+    "",
+  );
+
+  // Custom components for rendering specific markdown elements
+  const components = {
+    a: ({ node, href, children, ...props }: any) => {
+      const isGitHubUser =
+        href?.includes("https://github.com/") && href.split("/").length === 4;
+
+      if (isGitHubUser) {
+        return (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-1 inline-flex items-center font-medium text-foreground no-underline hover:underline"
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      }
+
+      // For all other links
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary no-underline hover:underline"
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    },
+
+    code: ({ node, inline, children, ...props }: any) => {
+      // Special handling for commit hashes in <samp> tags
+      if (
+        props.className === "language-samp" ||
+        (inline && children.toString().match(/^[a-f0-9]{5,7}$/))
+      ) {
+        return (
+          <samp className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-xs">
+            {children}
+          </samp>
+        );
+      }
+
+      return inline ? (
+        <code
+          className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
+          {...props}
+        >
+          {children}
+        </code>
+      ) : (
+        <pre className="overflow-auto rounded-md bg-muted p-4">
+          <code className="font-mono text-xs" {...props}>
+            {children}
+          </code>
+        </pre>
+      );
+    },
+  };
+
+  return (
+    <div className="markdown-content prose-sm dark:prose-invert max-w-none">
+      <ReactMarkdown components={components}>{modifiedContent}</ReactMarkdown>
+    </div>
+  );
+}
+
+function ChangelogFeatureItem({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-2">
       <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"></div>
       <div className="flex-1 text-sm">
-        {parts.map((part, index) => {
-          if (part.startsWith("`") && part.endsWith("`")) {
-            return (
-              <code
-                key={index}
-                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs"
-              >
-                {part.slice(1, -1)}
-              </code>
-            );
-          }
-
-          // Handle issue references like (#123)
-          return part.replace(/\(#(\d+)\)/g, (match, issueNumber) => {
-            return `(#${issueNumber})`;
-          });
-        })}
+        <MarkdownContent content={text} />
       </div>
     </div>
   );
@@ -271,10 +348,14 @@ function ChangelogEntry({
           </div>
         ) : (
           entry.rawContent && (
-            <div className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {showFullContent || isExpanded
-                ? entry.rawContent
-                : `${entry.rawContent.slice(0, 200)}${entry.rawContent.length > 200 ? "..." : ""}`}
+            <div className="text-sm text-muted-foreground">
+              {showFullContent || isExpanded ? (
+                <MarkdownContent content={entry.rawContent} />
+              ) : (
+                <div className="line-clamp-3">
+                  <MarkdownContent content={entry.rawContent} />
+                </div>
+              )}
             </div>
           )
         )}
