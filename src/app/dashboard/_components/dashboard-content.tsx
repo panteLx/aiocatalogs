@@ -155,17 +155,30 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     },
   });
 
+  // Helper function to transform stremio:// URLs to https://
+  const transformStremioUrl = (url: string): string => {
+    if (url.startsWith("stremio://")) {
+      return url.replace("stremio://", "https://");
+    }
+    return url;
+  };
+
   const handleAddCatalog = async () => {
     if (!catalogUrl.trim() || isAddingCatalog) return;
+
+    // Transform stremio:// URLs to https://
+    const transformedUrl = transformStremioUrl(catalogUrl.trim());
 
     setIsAddingCatalog(true);
     addCatalogMutation.mutate(
       {
         userId,
-        manifestUrl: catalogUrl.trim(),
+        manifestUrl: transformedUrl,
       },
       {
         onSuccess: () => {
+          // Update the input field with the transformed URL
+          setCatalogUrl(transformedUrl);
           toast({
             title: "Catalog Added",
             description:
@@ -174,6 +187,24 @@ export function DashboardContent({ userId }: DashboardContentProps) {
         },
       },
     );
+  };
+
+  // Function to add unified catalog directly to Stremio
+  const handleAddToStremio = () => {
+    const manifestUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/${userId}/manifest.json`
+        : `/${userId}/manifest.json`;
+
+    const stremioUrl = `stremio://${manifestUrl.replace(/^https?:\/\//, "")}`;
+
+    // Try to open in Stremio app
+    window.open(stremioUrl, "_blank");
+
+    toast({
+      title: "Opening Stremio",
+      description: "Attempting to add the unified catalog to Stremio app...",
+    });
   };
 
   const handleRemoveCatalog = (catalogId: number) => {
@@ -441,16 +472,21 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                   <Input
                     id="catalog-url"
                     type="url"
-                    placeholder="https://example.com/manifest.json"
+                    placeholder="https://example.com/manifest.json or stremio://..."
                     value={catalogUrl}
-                    onChange={(e) => setCatalogUrl(e.target.value)}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Automatically transform stremio:// URLs while typing
+                      const transformedValue = transformStremioUrl(inputValue);
+                      setCatalogUrl(transformedValue);
+                    }}
                     className="border-border/50 bg-background/50 pl-10"
                   />
                 </div>
                 <Button
                   onClick={handleAddCatalog}
                   disabled={!catalogUrl.trim() || isAddingCatalog}
-                  className="px-6"
+                  className="bg-primary/80 px-6 hover:bg-primary/70"
                 >
                   {isAddingCatalog ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -460,7 +496,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Enter the URL of a Stremio addon manifest.json file
+                Enter the URL of a addon catalog manifest.json file. You can
+                find them on MDBList for example.
               </p>
             </div>
           </CardContent>
@@ -913,8 +950,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                       <div className="text-xs text-blue-600 dark:text-blue-400">
                         <p className="font-medium">Important Note</p>
                         <p className="mt-1">
-                          You need to reinstall the addon after adding or
-                          removing catalogs.
+                          You need to reinstall the addon after adding, removing
+                          or renaming catalogs.
                         </p>
                       </div>
                     </div>
@@ -929,26 +966,37 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                               : `/${userId}/manifest.json`}
                           </span>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleCopyUrl(
-                              typeof window !== "undefined"
-                                ? `${window.location.origin}/${userId}/manifest.json`
-                                : `/${userId}/manifest.json`,
-                            )
-                          }
-                          className="w-full"
-                        >
-                          <Copy className="mr-2 h-4 w-4" />
-                          Copy Manifest URL
-                        </Button>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopyUrl(
+                                typeof window !== "undefined"
+                                  ? `${window.location.origin}/${userId}/manifest.json`
+                                  : `/${userId}/manifest.json`,
+                              )
+                            }
+                            className="flex-1"
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copy Manifest URL
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={handleAddToStremio}
+                            className="flex-1 bg-primary/80 hover:bg-primary/70"
+                          >
+                            <Play className="mr-2 h-4 w-4" />
+                            Add to Stremio
+                          </Button>
+                        </div>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Use this URL in Stremio to install your unified catalog
-                      addon
+                      Install your unified catalog addon by adding the URL to
+                      your favorite streaming app.
                     </p>
                   </CardContent>
                 </Card>
