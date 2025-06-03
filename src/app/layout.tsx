@@ -4,12 +4,13 @@ import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import { Navigation } from "@/components/navigation";
+import packageJson from "../../package.json";
 
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
   title: "AIOCatalogs",
-  description: "AIOCatalogs - Your supercharged catalog experience",
+  description: packageJson.description,
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
