@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,6 +10,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+function HomeButton({ className }: { className?: string }) {
+  const router = useRouter();
+
+  return (
+    <Button onClick={() => router.replace("/")} className={className}>
+      Go Home
+    </Button>
+  );
+}
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -97,12 +108,7 @@ function DefaultErrorFallback({
             >
               Try Again
             </Button>
-            <Button
-              onClick={() => (window.location.href = "/")}
-              className="flex-1 bg-white/10 text-white hover:bg-white/20"
-            >
-              Go Home
-            </Button>
+            <HomeButton className="flex-1 bg-white/10 text-white hover:bg-white/20" />
           </div>
         </CardContent>
       </Card>
