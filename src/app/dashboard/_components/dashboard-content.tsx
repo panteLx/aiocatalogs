@@ -32,6 +32,31 @@ import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/trpc/react";
 
+// Type definitions for the manifest structure
+interface StremioManifest {
+  id: string;
+  version: string;
+  name: string;
+  description: string;
+  resources: string[];
+  types: string[];
+  catalogs: Array<{
+    type: string;
+    id: string;
+    name: string;
+  }>;
+  idPrefixes?: string[];
+}
+
+// Error type for proper error handling
+interface ValidationError {
+  message: string;
+}
+
+interface TRPCError {
+  message: string;
+}
+
 interface DashboardContentProps {
   userId: string;
 }
@@ -67,11 +92,25 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       setCatalogUrl("");
       setIsAddingCatalog(false);
     },
-    onError: (error) => {
+    onError: (error: TRPCError) => {
       setIsAddingCatalog(false);
+
+      // Extract validation error message if it's a validation error
+      let errorMessage = "Failed to add catalog";
+      try {
+        const errorData = JSON.parse(error.message) as ValidationError[];
+        if (Array.isArray(errorData) && errorData[0]?.message) {
+          errorMessage = errorData[0].message;
+        } else {
+          errorMessage = error.message;
+        }
+      } catch {
+        errorMessage = error.message || "Failed to add catalog";
+      }
+
       toast({
         title: "Error",
-        description: error.message || "Failed to add catalog",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -649,11 +688,20 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                               {catalog.description}
                             </p>
 
-                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                              <Globe className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate font-mono">
-                                {catalog.manifestUrl}
-                              </span>
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center space-x-1">
+                                <Package className="h-3 w-3 flex-shrink-0" />
+                                <span>
+                                  {(() => {
+                                    const manifest =
+                                      catalog.originalManifest as StremioManifest;
+                                    return (
+                                      manifest?.types?.join(" & ") ||
+                                      "Movies & Series"
+                                    );
+                                  })()}
+                                </span>
+                              </div>
                             </div>
 
                             {/* Action Buttons Row */}
@@ -767,11 +815,20 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                               <p className="truncate text-xs text-muted-foreground">
                                 {catalog.description}
                               </p>
-                              <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                                <Globe className="h-3 w-3" />
-                                <span className="truncate font-mono">
-                                  {catalog.manifestUrl}
-                                </span>
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center space-x-1">
+                                  <Package className="h-3 w-3" />
+                                  <span>
+                                    {(() => {
+                                      const manifest =
+                                        catalog.originalManifest as StremioManifest;
+                                      return (
+                                        manifest?.types?.join(" & ") ||
+                                        "Movies & Series"
+                                      );
+                                    })()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
