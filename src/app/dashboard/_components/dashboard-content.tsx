@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,134 +26,166 @@ import {
   Info,
   Play,
   Pause,
+  Loader2,
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
+import { api } from "@/trpc/react";
 
 interface DashboardContentProps {
   userId: string;
 }
 
-// Mock data für die Cataloge
-const mockCatalogs = [
-  {
-    id: "1",
-    name: "Torrentio",
-    url: "https://torrentio.strem.fun/manifest.json",
-    description: "Provides torrent streams from various sources",
-    status: "active",
-    randomized: false,
-    addedAt: "2025-06-01T10:00:00Z",
-  },
-  {
-    id: "2",
-    name: "Pirate Bay+",
-    url: "https://tpb-plus.herokuapp.com/manifest.json",
-    description: "Enhanced Pirate Bay addon with improved search",
-    status: "active",
-    randomized: true,
-    addedAt: "2025-06-02T14:30:00Z",
-  },
-  {
-    id: "3",
-    name: "OpenSubtitles",
-    url: "https://opensubtitles-v3.strem.io/manifest.json",
-    description: "Subtitle provider for movies and TV shows",
-    status: "inactive",
-    randomized: false,
-    addedAt: "2025-06-03T09:15:00Z",
-  },
-];
-
 export function DashboardContent({ userId }: DashboardContentProps) {
   const [catalogUrl, setCatalogUrl] = useState("");
-  const [catalogs, setCatalogs] = useState(mockCatalogs);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<number | null>(null);
+  const [isAddingCatalog, setIsAddingCatalog] = useState(false);
   const dragCounter = useRef(0);
 
-  const handleAddCatalog = () => {
-    if (!catalogUrl.trim()) return;
+  // Check if user exists and create if necessary
+  const { data: userExists } = api.user.exists.useQuery({ userId });
+  const createUserMutation = api.user.create.useMutation();
 
-    // Mock adding a catalog
-    const newCatalog = {
-      id: Date.now().toString(),
-      name: "New Catalog",
-      url: catalogUrl,
-      description: "Newly added catalog",
-      status: "active" as const,
-      randomized: false,
-      addedAt: new Date().toISOString(),
-    };
+  // Auto-create user if they don't exist
+  if (userExists === false && !createUserMutation.isPending) {
+    createUserMutation.mutate({ userId });
+  }
 
-    setCatalogs([...catalogs, newCatalog]);
-    setCatalogUrl("");
+  // TRPC queries and mutations
+  const {
+    data: catalogs = [],
+    refetch: refetchCatalogs,
+    isLoading,
+  } = api.catalog.list.useQuery(
+    {
+      userId,
+    },
+    {
+      enabled: userExists !== false, // Only fetch catalogs if user exists
+    },
+  );
 
-    // Show success toast
-    toast({
-      title: "Catalog Added",
-      description:
-        "The catalog has been successfully added to your collection.",
+  const addCatalogMutation = api.catalog.add.useMutation({
+    onSuccess: () => {
+      void refetchCatalogs();
+      setCatalogUrl("");
+      setIsAddingCatalog(false);
+      toast({
+        title: "Catalog Added",
+        description:
+          "The catalog has been successfully added to your collection.",
+      });
+    },
+    onError: (error) => {
+      setIsAddingCatalog(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add catalog",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCatalogMutation = api.catalog.update.useMutation({
+    onSuccess: () => {
+      void refetchCatalogs();
+      toast({
+        title: "Catalog Updated",
+        description: "The catalog has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update catalog",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeCatalogMutation = api.catalog.remove.useMutation({
+    onSuccess: () => {
+      void refetchCatalogs();
+      toast({
+        title: "Catalog Removed",
+        description: "The catalog has been removed from your collection.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove catalog",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reorderCatalogsMutation = api.catalog.reorder.useMutation({
+    onSuccess: () => {
+      void refetchCatalogs();
+      toast({
+        title: "Catalog Moved",
+        description: "Your catalog order has been updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reorder catalogs",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddCatalog = async () => {
+    if (!catalogUrl.trim() || isAddingCatalog) return;
+
+    setIsAddingCatalog(true);
+    addCatalogMutation.mutate({
+      userId,
+      manifestUrl: catalogUrl.trim(),
     });
   };
 
-  const handleRemoveCatalog = (id: string) => {
-    setCatalogs(catalogs.filter((catalog) => catalog.id !== id));
-
-    // Show success toast
-    toast({
-      title: "Catalog Removed",
-      description: "The catalog has been removed from your collection.",
-    });
-  };
-
-  const handleCopyUrl = (url: string) => {
-    void navigator.clipboard.writeText(url);
-
-    // Show success toast
-    toast({
-      title: "URL Copied",
-      description: "The URL has been copied to your clipboard.",
+  const handleRemoveCatalog = (catalogId: number) => {
+    removeCatalogMutation.mutate({
+      catalogId,
+      userId,
     });
   };
 
   const handleRandomizeCatalogContent = (
-    catalogId: string,
+    catalogId: number,
     catalogName: string,
   ) => {
-    // Toggle randomized state
-    setCatalogs(
-      catalogs.map((catalog) =>
-        catalog.id === catalogId
-          ? { ...catalog, randomized: !catalog.randomized }
-          : catalog,
-      ),
-    );
-
     const catalog = catalogs.find((c) => c.id === catalogId);
-    const newState = !catalog?.randomized;
+    if (!catalog) return;
+
+    const newRandomizedState = !catalog.randomized;
+    updateCatalogMutation.mutate({
+      catalogId,
+      userId,
+      randomized: newRandomizedState,
+    });
 
     toast({
-      title: newState ? "Catalog Randomized" : "Catalog Unrandomized",
-      description: `${catalogName} content has been ${newState ? "randomized" : "restored to original order"}.`,
+      title: newRandomizedState ? "Catalog Randomized" : "Catalog Unrandomized",
+      description: `${catalogName} content has been ${newRandomizedState ? "randomized" : "restored to original order"}.`,
     });
   };
 
-  const handleToggleCatalogStatus = (catalogId: string) => {
-    setCatalogs(
-      catalogs.map((catalog) =>
-        catalog.id === catalogId
-          ? {
-              ...catalog,
-              status: catalog.status === "active" ? "inactive" : "active",
-            }
-          : catalog,
-      ),
-    );
-
+  const handleToggleCatalogStatus = (catalogId: number) => {
     const catalog = catalogs.find((c) => c.id === catalogId);
-    const newStatus = catalog?.status === "active" ? "inactive" : "active";
+    if (!catalog) return;
+
+    const newStatus = catalog.status === "active" ? "inactive" : "active";
+    updateCatalogMutation.mutate({
+      catalogId,
+      userId,
+      status: newStatus,
+    });
 
     toast({
       title: "Catalog Status Updated",
@@ -159,20 +193,18 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     });
   };
 
-  const handleStartEditing = (id: string, currentName: string) => {
+  const handleStartEditing = (id: number, currentName: string) => {
     setEditingId(id);
     setEditingName(currentName);
   };
 
   const handleSaveEdit = () => {
     if (editingId && editingName.trim()) {
-      setCatalogs(
-        catalogs.map((catalog) =>
-          catalog.id === editingId
-            ? { ...catalog, name: editingName.trim() }
-            : catalog,
-        ),
-      );
+      updateCatalogMutation.mutate({
+        catalogId: editingId,
+        userId,
+        name: editingName.trim(),
+      });
 
       toast({
         title: "Catalog Renamed",
@@ -188,7 +220,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     setEditingName("");
   };
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
+  const handleDragStart = (e: React.DragEvent, id: number) => {
     setDraggedItem(id);
     e.dataTransfer.effectAllowed = "move";
   };
@@ -212,7 +244,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     dragCounter.current--;
   };
 
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
+  const handleDrop = (e: React.DragEvent, targetId: number) => {
     e.preventDefault();
     dragCounter.current = 0;
 
@@ -221,22 +253,31 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       const targetIndex = catalogs.findIndex((c) => c.id === targetId);
 
       if (draggedIndex !== -1 && targetIndex !== -1) {
-        const newCatalogs = [...catalogs];
-        const removedItems = newCatalogs.splice(draggedIndex, 1);
-        const removed = removedItems[0];
-
+        // Create new order array
+        const newOrder = [...catalogs];
+        const [removed] = newOrder.splice(draggedIndex, 1);
         if (removed) {
-          newCatalogs.splice(targetIndex, 0, removed);
-          setCatalogs(newCatalogs);
+          newOrder.splice(targetIndex, 0, removed);
 
-          toast({
-            title: "Catalog Moved",
-            description: "Your catalog order has been updated.",
+          // Update order in database
+          const catalogIds = newOrder.map((c) => c.id);
+          reorderCatalogsMutation.mutate({
+            userId,
+            catalogIds,
           });
         }
       }
     }
     setDraggedItem(null);
+  };
+
+  const handleCopyUrl = (url: string) => {
+    void navigator.clipboard.writeText(url);
+
+    toast({
+      title: "URL Copied",
+      description: "The URL has been copied to your clipboard.",
+    });
   };
 
   return (
@@ -305,10 +346,14 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 </div>
                 <Button
                   onClick={handleAddCatalog}
-                  disabled={!catalogUrl.trim()}
+                  disabled={!catalogUrl.trim() || isAddingCatalog}
                   className="px-6"
                 >
-                  <Plus className="h-4 w-4" />
+                  {isAddingCatalog ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -446,7 +491,14 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                {catalogs.length === 0 ? (
+                {isLoading ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <Loader2 className="mx-auto mb-4 h-16 w-16 animate-spin opacity-50" />
+                    <p className="text-lg font-medium">
+                      Loading your catalogs...
+                    </p>
+                  </div>
+                ) : catalogs.length === 0 ? (
                   <div className="py-12 text-center text-muted-foreground">
                     <Package className="mx-auto mb-4 h-16 w-16 opacity-50" />
                     <p className="text-lg font-medium">No catalogs added yet</p>
@@ -533,11 +585,10 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                               {catalog.description}
                             </p>
 
-                            {/* URL Row */}
                             <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                               <Globe className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate font-mono">
-                                {catalog.url}
+                                {catalog.manifestUrl}
                               </span>
                             </div>
 
@@ -655,7 +706,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                               <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                                 <Globe className="h-3 w-3" />
                                 <span className="truncate font-mono">
-                                  {catalog.url}
+                                  {catalog.manifestUrl}
                                 </span>
                               </div>
                             </div>

@@ -28,3 +28,30 @@ export const userConfigs = createTable(
     userIdIndex: index("user_id_idx").on(table.userId),
   }),
 );
+
+export const catalogs = createTable(
+  "catalogs",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    userId: text("user_id").notNull(),
+    manifestUrl: text("manifest_url").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    originalManifest: text("original_manifest", { mode: "json" }).notNull(),
+    status: text("status", { enum: ["active", "inactive"] })
+      .default("active")
+      .notNull(),
+    randomized: int("randomized", { mode: "boolean" }).default(false).notNull(),
+    order: int("order").notNull().default(0),
+    createdAt: int("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+    updatedAt: int("updated_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => ({
+    userIdIndex: index("catalog_user_id_idx").on(table.userId),
+    orderIndex: index("catalog_order_idx").on(table.userId, table.order),
+  }),
+);

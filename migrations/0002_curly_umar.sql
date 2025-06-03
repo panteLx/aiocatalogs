@@ -1,1 +1,0 @@
-DROP TABLE `t3-cloudflare_post`;

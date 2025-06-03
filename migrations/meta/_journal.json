@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1748824251354,
-      "tag": "0000_rapid_scourge",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1748858596695,
-      "tag": "0001_awesome_timeslip",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1748861362859,
-      "tag": "0002_curly_umar",
+      "when": 1748970408565,
+      "tag": "0000_flaky_maximus",
       "breakpoints": true
     }
   ]
