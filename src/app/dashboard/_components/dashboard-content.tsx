@@ -63,7 +63,6 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ userId }: DashboardContentProps) {
-  const router = useRouter();
   const [catalogUrl, setCatalogUrl] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");

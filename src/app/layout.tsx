@@ -11,7 +11,73 @@ import { TRPCReactProvider } from "@/trpc/react";
 export const metadata: Metadata = {
   title: "AIOCatalogs",
   description: packageJson.description,
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  keywords: [
+    "stremio",
+    "addon",
+    "catalog",
+    "streaming",
+    "movies",
+    "series",
+    "media",
+    "entertainment",
+    "unified catalog",
+    "catalog manager",
+    "stremio addons",
+    "streaming catalogs",
+  ],
+  authors: [{ name: packageJson.author, url: "https://github.com/panteLx" }],
+  creator: packageJson.author,
+  publisher: packageJson.author,
+  applicationName: "AIOCatalogs",
+  category: "Entertainment",
+  classification: "Media Management",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://aio.pantelx.com",
+    siteName: "AIOCatalogs",
+    title: "AIOCatalogs",
+    description: packageJson.description,
+    images: [
+      {
+        url: "https://cdn.ssx.si/u/LSXKCT.png",
+        width: 1200,
+        height: 630,
+        alt: "AIOCatalogs",
+        type: "image/png",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AIOCatalogs",
+    description: packageJson.description,
+    images: ["https://cdn.ssx.si/u/LSXKCT.png"],
+    creator: "@panteLx",
+    site: "@panteLx",
+  },
+  alternates: {
+    canonical: "https://aio.pantelx.com",
+    languages: {
+      "en-US": "https://aio.pantelx.com",
+    },
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
+    "apple-mobile-web-app-title": "AIOCatalogs",
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport = {
