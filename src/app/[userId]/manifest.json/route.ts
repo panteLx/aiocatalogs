@@ -155,7 +155,9 @@ export async function GET(
     return NextResponse.json(unifiedManifest, {
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=60", // Cache for 1 minute to allow randomization updates
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+        Expires: "0",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",

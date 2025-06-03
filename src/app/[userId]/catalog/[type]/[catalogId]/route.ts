@@ -134,7 +134,9 @@ export async function GET(
         {
           headers: {
             "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=300", // Cache for 5 minutes
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            Pragma: "no-cache",
+            Expires: "0",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type",
@@ -184,7 +186,9 @@ export async function GET(
         {
           headers: {
             "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=300",
+            "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+            Pragma: "no-cache",
+            Expires: "0",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type",
@@ -227,7 +231,9 @@ export async function GET(
       {
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=300", // Cache for 5 minutes
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
@@ -242,6 +248,9 @@ export async function GET(
         status: 500,
         headers: {
           "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
