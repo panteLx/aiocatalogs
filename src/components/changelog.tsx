@@ -15,7 +15,6 @@ import {
   ExternalLink,
   Github,
   ChevronDown,
-  ChevronUp,
   Loader2,
   AlertTriangle,
 } from "lucide-react";
@@ -126,8 +125,42 @@ function MarkdownContent({ content }: { content: string }) {
     "",
   );
 
+  // Remove leading non-breaking spaces and regular spaces from headings
+  modifiedContent = modifiedContent.replace(
+    /^(#{1,6})\s+(&nbsp;|&#160;|\s)+/gm,
+    "$1 ",
+  );
+
   // Custom components for rendering specific markdown elements
   const components = {
+    h1: ({ children }: any) => {
+      const cleanChildren =
+        typeof children === "string"
+          ? children.replace(/^(&nbsp;|&#160;|\s)+/g, "")
+          : children;
+      return <h1 className="text-2xl font-bold">{cleanChildren}</h1>;
+    },
+    h2: ({ children }: any) => {
+      const cleanChildren =
+        typeof children === "string"
+          ? children.replace(/^(&nbsp;|&#160;|\s)+/g, "")
+          : children;
+      return <h2 className="text-xl font-semibold">{cleanChildren}</h2>;
+    },
+    h3: ({ children }: any) => {
+      const cleanChildren =
+        typeof children === "string"
+          ? children.replace(/^(&nbsp;|&#160;|\s)+/g, "")
+          : children;
+      return <h3 className="text-lg font-medium">{cleanChildren}</h3>;
+    },
+    h4: ({ children }: any) => {
+      const cleanChildren =
+        typeof children === "string"
+          ? children.replace(/^(&nbsp;|&#160;|\s)+/g, "")
+          : children;
+      return <h4 className="text-base font-semibold">{cleanChildren}</h4>;
+    },
     a: ({ node, href, children, ...props }: any) => {
       const isGitHubUser =
         href?.includes("https://github.com/") && href.split("/").length === 4;
@@ -208,14 +241,7 @@ function ChangelogFeatureItem({ text }: { text: string }) {
   );
 }
 
-function ChangelogEntry({
-  entry,
-  showFullContent = false,
-}: {
-  entry: ParsedChangelogEntry;
-  showFullContent?: boolean;
-}) {
-  const [isExpanded, setIsExpanded] = useState(showFullContent);
+function ChangelogEntry({ entry }: { entry: ParsedChangelogEntry }) {
   const hasStructuredContent =
     entry.features.length > 0 ||
     entry.improvements.length > 0 ||
@@ -250,20 +276,6 @@ function ChangelogEntry({
             <ExternalLink className="mr-1 h-3 w-3" />
             View Release
           </Button>
-          {hasStructuredContent && !showFullContent && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="h-8"
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
-          )}
         </div>
       </div>
 
@@ -280,44 +292,30 @@ function ChangelogEntry({
         )}
 
         {hasStructuredContent ? (
-          <div
-            className={`space-y-3 ${showFullContent || isExpanded ? "" : "line-clamp-3"}`}
-          >
+          <div className="space-y-3">
             {entry.features.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-foreground">Features</h4>
                 <div className="space-y-1">
-                  {entry.features
-                    .slice(0, showFullContent || isExpanded ? undefined : 2)
-                    .map((feature, index) => (
-                      <ChangelogFeatureItem key={index} text={feature} />
-                    ))}
-                  {!showFullContent &&
-                    !isExpanded &&
-                    entry.features.length > 2 && (
-                      <div className="ml-4 text-xs text-muted-foreground">
-                        +{entry.features.length - 2} more features...
-                      </div>
-                    )}
+                  {entry.features.map((feature, index) => (
+                    <ChangelogFeatureItem key={index} text={feature} />
+                  ))}
                 </div>
               </div>
             )}
 
-            {(showFullContent || isExpanded) &&
-              entry.improvements.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-foreground">
-                    Improvements
-                  </h4>
-                  <div className="space-y-1">
-                    {entry.improvements.map((improvement, index) => (
-                      <ChangelogFeatureItem key={index} text={improvement} />
-                    ))}
-                  </div>
+            {entry.improvements.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-foreground">Improvements</h4>
+                <div className="space-y-1">
+                  {entry.improvements.map((improvement, index) => (
+                    <ChangelogFeatureItem key={index} text={improvement} />
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
 
-            {(showFullContent || isExpanded) && entry.bugfixes.length > 0 && (
+            {entry.bugfixes.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-foreground">Bug Fixes</h4>
                 <div className="space-y-1">
@@ -327,35 +325,11 @@ function ChangelogEntry({
                 </div>
               </div>
             )}
-
-            {!showFullContent &&
-              !isExpanded &&
-              (entry.improvements.length > 0 || entry.bugfixes.length > 0) && (
-                <div className="text-xs text-muted-foreground">
-                  Click to view{" "}
-                  {entry.improvements.length > 0
-                    ? `${entry.improvements.length} improvements`
-                    : ""}
-                  {entry.improvements.length > 0 && entry.bugfixes.length > 0
-                    ? " and "
-                    : ""}
-                  {entry.bugfixes.length > 0
-                    ? `${entry.bugfixes.length} bug fixes`
-                    : ""}
-                  ...
-                </div>
-              )}
           </div>
         ) : (
           entry.rawContent && (
             <div className="text-sm text-muted-foreground">
-              {showFullContent || isExpanded ? (
-                <MarkdownContent content={entry.rawContent} />
-              ) : (
-                <div className="line-clamp-3">
-                  <MarkdownContent content={entry.rawContent} />
-                </div>
-              )}
+              <MarkdownContent content={entry.rawContent} />
             </div>
           )
         )}
@@ -488,16 +462,9 @@ export function Changelog({ includePrerelease = false }: ChangelogProps) {
             </div>
           ) : allChangelogs.length > 0 ? (
             <>
-              {allChangelogs.map((entry) => {
-                // Show full content for all entries
-                return (
-                  <ChangelogEntry
-                    key={entry.version}
-                    entry={entry}
-                    showFullContent={true}
-                  />
-                );
-              })}
+              {allChangelogs.map((entry) => (
+                <ChangelogEntry key={entry.version} entry={entry} />
+              ))}
 
               {loadingMore && (
                 <div className="flex items-center justify-center py-4">
