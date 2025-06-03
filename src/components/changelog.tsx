@@ -131,6 +131,12 @@ function MarkdownContent({ content }: { content: string }) {
     "$1 ",
   );
 
+  // Ensure list items have proper formatting with a space after the marker
+  modifiedContent = modifiedContent.replace(
+    /^(\s*)([*\-+]|(\d+\.))(\S)/gm,
+    "$1$2 $4",
+  );
+
   // Custom components for rendering specific markdown elements
   const components = {
     h1: ({ children }: any) => {
@@ -220,6 +226,16 @@ function MarkdownContent({ content }: { content: string }) {
           </code>
         </pre>
       );
+    },
+    // List rendering
+    ul: ({ children }: any) => {
+      return <ul className="my-2 list-disc space-y-1 pl-6">{children}</ul>;
+    },
+    ol: ({ children }: any) => {
+      return <ol className="my-2 list-decimal space-y-1 pl-6">{children}</ol>;
+    },
+    li: ({ children }: any) => {
+      return <li className="text-sm">{children}</li>;
     },
   };
 
