@@ -1,0 +1,1 @@
+ALTER TABLE `cloudflare_catalogs` ADD `rpdb_enabled` integer DEFAULT false NOT NULL;

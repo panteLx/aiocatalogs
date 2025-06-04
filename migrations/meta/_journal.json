@@ -15,6 +15,13 @@
       "when": 1749053798949,
       "tag": "0001_perfect_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1749076859696,
+      "tag": "0002_amused_electro",
+      "breakpoints": true
     }
   ]
 }

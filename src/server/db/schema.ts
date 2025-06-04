@@ -40,6 +40,9 @@ export const catalogs = createTable(
       .default("active")
       .notNull(),
     randomized: int("randomized", { mode: "boolean" }).default(false).notNull(),
+    rpdbEnabled: int("rpdb_enabled", { mode: "boolean" })
+      .default(false)
+      .notNull(),
     order: int("order").notNull().default(0),
     createdAt: int("created_at", { mode: "timestamp" })
       .default(sql`(unixepoch())`)

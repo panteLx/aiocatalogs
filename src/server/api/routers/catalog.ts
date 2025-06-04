@@ -210,7 +210,7 @@ export const catalogRouter = createTRPCRouter({
       }
     }),
 
-  // Update catalog (name, status, randomized)
+  // Update catalog (name, status, randomized, rpdbEnabled)
   update: publicProcedure
     .input(
       z.object({
@@ -219,6 +219,7 @@ export const catalogRouter = createTRPCRouter({
         name: z.string().optional(),
         status: z.enum(["active", "inactive"]).optional(),
         randomized: z.boolean().optional(),
+        rpdbEnabled: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -248,6 +249,7 @@ export const catalogRouter = createTRPCRouter({
           name?: string;
           status?: "active" | "inactive";
           randomized?: boolean;
+          rpdbEnabled?: boolean;
         } = {
           updatedAt: new Date(),
         };
@@ -256,6 +258,8 @@ export const catalogRouter = createTRPCRouter({
         if (input.status !== undefined) updateData.status = input.status;
         if (input.randomized !== undefined)
           updateData.randomized = input.randomized;
+        if (input.rpdbEnabled !== undefined)
+          updateData.rpdbEnabled = input.rpdbEnabled;
 
         const [updatedCatalog] = await ctx.db
           .update(catalogs)

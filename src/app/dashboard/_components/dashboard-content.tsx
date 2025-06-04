@@ -332,6 +332,30 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     );
   };
 
+  const handleToggleRpdbEnabled = (catalogId: number, catalogName: string) => {
+    const catalog = catalogs.find((c) => c.id === catalogId);
+    if (!catalog) return;
+
+    const newRpdbState = !catalog.rpdbEnabled;
+    updateCatalogMutation.mutate(
+      {
+        catalogId,
+        userId,
+        rpdbEnabled: newRpdbState,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: newRpdbState
+              ? "RPDB Poster Enhancement Enabled"
+              : "RPDB Poster Enhancement Disabled",
+            description: `${catalogName} will ${newRpdbState ? "now use enhanced posters from RPDB" : "use original posters"}.`,
+          });
+        },
+      },
+    );
+  };
+
   const handleToggleCatalogStatus = (catalogId: number) => {
     const catalog = catalogs.find((c) => c.id === catalogId);
     if (!catalog) return;
@@ -352,6 +376,79 @@ export function DashboardContent({ userId }: DashboardContentProps) {
         },
       },
     );
+  };
+
+  const handleToggleRpdbForAll = async () => {
+    if (catalogs.length === 0) {
+      toast({
+        title: "No Catalogs Available",
+        description: "Add some catalogs first to toggle RPDB for them.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if majority of catalogs have RPDB enabled to determine toggle direction
+    const enabledCount = catalogs.filter((c) => c.rpdbEnabled).length;
+    const shouldEnable = enabledCount < catalogs.length / 2;
+
+    const catalogsToUpdate = catalogs.filter(
+      (c) => c.rpdbEnabled !== shouldEnable,
+    );
+
+    if (catalogsToUpdate.length === 0) {
+      toast({
+        title: "No Changes Needed",
+        description: `RPDB is already ${shouldEnable ? "enabled" : "disabled"} for all catalogs.`,
+      });
+      return;
+    }
+
+    // Update catalogs sequentially to avoid overwhelming the database
+    const updateCatalogSequentially = async (index: number): Promise<void> => {
+      if (index >= catalogsToUpdate.length) {
+        toast({
+          title: `RPDB ${shouldEnable ? "Enabled" : "Disabled"} for All Catalogs`,
+          description: `RPDB poster enhancement has been ${shouldEnable ? "enabled" : "disabled"} for ${catalogsToUpdate.length} catalog${catalogsToUpdate.length > 1 ? "s" : ""}.`,
+        });
+        return;
+      }
+
+      const catalog = catalogsToUpdate[index];
+      if (!catalog) return;
+
+      return new Promise<void>((resolve, reject) => {
+        updateCatalogMutation.mutate(
+          {
+            catalogId: catalog.id,
+            userId,
+            rpdbEnabled: shouldEnable,
+          },
+          {
+            onSuccess: async () => {
+              // Wait a bit before updating the next catalog
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              await updateCatalogSequentially(index + 1);
+              resolve();
+            },
+            onError: (error) => {
+              toast({
+                title: "Error",
+                description: `Failed to update ${catalog.name}: ${error.message}`,
+                variant: "destructive",
+              });
+              reject(error);
+            },
+          },
+        );
+      });
+    };
+
+    try {
+      await updateCatalogSequentially(0);
+    } catch (error) {
+      console.error("Error updating catalogs:", error);
+    }
   };
 
   const handleStartEditing = (id: number, currentName: string) => {
@@ -766,7 +863,27 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                   <Package className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg">Your Catalogs</CardTitle>
                 </div>
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center space-x-2">
+                  {catalogs.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleRpdbForAll}
+                      className={
+                        catalogs.filter((c) => c.rpdbEnabled).length <
+                        catalogs.length / 2
+                          ? "h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
+                          : "h-7 text-xs"
+                      }
+                      // className="h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      {catalogs.filter((c) => c.rpdbEnabled).length <
+                      catalogs.length / 2
+                        ? "Enable RPDB for All"
+                        : "Disable RPDB for All"}
+                    </Button>
+                  )}
                   <Badge
                     variant="secondary"
                     className="bg-primary/10 text-primary"
@@ -910,6 +1027,28 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() =>
+                                  handleToggleRpdbEnabled(
+                                    catalog.id,
+                                    catalog.name,
+                                  )
+                                }
+                                className={`h-9 w-9 p-0 ${
+                                  catalog.rpdbEnabled
+                                    ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
+                                    : "hover:bg-muted"
+                                }`}
+                                title={`${
+                                  catalog.rpdbEnabled
+                                    ? "Disable RPDB Enhancement"
+                                    : "Enable RPDB Enhancement"
+                                }`}
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
                                   handleToggleCatalogStatus(catalog.id)
                                 }
                                 className={`h-9 w-9 p-0 ${
@@ -991,7 +1130,23 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                       : "border-yellow-500/20 bg-yellow-500/10 text-yellow-500"
                                   }
                                 >
-                                  {catalog.status}
+                                  {catalog.status === "active"
+                                    ? "Active"
+                                    : "Inactive"}
+                                </Badge>
+                                <Badge
+                                  variant={
+                                    catalog.rpdbEnabled === true
+                                      ? "default"
+                                      : "default"
+                                  }
+                                  className={
+                                    catalog.rpdbEnabled === true
+                                      ? "border-blue-500/20 bg-blue-500/10 text-blue-500 hover:bg-blue-500/30"
+                                      : "hidden"
+                                  }
+                                >
+                                  {catalog.rpdbEnabled === true ? "RPDB" : ""}
                                 </Badge>
                               </div>
                               <p className="truncate text-xs text-muted-foreground">
@@ -1032,6 +1187,28 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                               title={`${catalog.randomized ? "Disable" : "Enable"} catalog randomization`}
                             >
                               <Shuffle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleToggleRpdbEnabled(
+                                  catalog.id,
+                                  catalog.name,
+                                )
+                              }
+                              className={`h-8 w-8 p-0 ${
+                                catalog.rpdbEnabled
+                                  ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
+                                  : "hover:bg-muted"
+                              }`}
+                              title={`${
+                                catalog.rpdbEnabled
+                                  ? "Disable RPDB Enhancement"
+                                  : "Enable RPDB Enhancement"
+                              }`}
+                            >
+                              <Sparkles className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
