@@ -90,6 +90,60 @@ const MOCK_CATALOGS = [
   },
 ];
 
+// Mock search results for external catalog search
+const MOCK_SEARCH_RESULTS = [
+  {
+    id: 101,
+    name: "4K Movies Collection",
+    description: "High-quality 4K movies from various genres",
+    manifestUrl: "https://example.com/4k-movies/manifest.json",
+    types: ["movie"],
+    rating: 4.8,
+    downloads: "892K",
+    source: "CinemaHub",
+  },
+  {
+    id: 102,
+    name: "Retro TV Classics",
+    description: "Classic TV shows from the 80s and 90s",
+    manifestUrl: "https://example.com/retro-tv/manifest.json",
+    types: ["series"],
+    rating: 4.6,
+    downloads: "456K",
+    source: "VintageStream",
+  },
+  {
+    id: 103,
+    name: "International Cinema",
+    description: "Foreign films with subtitles from around the world",
+    manifestUrl: "https://example.com/international/manifest.json",
+    types: ["movie"],
+    rating: 4.7,
+    downloads: "321K",
+    source: "WorldCinema",
+  },
+  {
+    id: 104,
+    name: "Kids & Family",
+    description: "Safe, family-friendly content for children",
+    manifestUrl: "https://example.com/kids-family/manifest.json",
+    types: ["movie", "series"],
+    rating: 4.5,
+    downloads: "789K",
+    source: "FamilyStream",
+  },
+  {
+    id: 105,
+    name: "Sci-Fi Universe",
+    description: "Science fiction movies and series collection",
+    manifestUrl: "https://example.com/scifi/manifest.json",
+    types: ["movie", "series"],
+    rating: 4.9,
+    downloads: "1.1M",
+    source: "SciFiHub",
+  },
+];
+
 interface AddCatalogDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -109,12 +163,30 @@ export function AddCatalogDialog({
   const [apiKey, setApiKey] = useState("");
   const [selectedCatalog, setSelectedCatalog] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [activeTab, setActiveTab] = useState<"browse" | "manual">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "search">("browse");
 
-  // Manual catalog input states
-  const [manualName, setManualName] = useState("");
-  const [manualUrl, setManualUrl] = useState("");
-  const [manualDescription, setManualDescription] = useState("");
+  // Search catalog states
+  const [searchName, setSearchName] = useState("");
+  const [selectedSearchResult, setSelectedSearchResult] = useState<
+    number | null
+  >(null);
+
+  // Filter search results based on search query
+  const filteredSearchResults = MOCK_SEARCH_RESULTS.filter(
+    (result) =>
+      searchName.trim() === "" ||
+      result.name.toLowerCase().includes(searchName.toLowerCase()) ||
+      result.description.toLowerCase().includes(searchName.toLowerCase()) ||
+      result.source.toLowerCase().includes(searchName.toLowerCase()) ||
+      result.types.some((type) =>
+        type.toLowerCase().includes(searchName.toLowerCase()),
+      ),
+  );
+
+  // Sort search results by rating
+  const sortedSearchResults = filteredSearchResults.sort(
+    (a, b) => b.rating - a.rating,
+  );
 
   // Filter catalogs based on search query
   const filteredCatalogs = MOCK_CATALOGS.filter(
@@ -135,6 +207,16 @@ export function AddCatalogDialog({
   });
 
   const handleAddCatalog = async () => {
+    // Check if API key is provided
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your API key to add catalogs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAdding(true);
 
     try {
@@ -153,35 +235,39 @@ export function AddCatalogDialog({
             description: `${catalog.name} has been added to your collection.`,
           });
         }
-      } else if (activeTab === "manual") {
-        if (!manualName.trim() || !manualUrl.trim()) {
+      } else if (activeTab === "search") {
+        if (!selectedSearchResult) {
           toast({
-            title: "Missing Information",
-            description: "Please provide both name and manifest URL.",
+            title: "No Catalog Selected",
+            description: "Please select a catalog from the search results.",
             variant: "destructive",
           });
           setIsAdding(false);
           return;
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-        onAddCatalog({
-          name: manualName.trim(),
-          manifestUrl: manualUrl.trim(),
-          description: manualDescription.trim() || "Custom catalog",
-        });
+        const searchResult = MOCK_SEARCH_RESULTS.find(
+          (c) => c.id === selectedSearchResult,
+        );
+        if (searchResult) {
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+          onAddCatalog({
+            name: searchResult.name,
+            manifestUrl: searchResult.manifestUrl,
+            description: searchResult.description,
+          });
 
-        toast({
-          title: "Custom Catalog Added",
-          description: `${manualName} has been added to your collection.`,
-        });
+          toast({
+            title: "MDBList Catalog Added",
+            description: `${searchResult.name} has been added to your collection.`,
+          });
+        }
       }
 
       // Reset form
       setSelectedCatalog(null);
-      setManualName("");
-      setManualUrl("");
-      setManualDescription("");
+      setSelectedSearchResult(null);
+      setSearchName("");
       onOpenChange(false);
     } catch (error) {
       toast({
@@ -196,10 +282,9 @@ export function AddCatalogDialog({
 
   const handleClose = () => {
     setSelectedCatalog(null);
+    setSelectedSearchResult(null);
     setSearchQuery("");
-    setManualName("");
-    setManualUrl("");
-    setManualDescription("");
+    setSearchName("");
     onOpenChange(false);
   };
 
@@ -217,21 +302,24 @@ export function AddCatalogDialog({
           {/* API Key Input */}
           <div className="space-y-2">
             <Label htmlFor="api-key" className="text-sm font-medium">
-              API Key
+              API Key <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
               <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="api-key"
                 type="password"
-                placeholder="Enter your API key for premium catalogs..."
+                placeholder="Enter your API key (required)..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="border-border/50 bg-background/50 pl-10"
+                className={`border-border/50 bg-background/50 pl-10 ${
+                  !apiKey.trim() ? "border-red-500/50" : ""
+                }`}
+                required
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              You need a valid API key to access MDBList catalogs.
+              A valid API key is required to access MDBList catalogs.
             </p>
           </div>
 
@@ -243,17 +331,17 @@ export function AddCatalogDialog({
               onClick={() => setActiveTab("browse")}
               className="flex-1"
             >
-              <Package className="mr-2 h-4 w-4" />
+              <Package className="h-4 w-4" />
               Browse Catalogs
             </Button>
             <Button
-              variant={activeTab === "manual" ? "default" : "ghost"}
+              variant={activeTab === "search" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setActiveTab("manual")}
+              onClick={() => setActiveTab("search")}
               className="flex-1"
             >
-              <Globe className="mr-2 h-4 w-4" />
-              Manual Entry
+              <Search className="h-4 w-4" />
+              Search Catalogs
             </Button>
           </div>
 
@@ -354,57 +442,117 @@ export function AddCatalogDialog({
             <div className="flex-1 space-y-4 overflow-y-auto">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="manual-name" className="text-sm font-medium">
-                    Catalog Name
+                  <Label className="text-sm font-medium">
+                    Search MDBList Catalogs
                   </Label>
-                  <Input
-                    id="manual-name"
-                    placeholder="My Custom Catalog"
-                    value={manualName}
-                    onChange={(e) => setManualName(e.target.value)}
-                    className="border-border/50 bg-background/50"
-                  />
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search for catalogs by name, source, or category..."
+                      value={searchName}
+                      onChange={(e) => setSearchName(e.target.value)}
+                      className="border-border/50 bg-background/50 pl-10"
+                    />
+                  </div>
+                  {searchName.trim() && (
+                    <p className="text-xs text-muted-foreground">
+                      Found {sortedSearchResults.length} catalog
+                      {sortedSearchResults.length !== 1 ? "s" : ""}
+                      {searchName.trim() && ` matching "${searchName}"`}
+                    </p>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="manual-url" className="text-sm font-medium">
-                    Manifest URL
-                  </Label>
-                  <Input
-                    id="manual-url"
-                    type="url"
-                    placeholder="https://example.com/manifest.json"
-                    value={manualUrl}
-                    onChange={(e) => setManualUrl(e.target.value)}
-                    className="border-border/50 bg-background/50"
-                  />
-                </div>
+                {/* Search Results Grid */}
+                <div className="flex-1 overflow-y-auto pr-2">
+                  <div className="grid grid-cols-1 gap-3">
+                    {sortedSearchResults.map((result) => (
+                      <Card
+                        key={result.id}
+                        className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
+                          selectedSearchResult === result.id
+                            ? "border-primary/50 ring-2 ring-primary"
+                            : ""
+                        }`}
+                        onClick={() => setSelectedSearchResult(result.id)}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                                <span className="truncate">{result.name}</span>
+                              </CardTitle>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                from {result.source}
+                              </p>
+                            </div>
+                            {selectedSearchResult === result.id && (
+                              <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3 pt-0">
+                          <p className="line-clamp-2 text-xs text-muted-foreground">
+                            {result.description}
+                          </p>
 
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="manual-description"
-                    className="text-sm font-medium"
-                  >
-                    Description (Optional)
-                  </Label>
-                  <Input
-                    id="manual-description"
-                    placeholder="A brief description of your catalog..."
-                    value={manualDescription}
-                    onChange={(e) => setManualDescription(e.target.value)}
-                    className="border-border/50 bg-background/50"
-                  />
+                          <div className="flex flex-wrap gap-1">
+                            {result.types.map((type) => (
+                              <Badge
+                                key={type}
+                                variant="secondary"
+                                className="text-xs capitalize"
+                              >
+                                {type}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Star className="h-3 w-3" />
+                              <span>{result.rating}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Download className="h-3 w-3" />
+                              <span>{result.downloads}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {sortedSearchResults.length === 0 && searchName.trim() && (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Search className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                      <p className="text-lg font-medium">No catalogs found</p>
+                      <p className="text-sm">
+                        Try different search terms or browse the main catalog
+                      </p>
+                    </div>
+                  )}
+
+                  {sortedSearchResults.length === 0 && !searchName.trim() && (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Search className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                      <p className="text-lg font-medium">Start Searching</p>
+                      <p className="text-sm">
+                        Enter a search term to find MDBList catalogs
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
                   <div className="flex items-start space-x-2">
-                    <Package className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+                    <Search className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
                     <div className="text-xs text-blue-600 dark:text-blue-400">
-                      <p className="font-medium">Manual Entry</p>
+                      <p className="font-medium">MDBList Catalog Search</p>
                       <p className="mt-1">
-                        Enter the direct URL to a Stremio addon manifest.json
-                        file. Make sure the URL is accessible and returns valid
-                        JSON.
+                        Search through MDBList catalog sources to find
+                        additional content. Select a catalog to add it to your
+                        collection.
                       </p>
                     </div>
                   </div>
@@ -422,19 +570,19 @@ export function AddCatalogDialog({
             onClick={handleAddCatalog}
             disabled={
               isAdding ||
+              !apiKey.trim() ||
               (activeTab === "browse" && !selectedCatalog) ||
-              (activeTab === "manual" &&
-                (!manualName.trim() || !manualUrl.trim()))
+              (activeTab === "search" && !selectedSearchResult)
             }
           >
             {isAdding ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Adding...
               </>
             ) : (
               <>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Add Catalog
               </>
             )}
