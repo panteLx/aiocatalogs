@@ -1,6 +1,7 @@
 import { userRouter } from "@/server/api/routers/user";
 import { changelogRouter } from "@/server/api/routers/changelog";
 import { catalogRouter } from "@/server/api/routers/catalog";
+import { shareRouter } from "@/server/api/routers/share";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
@@ -12,6 +13,7 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   changelog: changelogRouter,
   catalog: catalogRouter,
+  share: shareRouter,
 });
 
 // export type definition of API

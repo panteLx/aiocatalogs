@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
   User,
   Sparkles,
   Plus,
@@ -27,6 +35,10 @@ import {
   Play,
   Pause,
   Loader2,
+  Share2,
+  Calendar,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
@@ -67,6 +79,20 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   const [editingName, setEditingName] = useState("");
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
   const [isAddingCatalog, setIsAddingCatalog] = useState(false);
+
+  // Share dialog states
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedCatalogsForShare, setSelectedCatalogsForShare] = useState<
+    number[]
+  >([]);
+  const [shareName, setShareName] = useState("");
+  const [shareDescription, setShareDescription] = useState("");
+  const [shareExpirationDays, setShareExpirationDays] = useState<
+    number | undefined
+  >(30);
+  const [isCreatingShare, setIsCreatingShare] = useState(false);
+  const [showMyShares, setShowMyShares] = useState(false);
+
   const dragCounter = useRef(0);
 
   // TRPC queries and mutations
@@ -142,6 +168,61 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       toast({
         title: "Error",
         description: error.message || "Failed to reorder catalogs",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Share mutations
+  const createShareMutation = api.share.create.useMutation({
+    onSuccess: (result) => {
+      setIsCreatingShare(false);
+      setIsShareDialogOpen(false);
+      setSelectedCatalogsForShare([]);
+      setShareName("");
+      setShareDescription("");
+
+      // Copy share URL to clipboard
+      void navigator.clipboard.writeText(
+        typeof window !== "undefined"
+          ? `${window.location.origin}/share/${result.shareId}`
+          : `/share/${result.shareId}`,
+      );
+
+      toast({
+        title: "Share Created Successfully",
+        description: "Share URL has been copied to your clipboard.",
+      });
+
+      void refetchMyShares();
+    },
+    onError: (error) => {
+      setIsCreatingShare(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create share",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const { data: myShares = [], refetch: refetchMyShares } =
+    api.share.listByUser.useQuery({
+      userId,
+    });
+
+  const deleteShareMutation = api.share.delete.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Share Deleted",
+        description: "The share has been deactivated.",
+      });
+      void refetchMyShares();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete share",
         variant: "destructive",
       });
     },
@@ -367,6 +448,74 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     });
   };
 
+  // Share functions
+  const handleOpenShareDialog = () => {
+    if (catalogs.length === 0) {
+      toast({
+        title: "No Catalogs Available",
+        description: "You need to add at least one catalog before sharing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsShareDialogOpen(true);
+  };
+
+  const handleCreateShare = () => {
+    if (selectedCatalogsForShare.length === 0) {
+      toast({
+        title: "No Catalogs Selected",
+        description: "Please select at least one catalog to share.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!shareName.trim()) {
+      toast({
+        title: "Share Name Required",
+        description: "Please provide a name for your share.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingShare(true);
+
+    createShareMutation.mutate({
+      userId,
+      catalogIds: selectedCatalogsForShare,
+      name: shareName.trim(),
+      description: shareDescription.trim() || undefined,
+      expiresInDays: shareExpirationDays,
+    });
+  };
+
+  const handleDeleteShare = (shareId: string) => {
+    deleteShareMutation.mutate({ shareId, userId });
+  };
+
+  const handleCopyShareUrl = (shareId: string) => {
+    const shareUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/share/${shareId}`
+        : `/share/${shareId}`;
+
+    void navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: "Share URL Copied",
+      description: "The share URL has been copied to your clipboard.",
+    });
+  };
+
+  const toggleCatalogSelection = (catalogId: number) => {
+    setSelectedCatalogsForShare((prev) =>
+      prev.includes(catalogId)
+        ? prev.filter((id) => id !== catalogId)
+        : [...prev, catalogId],
+    );
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
@@ -439,7 +588,6 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 <Button
                   onClick={handleAddCatalog}
                   disabled={!catalogUrl.trim() || isAddingCatalog}
-                  className="bg-primary/80 px-6 hover:bg-primary/70"
                 >
                   {isAddingCatalog ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -939,7 +1087,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                             variant="default"
                             size="sm"
                             onClick={handleAddToStremio}
-                            className="flex-1 bg-primary/80 hover:bg-primary/70"
+                            className="flex-1"
                           >
                             <Play className="mr-2 h-4 w-4" />
                             Add to Stremio
@@ -957,6 +1105,305 @@ export function DashboardContent({ userId }: DashboardContentProps) {
           </div>
         </div>
       </div>
+
+      {/* Share Section */}
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-2xl font-bold text-transparent">
+            Share Your Catalogs
+          </h2>
+          <p className="text-muted-foreground">
+            Share selected catalogs with others while keeping your data secure
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Create Share Card */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Plus className="h-5 w-5 text-primary" />
+                <CardTitle>Create New Share</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Create a secure share link for selected catalogs. Recipients can
+                import catalogs without seeing your personal information.
+              </p>
+              <Button
+                onClick={handleOpenShareDialog}
+                className="w-full"
+                disabled={
+                  catalogs.length === 0 ||
+                  isLoading ||
+                  catalogs.filter((c) => c.status === "active").length === 0
+                }
+              >
+                <Link2 className="h-4 w-4" />
+                Create Share Link
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* My Shares Card */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Share2 className="h-5 w-5 text-primary" />
+                  <CardTitle>My Shares</CardTitle>
+                </div>
+                <Badge variant="secondary">{myShares.length} Total</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Manage your active shares and view sharing statistics.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setShowMyShares(!showMyShares)}
+                className="w-full"
+              >
+                {showMyShares ? "Hide" : "View"} My Shares
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* My Shares List */}
+        {showMyShares && (
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Share2 className="h-5 w-5 text-primary" />
+                <CardTitle>My Shares</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {myShares.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                  <Share2 className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                  <p className="text-lg font-medium">No shares added yet</p>
+                  <p className="text-sm">
+                    Add your first share above to get started
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {myShares.map((share) => (
+                    <div
+                      key={share.id}
+                      className="flex items-center justify-between rounded-lg border border-border/50 bg-background/30 p-4"
+                    >
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-medium">{share.name}</h4>
+                          <Badge
+                            variant={share.isActive ? "default" : "secondary"}
+                            className={
+                              share.isActive
+                                ? "border-green-500/20 bg-green-500/10 text-green-500"
+                                : "border-gray-500/20 bg-gray-500/10 text-gray-500"
+                            }
+                          >
+                            {share.isActive ? "active" : "inactive"}
+                          </Badge>
+                        </div>
+                        {share.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {share.description}
+                          </p>
+                        )}
+                        <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>
+                              Created:{" "}
+                              {new Date(share.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {share.expiresAt && (
+                            <div className="flex items-center space-x-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                Expires:{" "}
+                                {new Date(share.expiresAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center space-x-1">
+                            <Package className="h-3 w-3" />
+                            <span>
+                              {(share.catalogIds as number[]).length} catalogs
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyShareUrl(share.shareId)}
+                          title="Copy share URL"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteShare(share.shareId)}
+                          className="text-destructive hover:text-destructive"
+                          title="Delete share"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Share Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Share Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Share Details */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="share-name">Share Name</Label>
+                <Input
+                  id="share-name"
+                  value={shareName}
+                  onChange={(e) => setShareName(e.target.value)}
+                  placeholder="My Awesome Catalog Collection"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="share-description">
+                  Description (Optional)
+                </Label>
+                <Textarea
+                  id="share-description"
+                  value={shareDescription}
+                  onChange={(e) => setShareDescription(e.target.value)}
+                  placeholder="A collection of the best movie and TV show catalogs..."
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="share-expiration">Expiration (Days)</Label>
+                <Input
+                  id="share-expiration"
+                  type="number"
+                  value={shareExpirationDays ?? ""}
+                  onChange={(e) =>
+                    setShareExpirationDays(
+                      e.target.value ? parseInt(e.target.value) : undefined,
+                    )
+                  }
+                  placeholder="30"
+                  min="1"
+                  max="365"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty for no expiration. Maximum 365 days.
+                </p>
+              </div>
+            </div>
+
+            {/* Catalog Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Select Catalogs to Share</Label>
+                <div className="text-sm text-muted-foreground">
+                  {selectedCatalogsForShare.length} of{" "}
+                  {catalogs.filter((c) => c.status === "active").length}{" "}
+                  selected
+                </div>
+              </div>
+              <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border border-border/50 p-4">
+                {catalogs
+                  .filter((catalog) => catalog.status === "active")
+                  .map((catalog) => (
+                    <div
+                      key={catalog.id}
+                      className="flex items-center space-x-3 rounded-md p-2 hover:bg-muted/50"
+                    >
+                      <input
+                        type="checkbox"
+                        id={`catalog-${catalog.id}`}
+                        checked={selectedCatalogsForShare.includes(catalog.id)}
+                        onChange={() => toggleCatalogSelection(catalog.id)}
+                        className="h-4 w-4 rounded border-border/50"
+                      />
+                      <label
+                        htmlFor={`catalog-${catalog.id}`}
+                        className="flex-1 cursor-pointer space-y-1"
+                      >
+                        <div className="font-medium">{catalog.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {catalog.description}
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
+              <div className="flex items-start space-x-2">
+                <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+                <div className="text-xs text-blue-600 dark:text-blue-400">
+                  <p className="font-medium">Security & Privacy</p>
+                  <p className="mt-1">
+                    Only catalog data is shared. Your User ID, API keys, and
+                    personal information remain private.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsShareDialogOpen(false)}
+              disabled={isCreatingShare}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateShare}
+              disabled={
+                isCreatingShare ||
+                selectedCatalogsForShare.length === 0 ||
+                !shareName.trim()
+              }
+            >
+              {isCreatingShare ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Create Share
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <div className="mt-16 border-t border-border/50 pt-8">

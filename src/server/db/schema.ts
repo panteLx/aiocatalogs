@@ -53,3 +53,29 @@ export const catalogs = createTable(
     orderIndex: index("catalog_order_idx").on(table.userId, table.order),
   }),
 );
+
+export const sharedCatalogs = createTable(
+  "shared_catalogs",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    shareId: text("share_id").notNull().unique(),
+    sharedByUserId: text("shared_by_user_id").notNull(),
+    catalogIds: text("catalog_ids", { mode: "json" }).notNull(), // Array of catalog IDs
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    isActive: int("is_active", { mode: "boolean" }).default(true).notNull(),
+    expiresAt: int("expires_at", { mode: "timestamp" }), // Optional expiration
+    createdAt: int("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+    updatedAt: int("updated_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => ({
+    shareIdIndex: index("share_id_idx").on(table.shareId),
+    sharedByUserIdIndex: index("shared_by_user_id_idx").on(
+      table.sharedByUserId,
+    ),
+  }),
+);
