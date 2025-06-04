@@ -170,7 +170,7 @@ export const mdblistRouter = createTRPCRouter({
           id: list.id,
           name: list.name,
           description: list.description ?? "No description available",
-          manifestUrl: `stremio://1fe84bc728af-stremio-mdblist.baby-beamup.club/${list.id}/${apiKey}/manifest.json`,
+          manifestUrl: `https://1fe84bc728af-stremio-mdblist.baby-beamup.club/${list.id}/${apiKey}/manifest.json`,
           types: list.mediatype ? [list.mediatype] : ["movie", "series"], // Use list.mediatype or default to both
           likes: list.likes ?? 0,
           source: "MDBList",
@@ -278,7 +278,7 @@ export const mdblistRouter = createTRPCRouter({
           id: list.id,
           name: list.name,
           description: list.description ?? "No description available",
-          manifestUrl: `stremio://1fe84bc728af-stremio-mdblist.baby-beamup.club/${list.id}/${apiKey}/manifest.json`,
+          manifestUrl: `https://1fe84bc728af-stremio-mdblist.baby-beamup.club/${list.id}/${apiKey}/manifest.json`,
           types: list.mediatype ? [list.mediatype] : ["movie", "series"], // Use list.mediatype or default to both
           likes: list.likes ?? 0,
           source: "MDBList",

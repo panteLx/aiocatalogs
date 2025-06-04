@@ -99,6 +99,9 @@ export function AddCatalogDialog({
   // Save API key mutation
   const saveApiKeyMutation = api.mdblist.saveApiKey.useMutation();
 
+  // Get tRPC utils for cache invalidation
+  const utils = api.useUtils();
+
   // Handle API key validation on Enter key press
   const handleApiKeyPress = async (
     e: React.KeyboardEvent<HTMLInputElement>,
@@ -321,12 +324,8 @@ export function AddCatalogDialog({
         manifestUrl: catalogToAdd.manifestUrl,
       });
 
-      // Also call the parent callback for immediate UI update
-      onAddCatalog({
-        name: catalogToAdd.name,
-        manifestUrl: catalogToAdd.manifestUrl,
-        description: catalogToAdd.description,
-      });
+      // Invalidate the catalog list query to refresh the UI
+      await utils.catalog.list.invalidate({ userId });
 
       toast({
         title: "Catalog Added Successfully",
