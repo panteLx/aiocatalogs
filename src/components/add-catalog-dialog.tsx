@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,131 +18,29 @@ import {
   Search,
   Key,
   Package,
-  Globe,
   Star,
   Download,
   CheckCircle,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { api } from "@/trpc/react";
 
-// Mock catalog data
-const MOCK_CATALOGS = [
-  {
-    id: 1,
-    name: "IMDB Top 250 Movies",
-    description: "The most popular and highest-rated movies according to IMDB",
-    manifestUrl: "https://example.com/imdb-top-250/manifest.json",
-    types: ["movie"],
-    rating: 4.9,
-    downloads: "2.3M",
-    featured: true,
-  },
-  {
-    id: 2,
-    name: "Netflix Originals",
-    description: "Exclusive Netflix original series and movies",
-    manifestUrl: "https://example.com/netflix-originals/manifest.json",
-    types: ["movie", "series"],
-    rating: 4.7,
-    downloads: "1.8M",
-    featured: true,
-  },
-  {
-    id: 3,
-    name: "Classic TV Shows",
-    description: "Timeless television series from the golden age",
-    manifestUrl: "https://example.com/classic-tv/manifest.json",
-    types: ["series"],
-    rating: 4.5,
-    downloads: "945K",
-    featured: false,
-  },
-  {
-    id: 4,
-    name: "Documentary Collection",
-    description: "Educational and thought-provoking documentaries",
-    manifestUrl: "https://example.com/documentaries/manifest.json",
-    types: ["movie"],
-    rating: 4.6,
-    downloads: "687K",
-    featured: false,
-  },
-  {
-    id: 5,
-    name: "Anime Series Hub",
-    description: "Popular anime series from various genres",
-    manifestUrl: "https://example.com/anime-hub/manifest.json",
-    types: ["series"],
-    rating: 4.8,
-    downloads: "1.2M",
-    featured: true,
-  },
-  {
-    id: 6,
-    name: "Horror Movie Vault",
-    description: "Spine-chilling horror movies for thrill seekers",
-    manifestUrl: "https://example.com/horror-vault/manifest.json",
-    types: ["movie"],
-    rating: 4.3,
-    downloads: "523K",
-    featured: false,
-  },
-];
-
-// Mock search results for external catalog search
-const MOCK_SEARCH_RESULTS = [
-  {
-    id: 101,
-    name: "4K Movies Collection",
-    description: "High-quality 4K movies from various genres",
-    manifestUrl: "https://example.com/4k-movies/manifest.json",
-    types: ["movie"],
-    rating: 4.8,
-    downloads: "892K",
-    source: "CinemaHub",
-  },
-  {
-    id: 102,
-    name: "Retro TV Classics",
-    description: "Classic TV shows from the 80s and 90s",
-    manifestUrl: "https://example.com/retro-tv/manifest.json",
-    types: ["series"],
-    rating: 4.6,
-    downloads: "456K",
-    source: "VintageStream",
-  },
-  {
-    id: 103,
-    name: "International Cinema",
-    description: "Foreign films with subtitles from around the world",
-    manifestUrl: "https://example.com/international/manifest.json",
-    types: ["movie"],
-    rating: 4.7,
-    downloads: "321K",
-    source: "WorldCinema",
-  },
-  {
-    id: 104,
-    name: "Kids & Family",
-    description: "Safe, family-friendly content for children",
-    manifestUrl: "https://example.com/kids-family/manifest.json",
-    types: ["movie", "series"],
-    rating: 4.5,
-    downloads: "789K",
-    source: "FamilyStream",
-  },
-  {
-    id: 105,
-    name: "Sci-Fi Universe",
-    description: "Science fiction movies and series collection",
-    manifestUrl: "https://example.com/scifi/manifest.json",
-    types: ["movie", "series"],
-    rating: 4.9,
-    downloads: "1.1M",
-    source: "SciFiHub",
-  },
-];
+// MDBList Catalog interface
+interface MDBListCatalog {
+  id: number;
+  name: string;
+  description: string;
+  manifestUrl: string;
+  types: string[];
+  rating: number;
+  downloads: string;
+  source: string;
+  listType?: "toplist" | "userlist";
+  username?: string;
+  listSlug?: string;
+}
 
 interface AddCatalogDialogProps {
   isOpen: boolean;
@@ -152,66 +50,116 @@ interface AddCatalogDialogProps {
     manifestUrl: string;
     description: string;
   }) => void;
+  userId: string;
 }
 
 export function AddCatalogDialog({
   isOpen,
   onOpenChange,
   onAddCatalog,
+  userId,
 }: AddCatalogDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [selectedCatalog, setSelectedCatalog] = useState<number | null>(null);
+  const [selectedCatalog, setSelectedCatalog] = useState<MDBListCatalog | null>(
+    null,
+  );
+  const [selectedSearchResult, setSelectedSearchResult] =
+    useState<MDBListCatalog | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [activeTab, setActiveTab] = useState<"browse" | "search">("browse");
-
-  // Search catalog states
+  const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const [searchName, setSearchName] = useState("");
-  const [selectedSearchResult, setSelectedSearchResult] = useState<
-    number | null
-  >(null);
+  const [actualSearchQuery, setActualSearchQuery] = useState("");
 
-  // Filter search results based on search query
-  const filteredSearchResults = MOCK_SEARCH_RESULTS.filter(
-    (result) =>
-      searchName.trim() === "" ||
-      result.name.toLowerCase().includes(searchName.toLowerCase()) ||
-      result.description.toLowerCase().includes(searchName.toLowerCase()) ||
-      result.source.toLowerCase().includes(searchName.toLowerCase()) ||
-      result.types.some((type) =>
-        type.toLowerCase().includes(searchName.toLowerCase()),
-      ),
+  // API queries
+  const validateApiKeyMutation = api.mdblist.validateApiKey.useQuery(
+    { apiKey },
+    { enabled: false, retry: false },
+  );
+  const getTopListsQuery = api.mdblist.getTopLists.useQuery(
+    { apiKey, limit: 20 },
+    { enabled: !!apiKey && apiKeyValid === true },
+  );
+  const searchListsQuery = api.mdblist.searchLists.useQuery(
+    { apiKey, query: actualSearchQuery, limit: 20 },
+    { enabled: !!apiKey && apiKeyValid === true && !!actualSearchQuery.trim() },
   );
 
-  // Sort search results by rating
-  const sortedSearchResults = filteredSearchResults.sort(
-    (a, b) => b.rating - a.rating,
-  );
+  // Add catalog mutation
+  const addCatalogMutation = api.catalog.add.useMutation();
 
-  // Filter catalogs based on search query
-  const filteredCatalogs = MOCK_CATALOGS.filter(
-    (catalog) =>
-      searchQuery.trim() === "" ||
-      catalog.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      catalog.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      catalog.types.some((type) =>
-        type.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-  );
+  // Handle search on Enter key press
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchName.trim()) {
+      setActualSearchQuery(searchName.trim());
+    }
+  };
 
-  // Sort catalogs: featured first, then by rating
-  const sortedCatalogs = filteredCatalogs.sort((a, b) => {
-    if (a.featured && !b.featured) return -1;
-    if (!a.featured && b.featured) return 1;
-    return b.rating - a.rating;
-  });
+  // Handle search button click
+  const handleSearchClick = () => {
+    if (searchName.trim()) {
+      setActualSearchQuery(searchName.trim());
+    }
+  };
+
+  // Validate API key when it changes
+  useEffect(() => {
+    if (apiKey.length > 10) {
+      // Basic length check
+      const timer = setTimeout(() => {
+        validateApiKeyMutation
+          .refetch()
+          .then((result) => {
+            if (result.data?.valid) {
+              setApiKeyValid(true);
+            } else {
+              setApiKeyValid(false);
+            }
+          })
+          .catch(() => {
+            setApiKeyValid(false);
+          });
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setApiKeyValid(null);
+    }
+  }, [apiKey, validateApiKeyMutation]);
+
+  // Filter browse catalogs based on search query
+  const filteredBrowseCatalogs =
+    getTopListsQuery.data?.catalogs?.filter(
+      (catalog) =>
+        searchQuery.trim() === "" ||
+        catalog.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        catalog.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        catalog.types.some((type) =>
+          type.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+    ) ?? [];
+
+  // Filter search results
+  const filteredSearchResults = searchListsQuery.data?.catalogs ?? [];
 
   const handleAddCatalog = async () => {
-    // Check if API key is provided
-    if (!apiKey.trim()) {
+    // Check if API key is valid
+    if (!apiKey.trim() || apiKeyValid !== true) {
       toast({
-        title: "API Key Required",
-        description: "Please enter your API key to add catalogs.",
+        title: "Invalid API Key",
+        description: "Please enter a valid MDBList API key.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const catalogToAdd =
+      activeTab === "browse" ? selectedCatalog : selectedSearchResult;
+
+    if (!catalogToAdd) {
+      toast({
+        title: "No Catalog Selected",
+        description: "Please select a catalog to add.",
         variant: "destructive",
       });
       return;
@@ -220,59 +168,34 @@ export function AddCatalogDialog({
     setIsAdding(true);
 
     try {
-      if (activeTab === "browse" && selectedCatalog) {
-        const catalog = MOCK_CATALOGS.find((c) => c.id === selectedCatalog);
-        if (catalog) {
-          await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-          onAddCatalog({
-            name: catalog.name,
-            manifestUrl: catalog.manifestUrl,
-            description: catalog.description,
-          });
+      // Add catalog using the existing catalog.add mutation
+      await addCatalogMutation.mutateAsync({
+        userId,
+        manifestUrl: catalogToAdd.manifestUrl,
+      });
 
-          toast({
-            title: "Catalog Added Successfully",
-            description: `${catalog.name} has been added to your collection.`,
-          });
-        }
-      } else if (activeTab === "search") {
-        if (!selectedSearchResult) {
-          toast({
-            title: "No Catalog Selected",
-            description: "Please select a catalog from the search results.",
-            variant: "destructive",
-          });
-          setIsAdding(false);
-          return;
-        }
+      // Also call the parent callback for immediate UI update
+      onAddCatalog({
+        name: catalogToAdd.name,
+        manifestUrl: catalogToAdd.manifestUrl,
+        description: catalogToAdd.description,
+      });
 
-        const searchResult = MOCK_SEARCH_RESULTS.find(
-          (c) => c.id === selectedSearchResult,
-        );
-        if (searchResult) {
-          await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-          onAddCatalog({
-            name: searchResult.name,
-            manifestUrl: searchResult.manifestUrl,
-            description: searchResult.description,
-          });
-
-          toast({
-            title: "MDBList Catalog Added",
-            description: `${searchResult.name} has been added to your collection.`,
-          });
-        }
-      }
-
-      // Reset form
-      setSelectedCatalog(null);
-      setSelectedSearchResult(null);
-      setSearchName("");
-      onOpenChange(false);
-    } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to add catalog. Please try again.",
+        title: "Catalog Added Successfully",
+        description: `${catalogToAdd.name} has been added to your collection.`,
+      });
+
+      // Reset form and close dialog
+      handleClose();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to add catalog. Please try again.";
+      toast({
+        title: "Error Adding Catalog",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -285,6 +208,8 @@ export function AddCatalogDialog({
     setSelectedSearchResult(null);
     setSearchQuery("");
     setSearchName("");
+    setActualSearchQuery("");
+    setApiKeyValid(null);
     onOpenChange(false);
   };
 
@@ -302,25 +227,54 @@ export function AddCatalogDialog({
           {/* API Key Input */}
           <div className="space-y-2">
             <Label htmlFor="api-key" className="text-sm font-medium">
-              API Key <span className="text-red-500">*</span>
+              MDBList API Key <span className="text-red-500">*</span>
             </Label>
             <div className="relative">
               <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="api-key"
                 type="password"
-                placeholder="Enter your API key (required)..."
+                placeholder="Enter your MDBList API key..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className={`border-border/50 bg-background/50 pl-10 ${
-                  !apiKey.trim() ? "border-red-500/50" : ""
+                  apiKeyValid === false
+                    ? "border-red-500/50"
+                    : apiKeyValid === true
+                      ? "border-green-500/50"
+                      : ""
                 }`}
                 required
               />
+              {validateApiKeyMutation.isFetching && (
+                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+              {apiKeyValid === true && (
+                <CheckCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-500" />
+              )}
+              {apiKeyValid === false && (
+                <AlertCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-red-500" />
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              A valid API key is required to access MDBList catalogs.
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Get your API key from{" "}
+                <a
+                  href="https://mdblist.com/api/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  mdblist.com/api/
+                </a>
+              </p>
+              {apiKeyValid === true && (
+                <p className="text-xs text-green-600">✓ Valid API key</p>
+              )}
+              {apiKeyValid === false && (
+                <p className="text-xs text-red-600">✗ Invalid API key</p>
+              )}
+            </div>
           </div>
 
           {/* Tab Selection */}
@@ -352,16 +306,17 @@ export function AddCatalogDialog({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search catalogs by name, description, or type..."
+                    placeholder="Search toplists by name, description, or type..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="border-border/50 bg-background/50 pl-10"
+                    disabled={apiKeyValid !== true}
                   />
                 </div>
                 {searchQuery.trim() && (
                   <p className="text-xs text-muted-foreground">
-                    Found {sortedCatalogs.length} catalog
-                    {sortedCatalogs.length !== 1 ? "s" : ""}
+                    Found {filteredBrowseCatalogs.length} catalog
+                    {filteredBrowseCatalogs.length !== 1 ? "s" : ""}
                     {searchQuery.trim() && ` matching "${searchQuery}"`}
                   </p>
                 )}
@@ -369,135 +324,62 @@ export function AddCatalogDialog({
 
               {/* Catalog Grid */}
               <div className="flex-1 overflow-y-auto pr-2">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {sortedCatalogs.map((catalog) => (
-                    <Card
-                      key={catalog.id}
-                      className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
-                        selectedCatalog === catalog.id
-                          ? "border-primary/50 ring-2 ring-primary"
-                          : ""
-                      }`}
-                      onClick={() => setSelectedCatalog(catalog.id)}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0 flex-1">
-                            <CardTitle className="flex items-center space-x-2 text-sm font-medium">
-                              <span className="truncate">{catalog.name}</span>
-                              {catalog.featured && (
-                                <Star className="h-3 w-3 text-yellow-500" />
-                              )}
-                            </CardTitle>
-                          </div>
-                          {selectedCatalog === catalog.id && (
-                            <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-3 pt-0">
-                        <p className="line-clamp-2 text-xs text-muted-foreground">
-                          {catalog.description}
-                        </p>
-
-                        <div className="flex flex-wrap gap-1">
-                          {catalog.types.map((type) => (
-                            <Badge
-                              key={type}
-                              variant="secondary"
-                              className="text-xs capitalize"
-                            >
-                              {type}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-3 w-3" />
-                            <span>{catalog.rating}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Download className="h-3 w-3" />
-                            <span>{catalog.downloads}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {sortedCatalogs.length === 0 && (
+                {apiKeyValid !== true ? (
                   <div className="py-12 text-center text-muted-foreground">
-                    <Package className="mx-auto mb-4 h-16 w-16 opacity-50" />
-                    <p className="text-lg font-medium">No catalogs found</p>
+                    <Key className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                    <p className="text-lg font-medium">API Key Required</p>
                     <p className="text-sm">
-                      Try adjusting your search terms or browse all catalogs
+                      Please enter a valid MDBList API key to browse catalogs
                     </p>
                   </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 space-y-4 overflow-y-auto">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Search MDBList Catalogs
-                  </Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search for catalogs by name, source, or category..."
-                      value={searchName}
-                      onChange={(e) => setSearchName(e.target.value)}
-                      className="border-border/50 bg-background/50 pl-10"
-                    />
+                ) : getTopListsQuery.isLoading ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <Loader2 className="mx-auto mb-4 h-16 w-16 animate-spin opacity-50" />
+                    <p className="text-lg font-medium">Loading Catalogs</p>
+                    <p className="text-sm">Fetching MDBList toplists...</p>
                   </div>
-                  {searchName.trim() && (
-                    <p className="text-xs text-muted-foreground">
-                      Found {sortedSearchResults.length} catalog
-                      {sortedSearchResults.length !== 1 ? "s" : ""}
-                      {searchName.trim() && ` matching "${searchName}"`}
+                ) : getTopListsQuery.error ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <AlertCircle className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                    <p className="text-lg font-medium">
+                      Error Loading Catalogs
                     </p>
-                  )}
-                </div>
-
-                {/* Search Results Grid */}
-                <div className="flex-1 overflow-y-auto pr-2">
-                  <div className="grid grid-cols-1 gap-3">
-                    {sortedSearchResults.map((result) => (
+                    <p className="text-sm">{getTopListsQuery.error.message}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {filteredBrowseCatalogs.map((catalog) => (
                       <Card
-                        key={result.id}
+                        key={catalog.id}
                         className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
-                          selectedSearchResult === result.id
+                          selectedCatalog?.id === catalog.id
                             ? "border-primary/50 ring-2 ring-primary"
                             : ""
                         }`}
-                        onClick={() => setSelectedSearchResult(result.id)}
+                        onClick={() => setSelectedCatalog(catalog)}
                       >
                         <CardHeader className="pb-2">
                           <div className="flex items-start justify-between">
                             <div className="min-w-0 flex-1">
                               <CardTitle className="flex items-center space-x-2 text-sm font-medium">
-                                <span className="truncate">{result.name}</span>
+                                <span className="truncate">{catalog.name}</span>
+                                {catalog.listType === "toplist" && (
+                                  <Star className="h-3 w-3 text-yellow-500" />
+                                )}
                               </CardTitle>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                from {result.source}
-                              </p>
                             </div>
-                            {selectedSearchResult === result.id && (
+                            {selectedCatalog?.id === catalog.id && (
                               <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
                             )}
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3 pt-0">
                           <p className="line-clamp-2 text-xs text-muted-foreground">
-                            {result.description}
+                            {catalog.description}
                           </p>
 
                           <div className="flex flex-wrap gap-1">
-                            {result.types.map((type) => (
+                            {catalog.types.map((type) => (
                               <Badge
                                 key={type}
                                 variant="secondary"
@@ -511,37 +393,179 @@ export function AddCatalogDialog({
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Star className="h-3 w-3" />
-                              <span>{result.rating}</span>
+                              <span>{catalog.rating.toFixed(1)}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Download className="h-3 w-3" />
-                              <span>{result.downloads}</span>
+                              <span>{catalog.downloads}</span>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
+                )}
 
-                  {sortedSearchResults.length === 0 && searchName.trim() && (
+                {filteredBrowseCatalogs.length === 0 &&
+                  apiKeyValid === true &&
+                  !getTopListsQuery.isLoading && (
                     <div className="py-12 text-center text-muted-foreground">
-                      <Search className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                      <Package className="mx-auto mb-4 h-16 w-16 opacity-50" />
                       <p className="text-lg font-medium">No catalogs found</p>
                       <p className="text-sm">
-                        Try different search terms or browse the main catalog
+                        Try adjusting your search terms or check your connection
                       </p>
+                    </div>
+                  )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 space-y-4 overflow-y-auto">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Search MDBList Catalogs
+                  </Label>
+                  <div className="flex space-x-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Search for catalogs by name, source, or category... (Press Enter to search)"
+                        value={searchName}
+                        onChange={(e) => setSearchName(e.target.value)}
+                        onKeyPress={handleSearchKeyPress}
+                        className="border-border/50 bg-background/50 pl-10"
+                        disabled={apiKeyValid !== true}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleSearchClick}
+                      disabled={apiKeyValid !== true || !searchName.trim()}
+                      size="default"
+                      variant="outline"
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {actualSearchQuery && (
+                    <p className="text-xs text-muted-foreground">
+                      Found {filteredSearchResults.length} catalog
+                      {filteredSearchResults.length !== 1 ? "s" : ""}
+                      {actualSearchQuery && ` matching "${actualSearchQuery}"`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Search Results Grid */}
+                <div className="flex-1 overflow-y-auto pr-2">
+                  {apiKeyValid !== true ? (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Key className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                      <p className="text-lg font-medium">API Key Required</p>
+                      <p className="text-sm">
+                        Please enter a valid MDBList API key to search catalogs
+                      </p>
+                    </div>
+                  ) : !actualSearchQuery ? (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Search className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                      <p className="text-lg font-medium">Ready to Search</p>
+                      <p className="text-sm">
+                        Enter a search term and press Enter or click the search
+                        button
+                      </p>
+                    </div>
+                  ) : searchListsQuery.isLoading ? (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <Loader2 className="mx-auto mb-4 h-16 w-16 animate-spin opacity-50" />
+                      <p className="text-lg font-medium">Searching</p>
+                      <p className="text-sm">Looking for catalogs...</p>
+                    </div>
+                  ) : searchListsQuery.error ? (
+                    <div className="py-12 text-center text-muted-foreground">
+                      <AlertCircle className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                      <p className="text-lg font-medium">Search Error</p>
+                      <p className="text-sm">
+                        {searchListsQuery.error.message}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      {filteredSearchResults.map((result) => (
+                        <Card
+                          key={result.id}
+                          className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
+                            selectedSearchResult?.id === result.id
+                              ? "border-primary/50 ring-2 ring-primary"
+                              : ""
+                          }`}
+                          onClick={() => setSelectedSearchResult(result)}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 flex-1">
+                                <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                                  <span className="truncate">
+                                    {result.name}
+                                  </span>
+                                  {result.listType === "toplist" && (
+                                    <Star className="h-3 w-3 text-yellow-500" />
+                                  )}
+                                </CardTitle>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  from {result.source}
+                                </p>
+                              </div>
+                              {selectedSearchResult?.id === result.id && (
+                                <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3 pt-0">
+                            <p className="line-clamp-2 text-xs text-muted-foreground">
+                              {result.description}
+                            </p>
+
+                            <div className="flex flex-wrap gap-1">
+                              {result.types.map((type) => (
+                                <Badge
+                                  key={type}
+                                  variant="secondary"
+                                  className="text-xs capitalize"
+                                >
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <div className="flex items-center space-x-1">
+                                <Star className="h-3 w-3" />
+                                <span>{result.rating.toFixed(1)}</span>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Download className="h-3 w-3" />
+                                <span>{result.downloads}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   )}
 
-                  {sortedSearchResults.length === 0 && !searchName.trim() && (
-                    <div className="py-12 text-center text-muted-foreground">
-                      <Search className="mx-auto mb-4 h-16 w-16 opacity-50" />
-                      <p className="text-lg font-medium">Start Searching</p>
-                      <p className="text-sm">
-                        Enter a search term to find MDBList catalogs
-                      </p>
-                    </div>
-                  )}
+                  {filteredSearchResults.length === 0 &&
+                    actualSearchQuery &&
+                    !searchListsQuery.isLoading &&
+                    apiKeyValid === true && (
+                      <div className="py-12 text-center text-muted-foreground">
+                        <Search className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                        <p className="text-lg font-medium">No catalogs found</p>
+                        <p className="text-sm">
+                          Try different search terms or browse the main catalog
+                        </p>
+                      </div>
+                    )}
                 </div>
 
                 <div className="rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
@@ -550,7 +574,7 @@ export function AddCatalogDialog({
                     <div className="text-xs text-blue-600 dark:text-blue-400">
                       <p className="font-medium">MDBList Catalog Search</p>
                       <p className="mt-1">
-                        Search through MDBList catalog sources to find
+                        Search through MDBList toplists and user lists to find
                         additional content. Select a catalog to add it to your
                         collection.
                       </p>
@@ -570,7 +594,7 @@ export function AddCatalogDialog({
             onClick={handleAddCatalog}
             disabled={
               isAdding ||
-              !apiKey.trim() ||
+              apiKeyValid !== true ||
               (activeTab === "browse" && !selectedCatalog) ||
               (activeTab === "search" && !selectedSearchResult)
             }

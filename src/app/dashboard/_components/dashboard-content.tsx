@@ -630,9 +630,9 @@ export function DashboardContent({ userId }: DashboardContentProps) {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Use the "Add MDBList Catalog" button to browse the MDBList
-                catalog library, or quickly add a manifest URL directly in the
-                input field above.
+                Use the &quot;Add MDBList Catalog&quot; button to browse the
+                MDBList catalog library, or quickly add a manifest URL directly
+                in the input field above.
               </p>
             </div>
           </CardContent>
@@ -1483,6 +1483,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
         isOpen={isAddCatalogDialogOpen}
         onOpenChange={setIsAddCatalogDialogOpen}
         onAddCatalog={handleAddCatalogFromDialog}
+        userId={userId}
       />
     </div>
   );
