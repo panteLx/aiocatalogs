@@ -4,6 +4,9 @@ CLOUDFLARE_TOKEN='x'
 
 # GitHub Repository Configuration for Changelog
 GITHUB_REPO_OWNER='your-github-username'
-GITHUB_REPO_NAME='aiocatalogs-v2'
+GITHUB_REPO_NAME='your-github-repo-name'
 # Optional: Add a GitHub Personal Access Token for higher rate limits
 # GITHUB_TOKEN='your-github-personal-access-token'
+
+# MDBList API Configuration
+MDBLIST_MANIFEST_URL='https://1fe84bc728af-stremio-mdblist.baby-beamup.club'

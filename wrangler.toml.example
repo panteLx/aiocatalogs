@@ -37,6 +37,7 @@ mode = "smart"
 [vars]
 GITHUB_REPO_OWNER=""
 GITHUB_REPO_NAME=""
+MDBLIST_MANIFEST_URL="https://1fe84bc728af-stremio-mdblist.baby-beamup.club"
 
 # Note: Use secrets to store sensitive data.
 # https://developers.cloudflare.com/workers/configuration/secrets/

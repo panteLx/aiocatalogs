@@ -20,8 +20,11 @@ export const env = createEnv({
       .default("development"),
     // GitHub Repository Configuration for Changelog
     GITHUB_REPO_OWNER: z.string().default("your-github-username"),
-    GITHUB_REPO_NAME: z.string().default("aiocatalogs-v2"),
+    GITHUB_REPO_NAME: z.string().default("aiocatalogs"),
     GITHUB_TOKEN: z.string().optional(), // Optional GitHub token for higher rate limits
+    MDBLIST_MANIFEST_URL: z
+      .string()
+      .default("https://1fe84bc728af-stremio-mdblist.baby-beamup.club"),
   },
 
   /**
@@ -46,6 +49,7 @@ export const env = createEnv({
     GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER,
     GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    MDBLIST_MANIFEST_URL: process.env.MDBLIST_MANIFEST_URL,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
