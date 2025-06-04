@@ -47,6 +47,7 @@ import {
   AddCatalogDialog,
   AddCatalogTrigger,
 } from "@/components/add-catalog-dialog";
+import { RPDBConfigTrigger } from "@/components/rpdb-config-dialog";
 
 // Type definitions for the manifest structure
 interface StremioManifest {
@@ -720,10 +721,12 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                       disabled={isAddingCatalog}
                       className="flex-1 sm:flex-none"
                     />
-                    <Button disabled={true} className="flex-1 sm:flex-none">
-                      <Plus className="h-4 w-4" /> RPDB Configuration (Coming
-                      Soon)
-                    </Button>
+                    <RPDBConfigTrigger
+                      userId={userId}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Plus className="h-4 w-4" /> RPDB Configuration
+                    </RPDBConfigTrigger>
                   </div>
                 </div>
 
