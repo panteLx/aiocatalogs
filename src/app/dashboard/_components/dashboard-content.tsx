@@ -548,105 +548,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
         </p>
       </div>
 
-      {/* Top Section - User Info and Add Catalog in one row */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-        {/* User ID Card - Smaller */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm lg:col-span-1">
-          <CardHeader className="pb-2">
-            <div className="flex items-center space-x-2">
-              <User className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">User ID</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="break-all rounded-md border bg-muted/50 p-2 font-mono text-xs">
-              {userId}
-            </p>
-            <div className="flex items-start space-x-2 rounded-md border border-orange-500/20 bg-orange-500/10 p-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-500" />
-              <div className="text-xs text-orange-600 dark:text-orange-400">
-                <p className="font-medium">Security Warning</p>
-                <p className="mt-1">
-                  Do not share your User ID – it gives full access to your
-                  catalogs and API keys.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Add Catalog Card - Takes up more space */}
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm lg:col-span-3">
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <div className="flex items-center space-x-2">
-              <Plus className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Add New Catalog</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Discover and add new catalogs to your collection. Browse our
-                curated catalog library or add your own custom manifest URLs.
-              </p>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <AddCatalogTrigger
-                  onClick={() => setIsAddCatalogDialogOpen(true)}
-                  disabled={isAddingCatalog}
-                  className="flex-1 sm:flex-none"
-                />
-
-                <div className="flex flex-1 space-x-2">
-                  <div className="relative flex-1">
-                    <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="catalog-url"
-                      type="url"
-                      placeholder="Quick add: https://example.com/manifest.json"
-                      value={catalogUrl}
-                      onChange={(e) => {
-                        const inputValue = e.target.value;
-                        // Automatically transform stremio:// URLs while typing
-                        const transformedValue =
-                          transformStremioUrl(inputValue);
-                        setCatalogUrl(transformedValue);
-                      }}
-                      className="border-border/50 bg-background/50 pl-10"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleAddCatalog}
-                    disabled={!catalogUrl.trim() || isAddingCatalog}
-                    variant="outline"
-                  >
-                    {isAddingCatalog ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Use the &quot;Add MDBList Catalog&quot; button to browse the
-                MDBList catalog library, or quickly add a manifest URL directly
-                in the input field above.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Featured Section */}
       <div className="space-y-6">
-        <div className="space-y-2 text-center">
-          <h2 className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-2xl font-bold text-transparent">
-            Featured
-          </h2>
-        </div>
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {/* Discord Server */}
           <Card className="border-border/50 bg-card/50 backdrop-blur-sm transition-all hover:bg-card/70">
@@ -712,7 +615,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 <div className="flex-1">
                   <h3 className="text-sm font-medium">Easynews++ Addon</h3>
                   <p className="text-xs text-muted-foreground">
-                    Premium streaming addon
+                    Highly customizable Easynews addon
                   </p>
                 </div>
                 <Button
@@ -725,6 +628,110 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Top Section - User Info and Add Catalog in one row */}
+      <div className="space-y-6">
+        <div className="space-y-2 text-center">
+          <h2 className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-2xl font-bold text-transparent">
+            Add Catalogs
+          </h2>
+          <p className="text-muted-foreground">
+            Start adding your favorite catalogs
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+          {/* User ID Card - Smaller */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm lg:col-span-1">
+            <CardHeader className="pb-2">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-primary" />
+                <CardTitle className="text-base">User ID</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="break-all rounded-md border bg-muted/50 p-2 font-mono text-xs">
+                {userId}
+              </p>
+              <div className="flex items-start space-x-2 rounded-md border border-orange-500/20 bg-orange-500/10 p-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-500" />
+                <div className="text-xs text-orange-600 dark:text-orange-400">
+                  <p className="font-medium">Security Warning</p>
+                  <p className="mt-1">
+                    Do not share your User ID – it gives full access to your
+                    catalogs and API keys.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Add Catalog Card - Takes up more space */}
+          <Card className="border-border/50 bg-card/50 backdrop-blur-sm lg:col-span-3">
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <div className="flex items-center space-x-2">
+                <Plus className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Add New Catalog</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                {/* Quick Add Section */}
+                <div className="space-y-3">
+                  <div className="flex space-x-2">
+                    <div className="relative flex-1">
+                      <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="catalog-url"
+                        type="url"
+                        placeholder="https://example.com/manifest.json or stremio://..."
+                        value={catalogUrl}
+                        onChange={(e) => {
+                          const inputValue = e.target.value;
+                          // Automatically transform stremio:// URLs while typing
+                          const transformedValue =
+                            transformStremioUrl(inputValue);
+                          setCatalogUrl(transformedValue);
+                        }}
+                        className="border-border/50 bg-background/50 pl-10"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleAddCatalog}
+                      disabled={!catalogUrl.trim() || isAddingCatalog}
+                      variant="outline"
+                    >
+                      {isAddingCatalog ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Additional Buttons Section */}
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <AddCatalogTrigger
+                      onClick={() => setIsAddCatalogDialogOpen(true)}
+                      disabled={isAddingCatalog}
+                      className="flex-1 sm:flex-none"
+                    />
+                    <Button disabled={true} className="flex-1 sm:flex-none">
+                      <Plus className="h-4 w-4" /> RPDB Configuration (Coming
+                      Soon)
+                    </Button>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Use the &quot;Add MDBList Catalog&quot; button to browse the
+                  MDBList catalog library, or quickly add a manifest URL
+                  directly in the input field above.
+                </p>
               </div>
             </CardContent>
           </Card>
