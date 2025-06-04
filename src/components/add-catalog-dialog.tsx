@@ -57,7 +57,6 @@ interface AddCatalogDialogProps {
 export function AddCatalogDialog({
   isOpen,
   onOpenChange,
-  onAddCatalog,
   userId,
 }: AddCatalogDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -320,7 +319,7 @@ export function AddCatalogDialog({
   // Trigger search when actualSearchQuery changes
   useEffect(() => {
     if (actualSearchQuery && apiKeyValid === true) {
-      searchListsQuery.refetch();
+      void searchListsQuery.refetch();
     }
   }, [actualSearchQuery, apiKeyValid, searchListsQuery]);
 
@@ -417,7 +416,7 @@ export function AddCatalogDialog({
     try {
       // Add catalogs sequentially to avoid overwhelming the server
       let successCount = 0;
-      let failedCatalogs: string[] = [];
+      const failedCatalogs: string[] = [];
 
       for (const catalog of catalogsToAdd) {
         setCurrentlyProcessing(catalog.name);
