@@ -43,6 +43,10 @@ import {
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/trpc/react";
+import {
+  AddCatalogDialog,
+  AddCatalogTrigger,
+} from "@/components/add-catalog-dialog";
 
 // Type definitions for the manifest structure
 interface StremioManifest {
@@ -92,6 +96,9 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   >(30);
   const [isCreatingShare, setIsCreatingShare] = useState(false);
   const [showMyShares, setShowMyShares] = useState(false);
+
+  // Add catalog dialog state
+  const [isAddCatalogDialogOpen, setIsAddCatalogDialogOpen] = useState(false);
 
   const dragCounter = useRef(0);
 
@@ -516,6 +523,19 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     );
   };
 
+  // Handle adding catalog from the new dialog
+  const handleAddCatalogFromDialog = (catalog: {
+    name: string;
+    manifestUrl: string;
+    description: string;
+  }) => {
+    setIsAddingCatalog(true);
+    addCatalogMutation.mutate({
+      userId,
+      manifestUrl: catalog.manifestUrl,
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
@@ -564,41 +584,55 @@ export function DashboardContent({ userId }: DashboardContentProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="catalog-url" className="text-sm font-medium">
-                Manifest URL
-              </Label>
-              <div className="flex space-x-2">
-                <div className="relative flex-1">
-                  <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="catalog-url"
-                    type="url"
-                    placeholder="https://example.com/manifest.json or stremio://..."
-                    value={catalogUrl}
-                    onChange={(e) => {
-                      const inputValue = e.target.value;
-                      // Automatically transform stremio:// URLs while typing
-                      const transformedValue = transformStremioUrl(inputValue);
-                      setCatalogUrl(transformedValue);
-                    }}
-                    className="border-border/50 bg-background/50 pl-10"
-                  />
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Discover and add new catalogs to your collection. Browse our
+                curated catalog library or add your own custom manifest URLs.
+              </p>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <AddCatalogTrigger
+                  onClick={() => setIsAddCatalogDialogOpen(true)}
+                  disabled={isAddingCatalog}
+                  className="flex-1 sm:flex-none"
+                />
+
+                <div className="flex flex-1 space-x-2">
+                  <div className="relative flex-1">
+                    <Link2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="catalog-url"
+                      type="url"
+                      placeholder="Quick add: https://example.com/manifest.json"
+                      value={catalogUrl}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        // Automatically transform stremio:// URLs while typing
+                        const transformedValue =
+                          transformStremioUrl(inputValue);
+                        setCatalogUrl(transformedValue);
+                      }}
+                      className="border-border/50 bg-background/50 pl-10"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddCatalog}
+                    disabled={!catalogUrl.trim() || isAddingCatalog}
+                    variant="outline"
+                  >
+                    {isAddingCatalog ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleAddCatalog}
-                  disabled={!catalogUrl.trim() || isAddingCatalog}
-                >
-                  {isAddingCatalog ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                </Button>
               </div>
+
               <p className="text-xs text-muted-foreground">
-                Enter the URL of a addon catalog manifest.json file. You can
-                find them on MDBList for example.
+                Use the "Add MDBList Catalog" button to browse the MDBList
+                catalog library, or quickly add a manifest URL directly in the
+                input field above.
               </p>
             </div>
           </CardContent>
@@ -1443,6 +1477,13 @@ export function DashboardContent({ userId }: DashboardContentProps) {
           </div>
         </div>
       </div>
+
+      {/* Add Catalog Dialog */}
+      <AddCatalogDialog
+        isOpen={isAddCatalogDialogOpen}
+        onOpenChange={setIsAddCatalogDialogOpen}
+        onAddCatalog={handleAddCatalogFromDialog}
+      />
     </div>
   );
 }
