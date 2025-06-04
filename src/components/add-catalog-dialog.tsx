@@ -62,12 +62,16 @@ export function AddCatalogDialog({
 }: AddCatalogDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [selectedCatalog, setSelectedCatalog] = useState<MDBListCatalog | null>(
+  const [selectedCatalogs, setSelectedCatalogs] = useState<MDBListCatalog[]>(
+    [],
+  );
+  const [selectedSearchResults, setSelectedSearchResults] = useState<
+    MDBListCatalog[]
+  >([]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [currentlyProcessing, setCurrentlyProcessing] = useState<string | null>(
     null,
   );
-  const [selectedSearchResult, setSelectedSearchResult] =
-    useState<MDBListCatalog | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
   const [activeTab, setActiveTab] = useState<"browse" | "search">("browse");
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const [searchName, setSearchName] = useState("");
@@ -101,6 +105,99 @@ export function AddCatalogDialog({
 
   // Get tRPC utils for cache invalidation
   const utils = api.useUtils();
+
+  // Helper functions for multi-selection
+  const toggleCatalogSelection = (catalog: MDBListCatalog) => {
+    if (activeTab === "browse") {
+      setSelectedCatalogs((prev) => {
+        const exists = prev.find((c) => c.id === catalog.id);
+        if (exists) {
+          return prev.filter((c) => c.id !== catalog.id);
+        } else {
+          return [...prev, catalog];
+        }
+      });
+    } else {
+      setSelectedSearchResults((prev) => {
+        const exists = prev.find((c) => c.id === catalog.id);
+        if (exists) {
+          return prev.filter((c) => c.id !== catalog.id);
+        } else {
+          return [...prev, catalog];
+        }
+      });
+    }
+  };
+
+  const isCatalogSelected = (catalog: MDBListCatalog) => {
+    if (activeTab === "browse") {
+      return selectedCatalogs.some((c) => c.id === catalog.id);
+    } else {
+      return selectedSearchResults.some((c) => c.id === catalog.id);
+    }
+  };
+
+  const getSelectedCatalogs = () => {
+    return activeTab === "browse" ? selectedCatalogs : selectedSearchResults;
+  };
+
+  const clearSelections = () => {
+    setSelectedCatalogs([]);
+    setSelectedSearchResults([]);
+  };
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      // Ctrl+A or Cmd+A to select all visible catalogs
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        if (
+          activeTab === "browse" &&
+          getTopListsQuery.data?.catalogs &&
+          apiKeyValid === true
+        ) {
+          const filtered = getTopListsQuery.data.catalogs.filter(
+            (catalog) =>
+              searchQuery.trim() === "" ||
+              catalog.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              catalog.description
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+              catalog.types.some((type) =>
+                type.toLowerCase().includes(searchQuery.toLowerCase()),
+              ),
+          );
+          setSelectedCatalogs([...filtered]);
+        } else if (activeTab === "search" && searchListsQuery.data?.catalogs) {
+          setSelectedSearchResults([...searchListsQuery.data.catalogs]);
+        }
+      }
+
+      // Escape to clear selections
+      if (
+        e.key === "Escape" &&
+        (selectedCatalogs.length > 0 || selectedSearchResults.length > 0)
+      ) {
+        e.preventDefault();
+        clearSelections();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isOpen,
+    activeTab,
+    selectedCatalogs.length,
+    selectedSearchResults.length,
+    apiKeyValid,
+    searchQuery,
+    getTopListsQuery.data?.catalogs,
+    searchListsQuery.data?.catalogs,
+  ]);
 
   // Handle API key validation on Enter key press
   const handleApiKeyPress = async (
@@ -265,9 +362,9 @@ export function AddCatalogDialog({
   useEffect(() => {
     if (!isOpen) {
       setSearchQuery("");
-      setSelectedCatalog(null);
-      setSelectedSearchResult(null);
+      clearSelections();
       setIsAdding(false);
+      setCurrentlyProcessing(null);
       setActiveTab("browse");
       setSearchName("");
       setActualSearchQuery("");
@@ -303,59 +400,91 @@ export function AddCatalogDialog({
       return;
     }
 
-    const catalogToAdd =
-      activeTab === "browse" ? selectedCatalog : selectedSearchResult;
+    const catalogsToAdd = getSelectedCatalogs();
 
-    if (!catalogToAdd) {
+    if (catalogsToAdd.length === 0) {
       toast({
-        title: "No Catalog Selected",
-        description: "Please select a catalog to add.",
+        title: "No Catalogs Selected",
+        description: "Please select at least one catalog to add.",
         variant: "destructive",
       });
       return;
     }
 
     setIsAdding(true);
+    setCurrentlyProcessing(null);
 
     try {
-      // Add catalog using the existing catalog.add mutation
-      await addCatalogMutation.mutateAsync({
-        userId,
-        manifestUrl: catalogToAdd.manifestUrl,
-      });
+      // Add catalogs sequentially to avoid overwhelming the server
+      let successCount = 0;
+      let failedCatalogs: string[] = [];
+
+      for (const catalog of catalogsToAdd) {
+        setCurrentlyProcessing(catalog.name);
+        try {
+          await addCatalogMutation.mutateAsync({
+            userId,
+            manifestUrl: catalog.manifestUrl,
+          });
+          successCount++;
+        } catch (error) {
+          failedCatalogs.push(catalog.name);
+          console.error(`Failed to add catalog ${catalog.name}:`, error);
+        }
+      }
+
+      setCurrentlyProcessing(null);
 
       // Invalidate the catalog list query to refresh the UI
       await utils.catalog.list.invalidate({ userId });
 
-      toast({
-        title: "Catalog Added Successfully",
-        description: `${catalogToAdd.name} has been added to your collection.`,
-      });
+      // Show appropriate success/error messages
+      if (successCount === catalogsToAdd.length) {
+        toast({
+          title: "Catalogs Added Successfully",
+          description: `${successCount} catalog${successCount !== 1 ? "s" : ""} added to your collection.`,
+        });
+      } else if (successCount > 0) {
+        toast({
+          title: "Partially Successful",
+          description: `${successCount} of ${catalogsToAdd.length} catalogs added successfully. ${failedCatalogs.length} failed: ${failedCatalogs.join(", ")}.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to Add Catalogs",
+          description: `All ${catalogsToAdd.length} catalogs failed to add. Please try again.`,
+          variant: "destructive",
+        });
+      }
 
-      // Reset form and close dialog
-      handleClose();
+      // Reset form and close dialog if at least one succeeded
+      if (successCount > 0) {
+        handleClose();
+      }
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Failed to add catalog. Please try again.";
+          : "Failed to add catalogs. Please try again.";
       toast({
-        title: "Error Adding Catalog",
+        title: "Error Adding Catalogs",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsAdding(false);
+      setCurrentlyProcessing(null);
     }
   };
 
   const handleClose = () => {
-    setSelectedCatalog(null);
-    setSelectedSearchResult(null);
+    clearSelections();
     setSearchQuery("");
     setSearchName("");
     setActualSearchQuery("");
     setApiKeyValid(null);
+    setCurrentlyProcessing(null);
     onOpenChange(false);
   };
 
@@ -365,8 +494,21 @@ export function AddCatalogDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Plus className="h-5 w-5 text-primary" />
-            <span>Add New MDBList Catalog</span>
+            <span>Add MDBList Catalogs</span>
           </DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Browse or search for MDBList catalogs. You can select multiple
+            catalogs to add them all at once.
+            <br />
+            <span className="text-xs">
+              <kbd className="rounded bg-muted px-1 py-0.5 text-xs">Ctrl+A</kbd>{" "}
+              to select all,
+              <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-xs">
+                Esc
+              </kbd>{" "}
+              to clear selections
+            </span>
+          </p>
         </DialogHeader>
 
         <div className="flex flex-1 flex-col space-y-4 overflow-hidden p-1">
@@ -447,19 +589,29 @@ export function AddCatalogDialog({
               variant={activeTab === "browse" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("browse")}
-              className="flex-1"
+              className="relative flex-1"
             >
               <Package className="h-4 w-4" />
               Browse Catalogs
+              {activeTab === "browse" && selectedCatalogs.length > 0 && (
+                <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs font-medium">
+                  {selectedCatalogs.length}
+                </span>
+              )}
             </Button>
             <Button
               variant={activeTab === "search" ? "default" : "ghost"}
               size="sm"
               onClick={() => setActiveTab("search")}
-              className="flex-1"
+              className="relative flex-1"
             >
               <Search className="h-4 w-4" />
               Search Catalogs
+              {activeTab === "search" && selectedSearchResults.length > 0 && (
+                <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs font-medium">
+                  {selectedSearchResults.length}
+                </span>
+              )}
             </Button>
           </div>
 
@@ -477,13 +629,43 @@ export function AddCatalogDialog({
                     disabled={apiKeyValid !== true}
                   />
                 </div>
-                {searchQuery.trim() && (
-                  <p className="text-xs text-muted-foreground">
-                    Found {filteredBrowseCatalogs.length} catalog
-                    {filteredBrowseCatalogs.length !== 1 ? "s" : ""}
-                    {searchQuery.trim() && ` matching "${searchQuery}"`}
-                  </p>
-                )}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    {searchQuery.trim() && (
+                      <span>
+                        Found {filteredBrowseCatalogs.length} catalog
+                        {filteredBrowseCatalogs.length !== 1 ? "s" : ""}
+                        {searchQuery.trim() && ` matching "${searchQuery}"`}
+                      </span>
+                    )}
+                  </div>
+                  {filteredBrowseCatalogs.length > 0 &&
+                    apiKeyValid === true && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setSelectedCatalogs([...filteredBrowseCatalogs])
+                          }
+                          disabled={
+                            selectedCatalogs.length ===
+                            filteredBrowseCatalogs.length
+                          }
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedCatalogs([])}
+                          disabled={selectedCatalogs.length === 0}
+                        >
+                          Clear All
+                        </Button>
+                      </div>
+                    )}
+                </div>
               </div>
 
               {/* Catalog Grid */}
@@ -516,11 +698,11 @@ export function AddCatalogDialog({
                       <Card
                         key={catalog.id}
                         className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
-                          selectedCatalog?.id === catalog.id
+                          isCatalogSelected(catalog)
                             ? "border-primary/50 ring-2 ring-primary"
                             : ""
                         }`}
-                        onClick={() => setSelectedCatalog(catalog)}
+                        onClick={() => toggleCatalogSelection(catalog)}
                       >
                         <CardHeader className="pb-2">
                           <div className="flex items-start justify-between">
@@ -529,7 +711,7 @@ export function AddCatalogDialog({
                                 <span className="truncate">{catalog.name}</span>
                               </CardTitle>
                             </div>
-                            {selectedCatalog?.id === catalog.id && (
+                            {isCatalogSelected(catalog) && (
                               <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
                             )}
                           </div>
@@ -617,11 +799,41 @@ export function AddCatalogDialog({
                     </Button>
                   </div>
                   {actualSearchQuery && (
-                    <p className="text-xs text-muted-foreground">
-                      Found {filteredSearchResults.length} catalog
-                      {filteredSearchResults.length !== 1 ? "s" : ""}
-                      {actualSearchQuery && ` matching "${actualSearchQuery}"`}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        Found {filteredSearchResults.length} catalog
+                        {filteredSearchResults.length !== 1 ? "s" : ""}
+                        {actualSearchQuery &&
+                          ` matching "${actualSearchQuery}"`}
+                      </p>
+                      {filteredSearchResults.length > 0 && (
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setSelectedSearchResults([
+                                ...filteredSearchResults,
+                              ])
+                            }
+                            disabled={
+                              selectedSearchResults.length ===
+                              filteredSearchResults.length
+                            }
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedSearchResults([])}
+                            disabled={selectedSearchResults.length === 0}
+                          >
+                            Clear All
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -664,11 +876,11 @@ export function AddCatalogDialog({
                         <Card
                           key={result.id}
                           className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
-                            selectedSearchResult?.id === result.id
+                            isCatalogSelected(result)
                               ? "border-primary/50 ring-2 ring-primary"
                               : ""
                           }`}
-                          onClick={() => setSelectedSearchResult(result)}
+                          onClick={() => toggleCatalogSelection(result)}
                         >
                           <CardHeader className="pb-2">
                             <div className="flex items-start justify-between">
@@ -679,7 +891,7 @@ export function AddCatalogDialog({
                                   </span>
                                 </CardTitle>
                               </div>
-                              {selectedSearchResult?.id === result.id && (
+                              {isCatalogSelected(result) && (
                                 <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
                               )}
                             </div>
@@ -746,8 +958,8 @@ export function AddCatalogDialog({
                       <p className="font-medium">MDBList Catalog Search</p>
                       <p className="mt-1">
                         Search through MDBList toplists and user lists to find
-                        additional content. Select a catalog to add it to your
-                        collection.
+                        additional content. You can select multiple catalogs and
+                        add them all at once.
                       </p>
                     </div>
                   </div>
@@ -758,30 +970,54 @@ export function AddCatalogDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isAdding}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAddCatalog}
-            disabled={
-              isAdding ||
-              apiKeyValid !== true ||
-              (activeTab === "browse" && !selectedCatalog) ||
-              (activeTab === "search" && !selectedSearchResult)
-            }
-          >
-            {isAdding ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                Add Catalog
-              </>
-            )}
-          </Button>
+          <div className="flex w-full items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {currentlyProcessing ? (
+                <span className="flex items-center space-x-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Processing: {currentlyProcessing}</span>
+                </span>
+              ) : getSelectedCatalogs().length > 0 ? (
+                <span>
+                  {getSelectedCatalogs().length} catalog
+                  {getSelectedCatalogs().length !== 1 ? "s" : ""} selected
+                </span>
+              ) : null}
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isAdding}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddCatalog}
+                disabled={
+                  isAdding ||
+                  apiKeyValid !== true ||
+                  getSelectedCatalogs().length === 0
+                }
+              >
+                {isAdding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Add{" "}
+                    {getSelectedCatalogs().length > 0
+                      ? `${getSelectedCatalogs().length} `
+                      : ""}
+                    Catalog{getSelectedCatalogs().length !== 1 ? "s" : ""}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
