@@ -69,6 +69,8 @@ export function AddCatalogDialog({
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const [searchName, setSearchName] = useState("");
   const [actualSearchQuery, setActualSearchQuery] = useState("");
+  const [topListsLoaded, setTopListsLoaded] = useState(false);
+  const [searchValidated, setSearchValidated] = useState(false);
 
   // API queries
   const validateApiKeyMutation = api.mdblist.validateApiKey.useQuery(
@@ -77,53 +79,120 @@ export function AddCatalogDialog({
   );
   const getTopListsQuery = api.mdblist.getTopLists.useQuery(
     { apiKey, limit: 20 },
-    { enabled: !!apiKey && apiKeyValid === true },
+    { enabled: false, retry: false },
   );
   const searchListsQuery = api.mdblist.searchLists.useQuery(
-    { apiKey, query: actualSearchQuery, limit: 20 },
-    { enabled: !!apiKey && apiKeyValid === true && !!actualSearchQuery.trim() },
+    { apiKey, query: actualSearchQuery || "", limit: 20 },
+    { enabled: false, retry: false },
   );
 
   // Add catalog mutation
   const addCatalogMutation = api.catalog.add.useMutation();
 
+  // Handle API key validation on Enter key press
+  const handleApiKeyPress = async (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Enter" && apiKey.trim().length > 10) {
+      try {
+        const result = await validateApiKeyMutation.refetch();
+        if (result.data?.valid) {
+          setApiKeyValid(true);
+          // Load toplists after successful validation
+          if (!topListsLoaded) {
+            await getTopListsQuery.refetch();
+            setTopListsLoaded(true);
+          }
+        } else {
+          setApiKeyValid(false);
+          setTopListsLoaded(false);
+        }
+      } catch (error) {
+        setApiKeyValid(false);
+        setTopListsLoaded(false);
+      }
+    }
+  };
+
+  // Handle API key validation button click
+  const handleApiKeyValidation = async () => {
+    if (apiKey.trim().length > 10) {
+      try {
+        const result = await validateApiKeyMutation.refetch();
+        if (result.data?.valid) {
+          setApiKeyValid(true);
+          // Load toplists after successful validation
+          if (!topListsLoaded) {
+            await getTopListsQuery.refetch();
+            setTopListsLoaded(true);
+          }
+        } else {
+          setApiKeyValid(false);
+          setTopListsLoaded(false);
+        }
+      } catch (error) {
+        setApiKeyValid(false);
+        setTopListsLoaded(false);
+      }
+    }
+  };
+
+  // Shared search logic
+  const performSearch = async () => {
+    if (searchName.trim()) {
+      const queryToSearch = searchName.trim();
+
+      // Validate API key once for search if not already validated for search
+      if (!searchValidated && apiKey.trim().length > 10) {
+        try {
+          const result = await validateApiKeyMutation.refetch();
+          if (result.data?.valid) {
+            setApiKeyValid(true);
+            setSearchValidated(true);
+            setActualSearchQuery(queryToSearch);
+          } else {
+            setApiKeyValid(false);
+            return;
+          }
+        } catch (error) {
+          setApiKeyValid(false);
+          return;
+        }
+      } else if (apiKeyValid === true) {
+        // API key already validated for search, just perform search
+        setActualSearchQuery(queryToSearch);
+      }
+    }
+  };
+
+  // Trigger search when actualSearchQuery changes
+  useEffect(() => {
+    if (actualSearchQuery && apiKeyValid === true) {
+      searchListsQuery.refetch();
+    }
+  }, [actualSearchQuery, apiKeyValid, searchListsQuery]);
+
   // Handle search on Enter key press
-  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyPress = async (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === "Enter" && searchName.trim()) {
-      setActualSearchQuery(searchName.trim());
+      await performSearch();
     }
   };
 
   // Handle search button click
-  const handleSearchClick = () => {
-    if (searchName.trim()) {
-      setActualSearchQuery(searchName.trim());
-    }
+  const handleSearchClick = async () => {
+    await performSearch();
   };
 
-  // Validate API key when it changes
+  // Reset states when API key changes
   useEffect(() => {
-    if (apiKey.length > 10) {
-      // Basic length check
-      const timer = setTimeout(() => {
-        validateApiKeyMutation
-          .refetch()
-          .then((result) => {
-            if (result.data?.valid) {
-              setApiKeyValid(true);
-            } else {
-              setApiKeyValid(false);
-            }
-          })
-          .catch(() => {
-            setApiKeyValid(false);
-          });
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setApiKeyValid(null);
-    }
-  }, [apiKey, validateApiKeyMutation]);
+    setApiKeyValid(null);
+    setTopListsLoaded(false);
+    setSearchValidated(false);
+    setActualSearchQuery("");
+  }, [apiKey]);
 
   // Filter browse catalogs based on search query
   const filteredBrowseCatalogs =
@@ -227,32 +296,50 @@ export function AddCatalogDialog({
             <Label htmlFor="api-key" className="text-sm font-medium">
               MDBList API Key <span className="text-red-500">*</span>
             </Label>
-            <div className="relative">
-              <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="api-key"
-                type="password"
-                placeholder="Enter your MDBList API key..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className={`border-border/50 bg-background/50 pl-10 ${
-                  apiKeyValid === false
-                    ? "border-red-500/50"
-                    : apiKeyValid === true
-                      ? "border-green-500/50"
-                      : ""
-                }`}
-                required
-              />
-              {validateApiKeyMutation.isFetching && (
-                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-              )}
-              {apiKeyValid === true && (
-                <CheckCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-500" />
-              )}
-              {apiKeyValid === false && (
-                <AlertCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-red-500" />
-              )}
+            <div className="flex space-x-2">
+              <div className="relative flex-1">
+                <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="api-key"
+                  type="password"
+                  placeholder="Enter your MDBList API key..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  onKeyPress={handleApiKeyPress}
+                  className={`border-border/50 bg-background/50 pl-10 ${
+                    apiKeyValid === false
+                      ? "border-red-500/50"
+                      : apiKeyValid === true
+                        ? "border-green-500/50"
+                        : ""
+                  }`}
+                  required
+                />
+                {validateApiKeyMutation.isFetching && (
+                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                )}
+                {apiKeyValid === true && (
+                  <CheckCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-500" />
+                )}
+                {apiKeyValid === false && (
+                  <AlertCircle className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-red-500" />
+                )}
+              </div>
+              <Button
+                onClick={handleApiKeyValidation}
+                disabled={
+                  apiKey.trim().length <= 10 ||
+                  validateApiKeyMutation.isFetching
+                }
+                size="default"
+                variant="outline"
+              >
+                {validateApiKeyMutation.isFetching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+              </Button>
             </div>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
@@ -370,7 +457,9 @@ export function AddCatalogDialog({
                         </CardHeader>
                         <CardContent className="space-y-3 pt-0">
                           <p className="line-clamp-2 text-xs text-muted-foreground">
-                            {catalog.description}
+                            {catalog.description.length > 0
+                              ? catalog.description
+                              : "No description available"}
                           </p>
 
                           <div className="flex flex-wrap justify-between gap-1">
@@ -418,7 +507,7 @@ export function AddCatalogDialog({
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        placeholder="Search for catalogs by name, source, or category... (Press Enter to search)"
+                        placeholder="Search for catalogs..."
                         value={searchName}
                         onChange={(e) => setSearchName(e.target.value)}
                         onKeyPress={handleSearchKeyPress}
@@ -505,7 +594,9 @@ export function AddCatalogDialog({
                           </CardHeader>
                           <CardContent className="space-y-3 pt-0">
                             <p className="line-clamp-2 text-xs text-muted-foreground">
-                              {result.description}
+                              {result.description.length > 0
+                                ? result.description
+                                : "No description available"}
                             </p>
 
                             <div className="flex flex-wrap justify-between gap-1">
