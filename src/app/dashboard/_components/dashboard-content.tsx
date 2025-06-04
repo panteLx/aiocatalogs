@@ -48,7 +48,6 @@ import {
   AddCatalogTrigger,
 } from "@/components/add-catalog-dialog";
 import { RPDBConfigTrigger } from "@/components/rpdb-config-dialog";
-
 // Type definitions for the manifest structure
 interface StremioManifest {
   id: string;
@@ -332,9 +331,28 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     );
   };
 
+  // Helper function to check if a catalog is from MDBList
+  // Using hardcoded URL since this is a client component and can't access server env vars
+  const isMDBListCatalog = (manifestUrl: string): boolean => {
+    return manifestUrl.includes(
+      "https://1fe84bc728af-stremio-mdblist.baby-beamup.club",
+    );
+  };
+
   const handleToggleRpdbEnabled = (catalogId: number, catalogName: string) => {
     const catalog = catalogs.find((c) => c.id === catalogId);
     if (!catalog) return;
+
+    // Check if the catalog is from MDBList before allowing RPDB toggle
+    if (!isMDBListCatalog(catalog.manifestUrl)) {
+      toast({
+        title: "RPDB Not Available",
+        description:
+          "RPDB poster enhancement is only available for MDBList catalogs.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const newRpdbState = !catalog.rpdbEnabled;
     updateCatalogMutation.mutate(
@@ -388,18 +406,33 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       return;
     }
 
-    // Check if majority of catalogs have RPDB enabled to determine toggle direction
-    const enabledCount = catalogs.filter((c) => c.rpdbEnabled).length;
-    const shouldEnable = enabledCount < catalogs.length / 2;
+    // Filter only MDBList catalogs for RPDB operations
+    const mdblistCatalogs = catalogs.filter((c) =>
+      isMDBListCatalog(c.manifestUrl),
+    );
 
-    const catalogsToUpdate = catalogs.filter(
+    if (mdblistCatalogs.length === 0) {
+      toast({
+        title: "No MDBList Catalogs Available",
+        description:
+          "RPDB enhancement is only available for MDBList catalogs. Add some MDBList catalogs first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if majority of MDBList catalogs have RPDB enabled to determine toggle direction
+    const enabledCount = mdblistCatalogs.filter((c) => c.rpdbEnabled).length;
+    const shouldEnable = enabledCount < mdblistCatalogs.length / 2;
+
+    const catalogsToUpdate = mdblistCatalogs.filter(
       (c) => c.rpdbEnabled !== shouldEnable,
     );
 
     if (catalogsToUpdate.length === 0) {
       toast({
         title: "No Changes Needed",
-        description: `RPDB is already ${shouldEnable ? "enabled" : "disabled"} for all catalogs.`,
+        description: `RPDB is already ${shouldEnable ? "enabled" : "disabled"} for all MDBList catalogs.`,
       });
       return;
     }
@@ -408,8 +441,8 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     const updateCatalogSequentially = async (index: number): Promise<void> => {
       if (index >= catalogsToUpdate.length) {
         toast({
-          title: `RPDB ${shouldEnable ? "Enabled" : "Disabled"} for All Catalogs`,
-          description: `RPDB poster enhancement has been ${shouldEnable ? "enabled" : "disabled"} for ${catalogsToUpdate.length} catalog${catalogsToUpdate.length > 1 ? "s" : ""}.`,
+          title: `RPDB ${shouldEnable ? "Enabled" : "Disabled"} for All MDBList Catalogs`,
+          description: `RPDB poster enhancement has been ${shouldEnable ? "enabled" : "disabled"} for ${catalogsToUpdate.length} MDBList catalog${catalogsToUpdate.length > 1 ? "s" : ""}.`,
         });
         return;
       }
@@ -864,26 +897,38 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                   <CardTitle className="text-lg">Your Catalogs</CardTitle>
                 </div>
                 <div className="ml-auto flex items-center space-x-2">
-                  {catalogs.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleToggleRpdbForAll}
-                      className={
-                        catalogs.filter((c) => c.rpdbEnabled).length <
-                        catalogs.length / 2
-                          ? "h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
-                          : "h-7 text-xs"
-                      }
-                      // className="h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      {catalogs.filter((c) => c.rpdbEnabled).length <
-                      catalogs.length / 2
-                        ? "Enable RPDB for All"
-                        : "Disable RPDB for All"}
-                    </Button>
-                  )}
+                  {catalogs.length > 0 &&
+                    catalogs.some((c) => isMDBListCatalog(c.manifestUrl)) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToggleRpdbForAll}
+                        className={
+                          catalogs.filter(
+                            (c) =>
+                              c.rpdbEnabled && isMDBListCatalog(c.manifestUrl),
+                          ).length <
+                          catalogs.filter((c) =>
+                            isMDBListCatalog(c.manifestUrl),
+                          ).length /
+                            2
+                            ? "h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
+                            : "h-7 text-xs"
+                        }
+                        title="Toggle RPDB enhancement for all MDBList catalogs"
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        {catalogs.filter(
+                          (c) =>
+                            c.rpdbEnabled && isMDBListCatalog(c.manifestUrl),
+                        ).length <
+                        catalogs.filter((c) => isMDBListCatalog(c.manifestUrl))
+                          .length /
+                          2
+                          ? "Enable RPDB for All MDBList"
+                          : "Disable RPDB for All MDBList"}
+                      </Button>
+                    )}
                   <Badge
                     variant="secondary"
                     className="bg-primary/10 text-primary"
@@ -1032,16 +1077,25 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                     catalog.name,
                                   )
                                 }
+                                disabled={
+                                  !isMDBListCatalog(catalog.manifestUrl)
+                                }
                                 className={`h-9 w-9 p-0 ${
-                                  catalog.rpdbEnabled
-                                    ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
-                                    : "hover:bg-muted"
+                                  !isMDBListCatalog(catalog.manifestUrl)
+                                    ? "cursor-not-allowed opacity-50"
+                                    : catalog.rpdbEnabled
+                                      ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
+                                      : "hover:bg-muted"
                                 }`}
-                                title={`${
-                                  catalog.rpdbEnabled
-                                    ? "Disable RPDB Enhancement"
-                                    : "Enable RPDB Enhancement"
-                                }`}
+                                title={
+                                  !isMDBListCatalog(catalog.manifestUrl)
+                                    ? "RPDB enhancement is only available for MDBList catalogs"
+                                    : `${
+                                        catalog.rpdbEnabled
+                                          ? "Disable RPDB Enhancement"
+                                          : "Enable RPDB Enhancement"
+                                      }`
+                                }
                               >
                                 <Sparkles className="h-4 w-4" />
                               </Button>
@@ -1197,16 +1251,23 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                   catalog.name,
                                 )
                               }
+                              disabled={!isMDBListCatalog(catalog.manifestUrl)}
                               className={`h-8 w-8 p-0 ${
-                                catalog.rpdbEnabled
-                                  ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
-                                  : "hover:bg-muted"
+                                !isMDBListCatalog(catalog.manifestUrl)
+                                  ? "cursor-not-allowed opacity-50"
+                                  : catalog.rpdbEnabled
+                                    ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
+                                    : "hover:bg-muted"
                               }`}
-                              title={`${
-                                catalog.rpdbEnabled
-                                  ? "Disable RPDB Enhancement"
-                                  : "Enable RPDB Enhancement"
-                              }`}
+                              title={
+                                !isMDBListCatalog(catalog.manifestUrl)
+                                  ? "RPDB enhancement is only available for MDBList catalogs"
+                                  : `${
+                                      catalog.rpdbEnabled
+                                        ? "Disable RPDB Enhancement"
+                                        : "Enable RPDB Enhancement"
+                                    }`
+                              }
                             >
                               <Sparkles className="h-4 w-4" />
                             </Button>
