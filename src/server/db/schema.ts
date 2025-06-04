@@ -79,3 +79,30 @@ export const sharedCatalogs = createTable(
     ),
   }),
 );
+
+export const apiKeys = createTable(
+  "api_keys",
+  {
+    id: int("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    userId: text("user_id").notNull(),
+    service: text("service").notNull(), // e.g., "mdblist", "trakt", etc.
+    keyName: text("key_name").notNull(), // e.g., "api_key", "client_id", etc.
+    keyValue: text("key_value").notNull(), // encrypted value
+    isActive: int("is_active", { mode: "boolean" }).default(true).notNull(),
+    createdAt: int("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+    updatedAt: int("updated_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => ({
+    userIdIndex: index("api_key_user_id_idx").on(table.userId),
+    serviceIndex: index("api_key_service_idx").on(table.userId, table.service),
+    uniqueUserServiceKey: index("unique_user_service_key_idx").on(
+      table.userId,
+      table.service,
+      table.keyName,
+    ),
+  }),
+);

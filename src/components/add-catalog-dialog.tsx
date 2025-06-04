@@ -88,9 +88,16 @@ export function AddCatalogDialog({
     { apiKey, query: actualSearchQuery || "", limit: 20 },
     { enabled: false, retry: false },
   );
+  const getApiKeyQuery = api.mdblist.getApiKey.useQuery(
+    { userId },
+    { enabled: isOpen && !!userId },
+  );
 
   // Add catalog mutation
   const addCatalogMutation = api.catalog.add.useMutation();
+
+  // Save API key mutation
+  const saveApiKeyMutation = api.mdblist.saveApiKey.useMutation();
 
   // Handle API key validation on Enter key press
   const handleApiKeyPress = async (
@@ -101,6 +108,27 @@ export function AddCatalogDialog({
         const result = await validateApiKeyMutation.refetch();
         if (result.data?.valid) {
           setApiKeyValid(true);
+
+          // Save the API key to database
+          try {
+            await saveApiKeyMutation.mutateAsync({
+              userId,
+              apiKey: apiKey.trim(),
+            });
+            toast({
+              title: "API Key Saved",
+              description: "Your MDBList API key has been saved successfully.",
+            });
+          } catch (saveError) {
+            console.error("Failed to save API key:", saveError);
+            toast({
+              title: "Warning",
+              description:
+                "API key validated but failed to save. You may need to re-enter it later.",
+              variant: "destructive",
+            });
+          }
+
           // Load toplists after successful validation
           if (!topListsLoaded) {
             await getTopListsQuery.refetch();
@@ -124,6 +152,27 @@ export function AddCatalogDialog({
         const result = await validateApiKeyMutation.refetch();
         if (result.data?.valid) {
           setApiKeyValid(true);
+
+          // Save the API key to database
+          try {
+            await saveApiKeyMutation.mutateAsync({
+              userId,
+              apiKey: apiKey.trim(),
+            });
+            toast({
+              title: "API Key Saved",
+              description: "Your MDBList API key has been saved successfully.",
+            });
+          } catch (saveError) {
+            console.error("Failed to save API key:", saveError);
+            toast({
+              title: "Warning",
+              description:
+                "API key validated but failed to save. You may need to re-enter it later.",
+              variant: "destructive",
+            });
+          }
+
           // Load toplists after successful validation
           if (!topListsLoaded) {
             await getTopListsQuery.refetch();
@@ -196,6 +245,34 @@ export function AddCatalogDialog({
     setSearchValidated(false);
     setActualSearchQuery("");
   }, [apiKey]);
+
+  // Load saved API key when dialog opens
+  useEffect(() => {
+    if (
+      isOpen &&
+      getApiKeyQuery.data?.hasApiKey &&
+      getApiKeyQuery.data.apiKey
+    ) {
+      setApiKey(getApiKeyQuery.data.apiKey);
+      setApiKeyValid(true);
+    }
+  }, [isOpen, getApiKeyQuery.data]);
+
+  // Reset dialog state when it closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+      setSelectedCatalog(null);
+      setSelectedSearchResult(null);
+      setIsAdding(false);
+      setActiveTab("browse");
+      setSearchName("");
+      setActualSearchQuery("");
+      setTopListsLoaded(false);
+      setSearchValidated(false);
+      // Don't reset apiKey and apiKeyValid to preserve user's entered key
+    }
+  }, [isOpen]);
 
   // Filter browse catalogs based on search query
   const filteredBrowseCatalogs =
@@ -482,7 +559,7 @@ export function AddCatalogDialog({
                               <span>{catalog.likes}</span>
                             </div>
                           </div>
-                          <div className="flex flex-wrap justify-between gap-1">
+                          <div className="flex flex-wrap gap-1">
                             {catalog.types.map((type) => (
                               <Badge
                                 key={type}
@@ -632,7 +709,7 @@ export function AddCatalogDialog({
                                 <span>{result.likes}</span>
                               </div>
                             </div>
-                            <div className="flex flex-wrap justify-between gap-1">
+                            <div className="flex flex-wrap gap-1">
                               {result.types.map((type) => (
                                 <Badge
                                   key={type}
