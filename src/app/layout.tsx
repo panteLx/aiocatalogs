@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     description: packageJson.description,
     images: [
       {
-        url: "https://cdn.ssx.si/u/LSXKCT.png",
+        url: "https://i.imgur.com/zi0Q5da.png",
         width: 1200,
         height: 630,
         alt: "AIOCatalogs",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AIOCatalogs",
     description: packageJson.description,
-    images: ["https://cdn.ssx.si/u/LSXKCT.png"],
+    images: ["https://i.imgur.com/zi0Q5da.png"],
     creator: "@panteLx",
     site: "@panteLx",
   },

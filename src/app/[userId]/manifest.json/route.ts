@@ -81,7 +81,7 @@ export async function GET(
         name: `AIOCatalogs - User Not Found`,
         description:
           "User not found. Please visit https://aio.pantelx.com to create an account. If you need help, join our Discord: https://discord.com/invite/Ma4SnagqwE",
-        logo: "https://cdn.ssx.si/u/LSXKCT.png",
+        logo: "https://i.imgur.com/zi0Q5da.png",
         background: "https://i.imgur.com/QPPXf5T.jpeg",
         resources: [],
         types: [],
@@ -120,7 +120,7 @@ export async function GET(
         name: `AIOCatalogs - No Active Catalogs`,
         description:
           "You have no active catalogs. Please visit https://aio.pantelx.com to add some or active them. If you need help, join our Discord: https://discord.com/invite/Ma4SnagqwE",
-        logo: "https://cdn.ssx.si/u/LSXKCT.png",
+        logo: "https://i.imgur.com/zi0Q5da.png",
         background: "https://i.imgur.com/QPPXf5T.jpeg",
         resources: [],
         types: [],
@@ -188,7 +188,7 @@ export async function GET(
       version: packageJson.version,
       name: "AIOCatalogs",
       description: packageJson.description,
-      logo: "https://cdn.ssx.si/u/LSXKCT.png",
+      logo: "https://i.imgur.com/zi0Q5da.png",
       background: "https://i.imgur.com/QPPXf5T.jpeg",
       resources: ["catalog"],
       types: Array.from(allTypes),
