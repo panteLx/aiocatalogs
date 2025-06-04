@@ -59,7 +59,6 @@ async function fetchCatalogData(
     const baseUrl = endpoint.endsWith("/") ? endpoint.slice(0, -1) : endpoint;
     const url = `${baseUrl}/catalog/${type}/${catalogId}.json`;
 
-    console.log(`Fetching catalog data from: ${url}`);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -221,8 +220,11 @@ export async function GET(
 
       // Apply randomization if enabled for this catalog
       if (foundCatalog.randomized && metas.length > 1) {
-        console.log(`Randomizing catalog items for ${foundCatalog.name}`);
-        metas = shuffleArray(metas);
+        try {
+          metas = shuffleArray(metas);
+        } catch (error) {
+          console.error("Error randomizing catalog items:", error);
+        }
       }
     }
 
