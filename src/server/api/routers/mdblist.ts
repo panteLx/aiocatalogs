@@ -29,8 +29,7 @@ interface MDBListCatalog {
   description: string;
   manifestUrl: string;
   types: string[];
-  rating: number;
-  downloads: string;
+  likes: number;
   source: string;
   listType: "toplist" | "userlist";
   username?: string;
@@ -138,11 +137,8 @@ export const mdblistRouter = createTRPCRouter({
           name: list.name,
           description: list.description || "No description available",
           manifestUrl: `stremio://1fe84bc728af-stremio-mdblist.baby-beamup.club/${list.id}/${input.apiKey}/manifest.json`,
-          types: ["movie", "series"], // MDBList typically contains both
-          rating: Math.min(4.5 + Math.random() * 0.5, 5.0), // Simulated rating between 4.5-5.0
-          downloads: formatDownloads(
-            (list.likes || 0) * 100 + (list.items || 0) * 50,
-          ), // Simulated based on likes and items
+          types: list.mediatype ? [list.mediatype] : ["movie", "series"], // Use list.mediatype or default to both
+          likes: list.likes || 0,
           source: "MDBList",
           listType: "toplist",
         }));
@@ -215,19 +211,16 @@ export const mdblistRouter = createTRPCRouter({
           name: list.name,
           description: list.description || "No description available",
           manifestUrl: `stremio://1fe84bc728af-stremio-mdblist.baby-beamup.club/${list.id}/${input.apiKey}/manifest.json`,
-          types: ["movie", "series"],
-          rating: Math.min(4.0 + Math.random() * 1.0, 5.0),
-          downloads: formatDownloads(
-            (list.likes || 0) * 80 + (list.items || 0) * 30,
-          ),
+          types: list.mediatype ? [list.mediatype] : ["movie", "series"], // Use list.mediatype or default to both
+          likes: list.likes || 0,
           source: "MDBList",
           listType: "userlist", // Search results are typically user lists
           username: list.user_name,
           listSlug: list.slug,
         }));
 
-        // Sort by rating and likes
-        catalogs.sort((a, b) => b.rating - a.rating);
+        // Sort by likes
+        catalogs.sort((a, b) => b.likes - a.likes);
 
         // Apply client-side pagination since the API doesn't support limit/offset for search
         const startIndex = input.offset;
@@ -258,13 +251,3 @@ export const mdblistRouter = createTRPCRouter({
       }
     }),
 });
-
-// Helper function to format download numbers
-function formatDownloads(num: number): string {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
-  }
-  return num.toString();
-}

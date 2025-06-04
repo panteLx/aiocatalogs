@@ -18,8 +18,7 @@ import {
   Search,
   Key,
   Package,
-  Star,
-  Download,
+  Heart,
   CheckCircle,
   Loader2,
   AlertCircle,
@@ -34,8 +33,7 @@ interface MDBListCatalog {
   description: string;
   manifestUrl: string;
   types: string[];
-  rating: number;
-  downloads: string;
+  likes: number;
   source: string;
   listType?: "toplist" | "userlist";
   username?: string;
@@ -223,7 +221,7 @@ export function AddCatalogDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-1 flex-col space-y-4 overflow-hidden">
+        <div className="flex flex-1 flex-col space-y-4 overflow-hidden p-1">
           {/* API Key Input */}
           <div className="space-y-2">
             <Label htmlFor="api-key" className="text-sm font-medium">
@@ -260,12 +258,12 @@ export function AddCatalogDialog({
               <p className="text-xs text-muted-foreground">
                 Get your API key from{" "}
                 <a
-                  href="https://mdblist.com/api/"
+                  href="https://mdblist.com/preferences/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
                 >
-                  mdblist.com/api/
+                  mdblist.com/preferences
                 </a>
               </p>
               {apiKeyValid === true && (
@@ -300,7 +298,7 @@ export function AddCatalogDialog({
           </div>
 
           {activeTab === "browse" ? (
-            <div className="flex flex-1 flex-col space-y-4 overflow-hidden">
+            <div className="flex flex-1 flex-col space-y-4 overflow-hidden p-1">
               {/* Search Input */}
               <div className="space-y-2">
                 <div className="relative">
@@ -323,7 +321,7 @@ export function AddCatalogDialog({
               </div>
 
               {/* Catalog Grid */}
-              <div className="flex-1 overflow-y-auto pr-2">
+              <div className="flex-1 overflow-y-auto p-1">
                 {apiKeyValid !== true ? (
                   <div className="py-12 text-center text-muted-foreground">
                     <Key className="mx-auto mb-4 h-16 w-16 opacity-50" />
@@ -363,9 +361,6 @@ export function AddCatalogDialog({
                             <div className="min-w-0 flex-1">
                               <CardTitle className="flex items-center space-x-2 text-sm font-medium">
                                 <span className="truncate">{catalog.name}</span>
-                                {catalog.listType === "toplist" && (
-                                  <Star className="h-3 w-3 text-yellow-500" />
-                                )}
                               </CardTitle>
                             </div>
                             {selectedCatalog?.id === catalog.id && (
@@ -378,7 +373,7 @@ export function AddCatalogDialog({
                             {catalog.description}
                           </p>
 
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap justify-between gap-1">
                             {catalog.types.map((type) => (
                               <Badge
                                 key={type}
@@ -388,16 +383,9 @@ export function AddCatalogDialog({
                                 {type}
                               </Badge>
                             ))}
-                          </div>
-
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-3 w-3" />
-                              <span>{catalog.rating.toFixed(1)}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Download className="h-3 w-3" />
-                              <span>{catalog.downloads}</span>
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              <Heart className="mr-1 h-3 w-3" />
+                              <span>{catalog.likes}</span>
                             </div>
                           </div>
                         </CardContent>
@@ -420,7 +408,7 @@ export function AddCatalogDialog({
               </div>
             </div>
           ) : (
-            <div className="flex-1 space-y-4 overflow-y-auto">
+            <div className="flex-1 space-y-4 overflow-y-auto p-1">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
@@ -457,7 +445,7 @@ export function AddCatalogDialog({
                 </div>
 
                 {/* Search Results Grid */}
-                <div className="flex-1 overflow-y-auto pr-2">
+                <div className="flex-1 overflow-y-auto p-1">
                   {apiKeyValid !== true ? (
                     <div className="py-12 text-center text-muted-foreground">
                       <Key className="mx-auto mb-4 h-16 w-16 opacity-50" />
@@ -490,7 +478,7 @@ export function AddCatalogDialog({
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {filteredSearchResults.map((result) => (
                         <Card
                           key={result.id}
@@ -508,13 +496,7 @@ export function AddCatalogDialog({
                                   <span className="truncate">
                                     {result.name}
                                   </span>
-                                  {result.listType === "toplist" && (
-                                    <Star className="h-3 w-3 text-yellow-500" />
-                                  )}
                                 </CardTitle>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  from {result.source}
-                                </p>
                               </div>
                               {selectedSearchResult?.id === result.id && (
                                 <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
@@ -526,7 +508,7 @@ export function AddCatalogDialog({
                               {result.description}
                             </p>
 
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap justify-between gap-1">
                               {result.types.map((type) => (
                                 <Badge
                                   key={type}
@@ -536,16 +518,9 @@ export function AddCatalogDialog({
                                   {type}
                                 </Badge>
                               ))}
-                            </div>
-
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center space-x-1">
-                                <Star className="h-3 w-3" />
-                                <span>{result.rating.toFixed(1)}</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <Download className="h-3 w-3" />
-                                <span>{result.downloads}</span>
+                              <div className="flex items-center text-xs text-muted-foreground">
+                                <Heart className="mr-1 h-3 w-3" />
+                                <span>{result.likes}</span>
                               </div>
                             </div>
                           </CardContent>
