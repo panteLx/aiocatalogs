@@ -4,7 +4,62 @@ import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { catalogs, sharedCatalogs, userConfigs } from "@/server/db/schema";
+import {
+  catalogs,
+  sharedCatalogs,
+  userConfigs,
+  apiKeys,
+} from "@/server/db/schema";
+import { env } from "@/env";
+import type { db as getDb } from "@/server/db";
+
+// Helper function to check if a URL is an MDBList manifest URL
+function isMDBListManifestUrl(manifestUrl: string): boolean {
+  return manifestUrl.includes(env.MDBLIST_MANIFEST_URL);
+}
+
+// Helper function to replace API key in MDBList manifest URL
+function replaceMDBListApiKey(manifestUrl: string, newApiKey: string): string {
+  if (!isMDBListManifestUrl(manifestUrl)) {
+    return manifestUrl;
+  }
+
+  // Pattern: https://1fe84bc728af-stremio-mdblist.baby-beamup.club/677/<api_key>/manifest.json
+  // We need to replace the API key part (third path segment)
+  const urlObj = new URL(manifestUrl);
+  const pathParts = urlObj.pathname
+    .split("/")
+    .filter((part) => part.length > 0);
+
+  if (pathParts.length >= 2) {
+    // Replace the API key (second part after the list ID)
+    pathParts[1] = newApiKey;
+    urlObj.pathname = "/" + pathParts.join("/");
+  }
+
+  return urlObj.toString();
+}
+
+// Helper function to get user's MDBList API key
+async function getUserMDBListApiKey(
+  db: Awaited<ReturnType<typeof getDb>>,
+  userId: string,
+): Promise<string | null> {
+  const apiKey = await db
+    .select()
+    .from(apiKeys)
+    .where(
+      and(
+        eq(apiKeys.userId, userId),
+        eq(apiKeys.service, "mdblist"),
+        eq(apiKeys.keyName, "api_key"),
+        eq(apiKeys.isActive, true),
+      ),
+    )
+    .limit(1);
+
+  return apiKey.length > 0 ? apiKey[0]!.keyValue : null;
+}
 
 export const shareRouter = createTRPCRouter({
   // Create a shareable link for selected catalogs
@@ -250,17 +305,40 @@ export const shareRouter = createTRPCRouter({
           .from(catalogs)
           .where(inArray(catalogs.id, catalogsToImport));
 
-        // Check for existing catalogs with same manifest URLs
+        // Check if any of the catalogs are MDBList catalogs
+        const hasMDBListCatalogs = catalogDetails.some((catalog) =>
+          isMDBListManifestUrl(catalog.manifestUrl),
+        );
+
+        // If importing MDBList catalogs, check if user has a valid API key
+        let userApiKey: string | null = null;
+        if (hasMDBListCatalogs) {
+          userApiKey = await getUserMDBListApiKey(ctx.db, input.userId);
+          if (!userApiKey) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "You need a valid MDBList API key to import MDBList catalogs. Please add your API key first.",
+            });
+          }
+        }
+
+        // Check for existing catalogs with same manifest URLs (after API key replacement)
+        const catalogUrlsToCheck = catalogDetails.map((catalog) => {
+          let manifestUrl = catalog.manifestUrl;
+          if (isMDBListManifestUrl(manifestUrl) && userApiKey) {
+            manifestUrl = replaceMDBListApiKey(manifestUrl, userApiKey);
+          }
+          return manifestUrl;
+        });
+
         const existingCatalogs = await ctx.db
           .select({ manifestUrl: catalogs.manifestUrl })
           .from(catalogs)
           .where(
             and(
               eq(catalogs.userId, input.userId),
-              inArray(
-                catalogs.manifestUrl,
-                catalogDetails.map((c) => c.manifestUrl),
-              ),
+              inArray(catalogs.manifestUrl, catalogUrlsToCheck),
             ),
           );
 
@@ -268,10 +346,14 @@ export const shareRouter = createTRPCRouter({
           existingCatalogs.map((c) => c.manifestUrl),
         );
 
-        // Filter out catalogs that already exist
-        const newCatalogs = catalogDetails.filter(
-          (catalog) => !existingUrls.has(catalog.manifestUrl),
-        );
+        // Filter out catalogs that already exist (checking the URL after API key replacement)
+        const newCatalogs = catalogDetails.filter((catalog) => {
+          let manifestUrl = catalog.manifestUrl;
+          if (isMDBListManifestUrl(manifestUrl) && userApiKey) {
+            manifestUrl = replaceMDBListApiKey(manifestUrl, userApiKey);
+          }
+          return !existingUrls.has(manifestUrl);
+        });
 
         if (newCatalogs.length === 0) {
           throw new TRPCError({
@@ -294,11 +376,17 @@ export const shareRouter = createTRPCRouter({
         // Import catalogs
         const importedCatalogs = [];
         for (const catalog of newCatalogs) {
+          // Replace API key in manifest URL if it's an MDBList catalog
+          let manifestUrl = catalog.manifestUrl;
+          if (isMDBListManifestUrl(manifestUrl) && userApiKey) {
+            manifestUrl = replaceMDBListApiKey(manifestUrl, userApiKey);
+          }
+
           const [importedCatalog] = await ctx.db
             .insert(catalogs)
             .values({
               userId: input.userId,
-              manifestUrl: catalog.manifestUrl,
+              manifestUrl: manifestUrl,
               name: catalog.name,
               description: catalog.description,
               originalManifest: catalog.originalManifest,
