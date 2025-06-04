@@ -11,8 +11,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
-  ExternalLink,
-  Share2,
+  Heart,
+  Github,
+  MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -136,17 +137,19 @@ export default function SharePage({ params }: SharePageProps) {
 
   if (isLoading) {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+      <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
         {/* Modern animated background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/10 blur-3xl"></div>
-          <div className="absolute right-1/4 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
+          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
+          <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
           <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
         </div>
 
         <div className="relative z-10 flex items-center justify-center py-12">
           <div className="space-y-4 text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
             <p className="text-muted-foreground">Loading shared catalog...</p>
           </div>
         </div>
@@ -156,11 +159,13 @@ export default function SharePage({ params }: SharePageProps) {
 
   if (error ?? !shareData) {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+      <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
         {/* Modern animated background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/10 blur-3xl"></div>
-          <div className="absolute right-1/4 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
+          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
+          <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
           <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
         </div>
 
@@ -188,25 +193,26 @@ export default function SharePage({ params }: SharePageProps) {
   }
 
   return (
-    <main className="relative min-h-screen bg-background">
+    <main className="relative min-h-screen bg-background pt-16">
       {/* Modern animated background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/10 blur-3xl"></div>
-        <div className="absolute right-1/4 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
+        <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
+        <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
         <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
       </div>
 
       <div className="container relative z-10 mx-auto px-4 py-8">
         <div className="mx-auto max-w-4xl space-y-8">
           {/* Header */}
-          <div className="space-y-4 text-center">
-            <div className="flex items-center justify-center space-x-2">
-              <Share2 className="h-8 w-8 text-primary" />
+          <div className="space-y-2 text-center">
+            <div className="flex items-center justify-center">
               <h1 className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-3xl font-bold text-transparent">
                 Shared Catalog Collection
               </h1>
             </div>
-            <p className="mx-auto max-w-2xl text-muted-foreground">
+            <p className="text-muted-foreground">
               Import these shared catalogs to your collection and enhance your
               streaming experience
             </p>
@@ -301,12 +307,11 @@ export default function SharePage({ params }: SharePageProps) {
                           selectedCatalogs.length === 0 ||
                           isImporting
                         }
-                        className="bg-primary/80 hover:bg-primary/70"
                       >
                         {isImporting ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <Download className="mr-2 h-4 w-4" />
+                          <Download className="h-4 w-4" />
                         )}
                         Import Selected ({selectedCatalogs.length})
                       </Button>
@@ -392,10 +397,44 @@ export default function SharePage({ params }: SharePageProps) {
           </div>
 
           {/* Footer */}
-          <div className="pt-8 text-center">
-            <div className="inline-flex items-center space-x-2 text-sm text-muted-foreground">
-              <ExternalLink className="h-4 w-4" />
-              <span>Powered by AIOCatalogs</span>
+          <div className="mt-16 border-t border-border/50 pt-8">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Developed by{" "}
+                <span className="font-medium text-primary">panteL</span>
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+                <button
+                  onClick={() =>
+                    window.open("https://buymeacoffee.com/pantel", "_blank")
+                  }
+                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-yellow-500"
+                >
+                  <Heart className="h-4 w-4" />
+                  <span>Buy me a coffee</span>
+                </button>
+                <button
+                  onClick={() =>
+                    window.open(
+                      "https://github.com/panteLx/aiocatalogs",
+                      "_blank",
+                    )
+                  }
+                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-primary"
+                >
+                  <Github className="h-4 w-4" />
+                  <span>GitHub</span>
+                </button>
+                <button
+                  onClick={() =>
+                    window.open("https://discord.gg/Ma4SnagqwE", "_blank")
+                  }
+                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-indigo-500"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>Discord</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
