@@ -9,7 +9,7 @@ const MDBListItem = z.object({
   name: z.string(),
   slug: z.string(),
   description: z.string().nullable(), // Can be null in the API response
-  items: z.number().nullable().default(0), // Can be null in the API response
+  items: z.number(),
   likes: z.number().nullable().default(0), // Can be null in the API response
   created: z.string().optional(),
   modified: z.string().optional(),
@@ -32,8 +32,9 @@ interface MDBListCatalog {
   likes: number;
   source: string;
   listType: "toplist" | "userlist";
-  username?: string;
+  username: string;
   listSlug?: string;
+  items: number; // Optional, can be used for user lists
 }
 
 export const mdblistRouter = createTRPCRouter({
@@ -141,6 +142,9 @@ export const mdblistRouter = createTRPCRouter({
           likes: list.likes ?? 0,
           source: "MDBList",
           listType: "toplist",
+          username: list.user_name,
+          listSlug: list.slug,
+          items: list.items,
         }));
 
         return {
@@ -217,6 +221,7 @@ export const mdblistRouter = createTRPCRouter({
           listType: "userlist", // Search results are typically user lists
           username: list.user_name,
           listSlug: list.slug,
+          items: list.items,
         }));
 
         // Sort by likes

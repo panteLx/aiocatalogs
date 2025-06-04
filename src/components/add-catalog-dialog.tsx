@@ -22,6 +22,8 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
+  User,
+  Hash,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { api } from "@/trpc/react";
@@ -38,6 +40,7 @@ interface MDBListCatalog {
   listType?: "toplist" | "userlist";
   username?: string;
   listSlug?: string;
+  items: number;
 }
 
 interface AddCatalogDialogProps {
@@ -461,7 +464,24 @@ export function AddCatalogDialog({
                               ? catalog.description
                               : "No description available"}
                           </p>
-
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <User className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">
+                                {catalog.username || "Unknown User"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Hash className="h-3 w-3 flex-shrink-0" />
+                              <span>
+                                {catalog.items.toLocaleString()} items
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Heart className="h-3 w-3 flex-shrink-0" />
+                              <span>{catalog.likes}</span>
+                            </div>
+                          </div>
                           <div className="flex flex-wrap justify-between gap-1">
                             {catalog.types.map((type) => (
                               <Badge
@@ -472,10 +492,6 @@ export function AddCatalogDialog({
                                 {type}
                               </Badge>
                             ))}
-                            <div className="flex items-center text-xs text-muted-foreground">
-                              <Heart className="mr-1 h-3 w-3" />
-                              <span>{catalog.likes}</span>
-                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -598,7 +614,24 @@ export function AddCatalogDialog({
                                 ? result.description
                                 : "No description available"}
                             </p>
-
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <User className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {result.username || "Unknown User"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Hash className="h-3 w-3 flex-shrink-0" />
+                                <span>
+                                  {result.items.toLocaleString()} items
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Heart className="h-3 w-3 flex-shrink-0" />
+                                <span>{result.likes}</span>
+                              </div>
+                            </div>
                             <div className="flex flex-wrap justify-between gap-1">
                               {result.types.map((type) => (
                                 <Badge
@@ -609,10 +642,6 @@ export function AddCatalogDialog({
                                   {type}
                                 </Badge>
                               ))}
-                              <div className="flex items-center text-xs text-muted-foreground">
-                                <Heart className="mr-1 h-3 w-3" />
-                                <span>{result.likes}</span>
-                              </div>
                             </div>
                           </CardContent>
                         </Card>
