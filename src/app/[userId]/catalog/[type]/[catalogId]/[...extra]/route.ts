@@ -53,13 +53,18 @@ async function fetchCatalogData(
   endpoint: string,
   type: string,
   catalogId: string,
+  extraParams?: string,
 ): Promise<CatalogResponse> {
   try {
     // Ensure the endpoint is correctly formatted
     const baseUrl = endpoint.endsWith("/") ? endpoint.slice(0, -1) : endpoint;
 
-    // Build the URL
-    const url = `${baseUrl}/catalog/${type}/${catalogId}.json`;
+    // Build the URL with extra parameters if present
+    let url = `${baseUrl}/catalog/${type}/${catalogId}`;
+    if (extraParams) {
+      url += `/${extraParams}`;
+    }
+    url += ".json";
 
     const response = await fetch(url);
 
@@ -80,10 +85,19 @@ async function fetchCatalogData(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string; type: string; catalogId: string } },
+  {
+    params,
+  }: {
+    params: {
+      userId: string;
+      type: string;
+      catalogId: string;
+      extra: string[];
+    };
+  },
 ) {
   try {
-    const { userId, type, catalogId } = params;
+    const { userId, type, catalogId, extra } = params;
 
     if (!userId || !type || !catalogId) {
       return NextResponse.json(
@@ -146,11 +160,17 @@ export async function GET(
       );
     }
 
-    // Parse the catalog ID to find the source catalog and inner catalog ID
-    // The catalogId format is like "com.mdblist.latest-tv-shows-latest-tv-shows-series"
-    // This route only handles requests without extra parameters (like genre filtering)
-    // Requests with extra parameters are handled by the [...extra] route
+    // Process extra parameters (like genre=action)
+    let extraParams: string | undefined = undefined;
+    if (extra && extra.length > 0) {
+      // Join all extra segments and remove .json extension if present
+      extraParams = extra.join("/");
+      if (extraParams.endsWith(".json")) {
+        extraParams = extraParams.substring(0, extraParams.length - 5);
+      }
+    }
 
+    // Find the matching catalog and inner catalog ID
     let foundCatalog: (typeof activeCatalogs)[0] | null = null;
     let innerCatalogId: string | null = null;
 
@@ -212,7 +232,12 @@ export async function GET(
     }
 
     // Fetch catalog data from the external addon
-    const catalogData = await fetchCatalogData(endpoint, type, innerCatalogId);
+    const catalogData = await fetchCatalogData(
+      endpoint,
+      type,
+      innerCatalogId,
+      extraParams,
+    );
     let metas = catalogData.metas || [];
 
     // Add source addon information to each meta item
