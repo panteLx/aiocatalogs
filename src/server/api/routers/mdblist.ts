@@ -4,7 +4,7 @@ import { eq, and, sql } from "drizzle-orm";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
-import { apiKeys } from "@/server/db/schema";
+import { apiKeys, catalogs } from "@/server/db/schema";
 import packageJson from "../../../../package.json";
 import { env } from "@/env";
 
@@ -46,6 +46,72 @@ interface MDBListCatalog {
 const MDBLIST_BASE_URL = "https://api.mdblist.com";
 const USER_AGENT = `${packageJson.name}/${packageJson.version}`;
 const MANIFEST_BASE_URL = env.MDBLIST_MANIFEST_URL;
+
+// Helper function to check if a URL is an MDBList manifest URL
+function isMDBListManifestUrl(manifestUrl: string): boolean {
+  return manifestUrl.includes(env.MDBLIST_MANIFEST_URL);
+}
+
+// Helper function to replace API key in MDBList manifest URL
+function replaceMDBListApiKey(manifestUrl: string, newApiKey: string): string {
+  if (!isMDBListManifestUrl(manifestUrl)) {
+    return manifestUrl;
+  }
+
+  // Pattern: https://1fe84bc728af-stremio-mdblist.baby-beamup.club/677/<api_key>/manifest.json
+  // We need to replace the API key part (second path segment after list ID)
+  const urlObj = new URL(manifestUrl);
+  const pathParts = urlObj.pathname
+    .split("/")
+    .filter((part) => part.length > 0);
+
+  if (pathParts.length >= 2) {
+    // Replace the API key (second part after the list ID)
+    pathParts[1] = newApiKey;
+    urlObj.pathname = "/" + pathParts.join("/");
+  }
+
+  return urlObj.toString();
+}
+
+// Helper function to update all MDBList catalog manifest URLs for a user
+async function updateUserMDBListCatalogUrls(
+  database: Awaited<ReturnType<typeof db>>,
+  userId: string,
+  newApiKey: string,
+): Promise<number> {
+  // Get all catalogs for this user that have MDBList manifest URLs
+  const userCatalogs = await database
+    .select()
+    .from(catalogs)
+    .where(eq(catalogs.userId, userId));
+
+  let updatedCount = 0;
+
+  for (const catalog of userCatalogs) {
+    if (isMDBListManifestUrl(catalog.manifestUrl)) {
+      const newManifestUrl = replaceMDBListApiKey(
+        catalog.manifestUrl,
+        newApiKey,
+      );
+
+      // Only update if the URL actually changed
+      if (newManifestUrl !== catalog.manifestUrl) {
+        await database
+          .update(catalogs)
+          .set({
+            manifestUrl: newManifestUrl,
+            updatedAt: sql`(unixepoch())`,
+          })
+          .where(eq(catalogs.id, catalog.id));
+
+        updatedCount++;
+      }
+    }
+  }
+
+  return updatedCount;
+}
 
 // Helper functions
 async function getApiKeyForUser(
@@ -279,6 +345,10 @@ export const mdblistRouter = createTRPCRouter({
           )
           .limit(1);
 
+        const isNewKey = existingKey.length === 0;
+        const isKeyChanged =
+          !isNewKey && existingKey[0]!.keyValue !== input.apiKey;
+
         if (existingKey.length > 0) {
           // Update existing key
           await database
@@ -300,7 +370,24 @@ export const mdblistRouter = createTRPCRouter({
           });
         }
 
-        return { success: true, message: "API key saved successfully" };
+        // Update all MDBList catalog manifest URLs with the new API key
+        // This happens when the key is new or changed
+        let updatedCatalogs = 0;
+        if (isNewKey || isKeyChanged) {
+          updatedCatalogs = await updateUserMDBListCatalogUrls(
+            database,
+            input.userId,
+            input.apiKey,
+          );
+        }
+
+        return {
+          success: true,
+          message: "API key saved successfully",
+          updatedCatalogs,
+          isNewKey,
+          isKeyChanged,
+        };
       } catch (error) {
         handleMDBListError(error, "Failed to save API key");
       }

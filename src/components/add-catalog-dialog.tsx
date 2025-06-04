@@ -210,13 +210,21 @@ export function AddCatalogDialog({
 
           // Save the API key to database
           try {
-            await saveApiKeyMutation.mutateAsync({
+            const saveResult = await saveApiKeyMutation.mutateAsync({
               userId,
               apiKey: apiKey.trim(),
             });
+
+            let toastMessage =
+              "Your MDBList API key has been saved successfully.";
+
+            if (saveResult.updatedCatalogs > 0) {
+              toastMessage += ` Updated ${saveResult.updatedCatalogs} existing catalog(s) with the new API key.`;
+            }
+
             toast({
               title: "API Key Saved",
-              description: "Your MDBList API key has been saved successfully.",
+              description: toastMessage,
             });
           } catch (saveError) {
             console.error("Failed to save API key:", saveError);
@@ -254,13 +262,21 @@ export function AddCatalogDialog({
 
           // Save the API key to database
           try {
-            await saveApiKeyMutation.mutateAsync({
+            const saveResult = await saveApiKeyMutation.mutateAsync({
               userId,
               apiKey: apiKey.trim(),
             });
+
+            let toastMessage =
+              "Your MDBList API key has been saved successfully.";
+
+            if (saveResult.updatedCatalogs > 0) {
+              toastMessage += ` Updated ${saveResult.updatedCatalogs} existing catalog(s) with the new API key.`;
+            }
+
             toast({
               title: "API Key Saved",
-              description: "Your MDBList API key has been saved successfully.",
+              description: toastMessage,
             });
           } catch (saveError) {
             console.error("Failed to save API key:", saveError);
