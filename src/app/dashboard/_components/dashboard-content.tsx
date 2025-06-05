@@ -48,6 +48,7 @@ import {
   AddCatalogTrigger,
 } from "@/components/add-catalog-dialog";
 import { RPDBConfigTrigger } from "@/components/rpdb-config-dialog";
+import { isMDBListCatalogClient } from "@/lib/mdblist-client-utils";
 // Type definitions for the manifest structure
 interface StremioManifest {
   id: string;
@@ -100,6 +101,9 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   // Add catalog dialog state
   const [isAddCatalogDialogOpen, setIsAddCatalogDialogOpen] = useState(false);
 
+  // Bulk RPDB toggle loading state
+  const [isTogglingRpdbForAll, setIsTogglingRpdbForAll] = useState(false);
+
   const dragCounter = useRef(0);
 
   // TRPC queries and mutations
@@ -110,6 +114,14 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   } = api.catalog.list.useQuery({
     userId,
   });
+
+  // Check if user has RPDB API key configured
+  const { data: rpdbApiKeyData, refetch: refetchRpdbApiKey } =
+    api.rpdb.getApiKey.useQuery({
+      userId,
+    });
+
+  const hasRpdbApiKey = rpdbApiKeyData?.hasApiKey ?? false;
 
   const addCatalogMutation = api.catalog.add.useMutation({
     onSuccess: () => {
@@ -331,24 +343,27 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     );
   };
 
-  // Helper function to check if a catalog is from MDBList
-  // Using hardcoded URL since this is a client component and can't access server env vars
-  const isMDBListCatalog = (manifestUrl: string): boolean => {
-    return manifestUrl.includes(
-      "https://1fe84bc728af-stremio-mdblist.baby-beamup.club",
-    );
-  };
-
   const handleToggleRpdbEnabled = (catalogId: number, catalogName: string) => {
     const catalog = catalogs.find((c) => c.id === catalogId);
     if (!catalog) return;
 
     // Check if the catalog is from MDBList before allowing RPDB toggle
-    if (!isMDBListCatalog(catalog.manifestUrl)) {
+    if (!isMDBListCatalogClient(catalog.manifestUrl)) {
       toast({
         title: "RPDB Not Available",
         description:
           "RPDB poster enhancement is only available for MDBList catalogs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user has RPDB API key configured
+    if (!hasRpdbApiKey) {
+      toast({
+        title: "RPDB API Key Required",
+        description:
+          "Please configure your RPDB API key first to enable RPDB functionality.",
         variant: "destructive",
       });
       return;
@@ -397,6 +412,17 @@ export function DashboardContent({ userId }: DashboardContentProps) {
   };
 
   const handleToggleRpdbForAll = async () => {
+    // Check if user has RPDB API key configured
+    if (!hasRpdbApiKey) {
+      toast({
+        title: "RPDB API Key Required",
+        description:
+          "Please configure your RPDB API key first to enable RPDB functionality.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (catalogs.length === 0) {
       toast({
         title: "No Catalogs Available",
@@ -408,7 +434,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
 
     // Filter only MDBList catalogs for RPDB operations
     const mdblistCatalogs = catalogs.filter((c) =>
-      isMDBListCatalog(c.manifestUrl),
+      isMDBListCatalogClient(c.manifestUrl),
     );
 
     if (mdblistCatalogs.length === 0) {
@@ -421,6 +447,14 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       return;
     }
 
+    // Check if already processing
+    if (isTogglingRpdbForAll) {
+      return;
+    }
+
+    // Set loading state
+    setIsTogglingRpdbForAll(true);
+
     // Check if majority of MDBList catalogs have RPDB enabled to determine toggle direction
     const enabledCount = mdblistCatalogs.filter((c) => c.rpdbEnabled).length;
     const shouldEnable = enabledCount < mdblistCatalogs.length / 2;
@@ -430,6 +464,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     );
 
     if (catalogsToUpdate.length === 0) {
+      setIsTogglingRpdbForAll(false);
       toast({
         title: "No Changes Needed",
         description: `RPDB is already ${shouldEnable ? "enabled" : "disabled"} for all MDBList catalogs.`,
@@ -440,6 +475,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     // Update catalogs sequentially to avoid overwhelming the database
     const updateCatalogSequentially = async (index: number): Promise<void> => {
       if (index >= catalogsToUpdate.length) {
+        setIsTogglingRpdbForAll(false);
         toast({
           title: `RPDB ${shouldEnable ? "Enabled" : "Disabled"} for All MDBList Catalogs`,
           description: `RPDB poster enhancement has been ${shouldEnable ? "enabled" : "disabled"} for ${catalogsToUpdate.length} MDBList catalog${catalogsToUpdate.length > 1 ? "s" : ""}.`,
@@ -458,13 +494,16 @@ export function DashboardContent({ userId }: DashboardContentProps) {
             rpdbEnabled: shouldEnable,
           },
           {
-            onSuccess: async () => {
-              // Wait a bit before updating the next catalog
-              await new Promise((resolve) => setTimeout(resolve, 100));
-              await updateCatalogSequentially(index + 1);
-              resolve();
+            onSuccess: () => {
+              // Wait a bit before updating the next catalog, then continue sequentially
+              setTimeout(() => {
+                updateCatalogSequentially(index + 1)
+                  .then(() => resolve())
+                  .catch(reject);
+              }, 100);
             },
             onError: (error) => {
+              setIsTogglingRpdbForAll(false);
               toast({
                 title: "Error",
                 description: `Failed to update ${catalog.name}: ${error.message}`,
@@ -481,6 +520,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
       await updateCatalogSequentially(0);
     } catch (error) {
       console.error("Error updating catalogs:", error);
+      setIsTogglingRpdbForAll(false);
     }
   };
 
@@ -854,6 +894,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                     <RPDBConfigTrigger
                       userId={userId}
                       className="flex-1 sm:flex-none"
+                      onApiKeySaved={() => void refetchRpdbApiKey()}
                     >
                       <Plus className="h-4 w-4" /> RPDB Configuration
                     </RPDBConfigTrigger>
@@ -898,35 +939,57 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                 </div>
                 <div className="ml-auto flex items-center space-x-2">
                   {catalogs.length > 0 &&
-                    catalogs.some((c) => isMDBListCatalog(c.manifestUrl)) && (
+                    catalogs.some((c) =>
+                      isMDBListCatalogClient(c.manifestUrl),
+                    ) && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={handleToggleRpdbForAll}
+                        disabled={!hasRpdbApiKey || isTogglingRpdbForAll}
                         className={
-                          catalogs.filter(
-                            (c) =>
-                              c.rpdbEnabled && isMDBListCatalog(c.manifestUrl),
-                          ).length <
-                          catalogs.filter((c) =>
-                            isMDBListCatalog(c.manifestUrl),
-                          ).length /
-                            2
-                            ? "h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
-                            : "h-7 text-xs"
+                          !hasRpdbApiKey || isTogglingRpdbForAll
+                            ? "h-7 cursor-not-allowed text-xs opacity-50"
+                            : catalogs.filter(
+                                  (c) =>
+                                    c.rpdbEnabled &&
+                                    isMDBListCatalogClient(c.manifestUrl),
+                                ).length <
+                                catalogs.filter((c) =>
+                                  isMDBListCatalogClient(c.manifestUrl),
+                                ).length /
+                                  2
+                              ? "h-7 bg-blue-500/20 text-xs text-blue-500 hover:bg-blue-500/30"
+                              : "h-7 text-xs"
                         }
-                        title="Toggle RPDB enhancement for all MDBList catalogs"
+                        title={
+                          !hasRpdbApiKey
+                            ? "Configure RPDB API key first to enable RPDB functionality"
+                            : isTogglingRpdbForAll
+                              ? "Processing RPDB changes..."
+                              : "Toggle RPDB enhancement for all MDBList catalogs"
+                        }
                       >
-                        <Sparkles className="h-3 w-3" />
-                        {catalogs.filter(
-                          (c) =>
-                            c.rpdbEnabled && isMDBListCatalog(c.manifestUrl),
-                        ).length <
-                        catalogs.filter((c) => isMDBListCatalog(c.manifestUrl))
-                          .length /
-                          2
-                          ? "Enable RPDB for All MDBList"
-                          : "Disable RPDB for All MDBList"}
+                        {isTogglingRpdbForAll ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        {!hasRpdbApiKey
+                          ? "RPDB for All MDBLists (API Key Required)"
+                          : isTogglingRpdbForAll
+                            ? "Processing..."
+                            : catalogs.filter(
+                                  (c) =>
+                                    c.rpdbEnabled &&
+                                    isMDBListCatalogClient(c.manifestUrl),
+                                ).length <
+                                catalogs.filter((c) =>
+                                  isMDBListCatalogClient(c.manifestUrl),
+                                ).length /
+                                  2
+                              ? "Enable RPDB for All MDBLists"
+                              : "Disable RPDB for All MDBLists"}
                       </Button>
                     )}
                   <Badge
@@ -1078,23 +1141,29 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                   )
                                 }
                                 disabled={
-                                  !isMDBListCatalog(catalog.manifestUrl)
+                                  !isMDBListCatalogClient(
+                                    catalog.manifestUrl,
+                                  ) || !hasRpdbApiKey
                                 }
                                 className={`h-9 w-9 p-0 ${
-                                  !isMDBListCatalog(catalog.manifestUrl)
+                                  !isMDBListCatalogClient(
+                                    catalog.manifestUrl,
+                                  ) || !hasRpdbApiKey
                                     ? "cursor-not-allowed opacity-50"
                                     : catalog.rpdbEnabled
                                       ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
                                       : "hover:bg-muted"
                                 }`}
                                 title={
-                                  !isMDBListCatalog(catalog.manifestUrl)
+                                  !isMDBListCatalogClient(catalog.manifestUrl)
                                     ? "RPDB enhancement is only available for MDBList catalogs"
-                                    : `${
-                                        catalog.rpdbEnabled
-                                          ? "Disable RPDB Enhancement"
-                                          : "Enable RPDB Enhancement"
-                                      }`
+                                    : !hasRpdbApiKey
+                                      ? "Configure RPDB API key first to enable RPDB functionality"
+                                      : `${
+                                          catalog.rpdbEnabled
+                                            ? "Disable RPDB Enhancement"
+                                            : "Enable RPDB Enhancement"
+                                        }`
                                 }
                               >
                                 <Sparkles className="h-4 w-4" />
@@ -1251,22 +1320,28 @@ export function DashboardContent({ userId }: DashboardContentProps) {
                                   catalog.name,
                                 )
                               }
-                              disabled={!isMDBListCatalog(catalog.manifestUrl)}
+                              disabled={
+                                !isMDBListCatalogClient(catalog.manifestUrl) ||
+                                !hasRpdbApiKey
+                              }
                               className={`h-8 w-8 p-0 ${
-                                !isMDBListCatalog(catalog.manifestUrl)
+                                !isMDBListCatalogClient(catalog.manifestUrl) ||
+                                !hasRpdbApiKey
                                   ? "cursor-not-allowed opacity-50"
                                   : catalog.rpdbEnabled
                                     ? "bg-blue-500/20 text-blue-500 hover:bg-blue-500/30"
                                     : "hover:bg-muted"
                               }`}
                               title={
-                                !isMDBListCatalog(catalog.manifestUrl)
+                                !isMDBListCatalogClient(catalog.manifestUrl)
                                   ? "RPDB enhancement is only available for MDBList catalogs"
-                                  : `${
-                                      catalog.rpdbEnabled
-                                        ? "Disable RPDB Enhancement"
-                                        : "Enable RPDB Enhancement"
-                                    }`
+                                  : !hasRpdbApiKey
+                                    ? "Configure RPDB API key first to enable RPDB functionality"
+                                    : `${
+                                        catalog.rpdbEnabled
+                                          ? "Disable RPDB Enhancement"
+                                          : "Enable RPDB Enhancement"
+                                      }`
                               }
                             >
                               <Sparkles className="h-4 w-4" />

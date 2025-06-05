@@ -267,6 +267,40 @@ export const catalogRouter = createTRPCRouter({
           .where(eq(catalogs.id, input.catalogId))
           .returning();
 
+        // If rpdbEnabled was changed, update only this catalog's manifest URL
+        if (input.rpdbEnabled !== undefined) {
+          // Import the helper functions
+          const { updateSingleCatalogManifestUrlWithRPDB } = await import(
+            "./rpdb"
+          );
+
+          // Get the user's RPDB API key
+          const { apiKeys } = await import("@/server/db/schema");
+          const rpdbApiKeyResult = await ctx.db
+            .select()
+            .from(apiKeys)
+            .where(
+              and(
+                eq(apiKeys.userId, input.userId),
+                eq(apiKeys.service, "rpdb"),
+                eq(apiKeys.keyName, "api_key"),
+                eq(apiKeys.isActive, true),
+              ),
+            )
+            .limit(1);
+
+          const rpdbApiKey =
+            rpdbApiKeyResult.length > 0 ? rpdbApiKeyResult[0]!.keyValue : null;
+
+          // Update only this specific catalog's manifest URL
+          await updateSingleCatalogManifestUrlWithRPDB(
+            ctx.db,
+            input.catalogId,
+            rpdbApiKey,
+            input.rpdbEnabled,
+          );
+        }
+
         return {
           success: true,
           catalog: updatedCatalog,

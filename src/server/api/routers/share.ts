@@ -10,35 +10,11 @@ import {
   userConfigs,
   apiKeys,
 } from "@/server/db/schema";
-import { env } from "@/env";
 import type { db as getDb } from "@/server/db";
-
-// Helper function to check if a URL is an MDBList manifest URL
-function isMDBListManifestUrl(manifestUrl: string): boolean {
-  return manifestUrl.includes(env.MDBLIST_MANIFEST_URL);
-}
-
-// Helper function to replace API key in MDBList manifest URL
-function replaceMDBListApiKey(manifestUrl: string, newApiKey: string): string {
-  if (!isMDBListManifestUrl(manifestUrl)) {
-    return manifestUrl;
-  }
-
-  // Pattern: https://1fe84bc728af-stremio-mdblist.baby-beamup.club/677/<api_key>/manifest.json
-  // We need to replace the API key part (third path segment)
-  const urlObj = new URL(manifestUrl);
-  const pathParts = urlObj.pathname
-    .split("/")
-    .filter((part) => part.length > 0);
-
-  if (pathParts.length >= 2) {
-    // Replace the API key (second part after the list ID)
-    pathParts[1] = newApiKey;
-    urlObj.pathname = "/" + pathParts.join("/");
-  }
-
-  return urlObj.toString();
-}
+import {
+  isMDBListManifestUrl,
+  replaceMDBListApiKey,
+} from "@/lib/mdblist-utils";
 
 // Helper function to get user's MDBList API key
 async function getUserMDBListApiKey(

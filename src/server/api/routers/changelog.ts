@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { env } from "@/env";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import packageJson from "../../../../package.json";
 
 // Helper function to get GitHub configuration from environment
 function getGitHubConfig() {
@@ -187,7 +188,7 @@ export const changelogRouter = createTRPCRouter({
         // Prepare headers with optional GitHub token
         const headers: Record<string, string> = {
           Accept: "application/vnd.github.v3+json",
-          "User-Agent": "AIOCatalogs-Changelog",
+          "User-Agent": `${packageJson.name}/${packageJson.version}`,
         };
 
         // Add authorization header if GitHub token is available
@@ -278,7 +279,7 @@ export const changelogRouter = createTRPCRouter({
         // Prepare headers with optional GitHub token
         const headers: Record<string, string> = {
           Accept: "application/vnd.github.v3+json",
-          "User-Agent": "AIOCatalogs-Changelog",
+          "User-Agent": `${packageJson.name}/${packageJson.version}`,
         };
 
         // Add authorization header if GitHub token is available

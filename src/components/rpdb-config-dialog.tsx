@@ -19,12 +19,14 @@ interface RPDBConfigDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
+  onApiKeySaved?: () => void; // Callback to notify parent when API key is saved
 }
 
 export function RPDBConfigDialog({
   isOpen,
   onOpenChange,
   userId,
+  onApiKeySaved,
 }: RPDBConfigDialogProps) {
   const [apiKey, setApiKey] = useState("");
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
@@ -93,6 +95,9 @@ export function RPDBConfigDialog({
               title: "API Key Saved",
               description: "Your RPDB API key has been saved successfully.",
             });
+
+            // Notify parent component that API key was saved
+            onApiKeySaved?.();
           } catch (saveError) {
             console.error("Failed to save API key:", saveError);
             toast({
@@ -243,10 +248,12 @@ export function RPDBConfigDialog({
 export function RPDBConfigTrigger({
   children,
   userId,
+  onApiKeySaved,
   ...props
 }: {
   children: React.ReactNode;
   userId: string;
+  onApiKeySaved?: () => void;
 } & React.ComponentProps<typeof Button>) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -259,6 +266,7 @@ export function RPDBConfigTrigger({
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         userId={userId}
+        onApiKeySaved={onApiKeySaved}
       />
     </>
   );
