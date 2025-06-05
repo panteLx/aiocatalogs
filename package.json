@@ -1,6 +1,6 @@
 {
   "name": "aiocatalogs",
-  "version": "2.0.0",
+  "version": "2.0.0-beta.1",
   "description": "AIOCatalogs is an open-source addon that combines multiple catalog addons into a single one with enhanced performance and a user-friendly configuration interface. It features multi-platform compatibility, serverless deployment options, and an optimized caching system. Join our community on Discord (discord.gg/Ma4SnagqwE) or contribute on GitHub (github.com/panteLx/aiocatalogs)",
   "private": true,
   "type": "module",
@@ -48,6 +48,7 @@
     "build:worker": "pnpm with-env cloudflare",
     "preview": "pnpm build:worker && wrangler versions upload",
     "deploy": "pnpm build:worker && wrangler deploy",
+    "release": "bumpp",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts",
     "bindings": "cf-bindings-proxy",
     "with-env": "dotenv -e .dev.vars --",
@@ -96,6 +97,7 @@
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
+    "bumpp": "^10.1.1",
     "cross-env": "^7.0.3",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.21.4",
