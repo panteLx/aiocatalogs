@@ -218,8 +218,8 @@ export function AddCatalogDialog({
             let toastMessage =
               "Your MDBList API key has been saved successfully.";
 
-            if (saveResult.updatedCatalogs > 0) {
-              toastMessage += ` Updated ${saveResult.updatedCatalogs} existing catalog(s) with the new API key.`;
+            if (saveResult.updatedManifestUrls > 0) {
+              toastMessage += ` Updated ${saveResult.updatedManifestUrls} existing catalog(s) with the new API key.`;
             }
 
             toast({
@@ -270,8 +270,8 @@ export function AddCatalogDialog({
             let toastMessage =
               "Your MDBList API key has been saved successfully.";
 
-            if (saveResult.updatedCatalogs > 0) {
-              toastMessage += ` Updated ${saveResult.updatedCatalogs} existing catalog(s) with the new API key.`;
+            if (saveResult.updatedManifestUrls > 0) {
+              toastMessage += ` Updated ${saveResult.updatedManifestUrls} existing catalog(s) with the new API key.`;
             }
 
             toast({

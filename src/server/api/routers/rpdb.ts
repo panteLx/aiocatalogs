@@ -65,8 +65,6 @@ export async function updateUserMDBListCatalogUrlsWithRPDB(
   rpdbApiKey: string | null,
 ): Promise<number> {
   // Get all catalogs for this user that have MDBList manifest URLs
-  // We process all MDBList catalogs, not just those with rpdbEnabled=true
-  // because we need to remove RPDB keys when disabling
   const userCatalogs = await database
     .select()
     .from(catalogs)
@@ -76,19 +74,10 @@ export async function updateUserMDBListCatalogUrlsWithRPDB(
 
   for (const catalog of userCatalogs) {
     if (isMDBListManifestUrl(catalog.manifestUrl)) {
-      let newManifestUrl: string;
-
-      // Only add RPDB key if catalog has RPDB enabled AND we have an API key
-      if (catalog.rpdbEnabled && rpdbApiKey) {
-        // Add or update RPDB key in the URL
-        newManifestUrl = updateMDBListManifestUrlWithRPDB(
-          catalog.manifestUrl,
-          rpdbApiKey,
-        );
-      } else {
-        // Remove RPDB key from the URL (either RPDB disabled or no API key)
-        newManifestUrl = removeMDBListManifestUrlRPDB(catalog.manifestUrl);
-      }
+      const newManifestUrl =
+        catalog.rpdbEnabled && rpdbApiKey
+          ? updateMDBListManifestUrlWithRPDB(catalog.manifestUrl, rpdbApiKey)
+          : removeMDBListManifestUrlRPDB(catalog.manifestUrl);
 
       // Only update if the URL actually changed
       if (newManifestUrl !== catalog.manifestUrl) {

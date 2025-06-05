@@ -55,7 +55,9 @@ export function RPDBConfigDialog({
 
   // Reset API key validation when it changes
   useEffect(() => {
-    setApiKeyValid(null);
+    if (apiKey.trim().length <= 10) {
+      setApiKeyValid(null);
+    }
   }, [apiKey]);
 
   // Reset dialog state when it closes

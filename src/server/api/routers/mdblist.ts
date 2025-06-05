@@ -179,62 +179,13 @@ async function fetchMDBListData(
   return MDBListApiResponse.parse(data);
 }
 
-function transformToMDBListCatalog(
+// Function to transform MDBList data to catalog format
+async function transformToMDBListCatalog(
   list: z.infer<typeof MDBListItem>,
   apiKey: string,
   listType: "toplist" | "userlist",
-): MDBListCatalog {
-  return {
-    id: list.id,
-    name: list.name,
-    description: list.description ?? "No description available",
-    manifestUrl: `${MANIFEST_BASE_URL}/${list.id}/${apiKey}/manifest.json`,
-    types: list.mediatype ? [list.mediatype] : ["movie", "series"],
-    likes: list.likes ?? 0,
-    source: "MDBList",
-    listType,
-    username: list.user_name,
-    listSlug: list.slug,
-    items: list.items,
-  };
-}
-
-// Enhanced version that considers RPDB API key
-async function transformToMDBListCatalogWithRPDB(
-  list: z.infer<typeof MDBListItem>,
-  apiKey: string,
-  listType: "toplist" | "userlist",
-  userId?: string,
 ): Promise<MDBListCatalog> {
-  let manifestUrl = `${MANIFEST_BASE_URL}/${list.id}/${apiKey}/manifest.json`;
-
-  // If userId is provided, check if user has RPDB enabled for new catalogs
-  if (userId) {
-    try {
-      const database = await db();
-      const rpdbApiKeyResult = await database
-        .select()
-        .from(apiKeys)
-        .where(
-          and(
-            eq(apiKeys.userId, userId),
-            eq(apiKeys.service, "rpdb"),
-            eq(apiKeys.keyName, "api_key"),
-            eq(apiKeys.isActive, true),
-          ),
-        )
-        .limit(1);
-
-      // If user has RPDB API key, include it in the URL
-      if (rpdbApiKeyResult.length > 0) {
-        const rpdbApiKey = rpdbApiKeyResult[0]!.keyValue;
-        manifestUrl = `${MANIFEST_BASE_URL}/${list.id}/${apiKey}/${rpdbApiKey}/manifest.json`;
-      }
-    } catch (error) {
-      // If there's an error fetching RPDB key, just use the standard URL
-      console.warn("Error fetching RPDB API key for user", userId, error);
-    }
-  }
+  const manifestUrl = `${MANIFEST_BASE_URL}/${list.id}/${apiKey}/manifest.json`;
 
   return {
     id: list.id,
@@ -298,8 +249,11 @@ export const mdblistRouter = createTRPCRouter({
         const url = `${MDBLIST_BASE_URL}/lists/top?apikey=${apiKey}&limit=${input.limit}&skip=${input.offset}`;
         const parsedData = await fetchMDBListData(url);
 
-        const catalogs = parsedData.map((list) =>
-          transformToMDBListCatalog(list, apiKey, "toplist"),
+        // Transform data to catalog format
+        const catalogs = await Promise.all(
+          parsedData.map((list) =>
+            transformToMDBListCatalog(list, apiKey, "toplist"),
+          ),
         );
 
         return {
@@ -329,87 +283,10 @@ export const mdblistRouter = createTRPCRouter({
         const url = `${MDBLIST_BASE_URL}/lists/search?query=${encodeURIComponent(input.query)}&apikey=${apiKey}`;
         const parsedData = await fetchMDBListData(url);
 
-        const catalogs = parsedData
-          .map((list) => transformToMDBListCatalog(list, apiKey, "userlist"))
-          .sort((a, b) => b.likes - a.likes);
-
-        // Apply client-side pagination
-        const startIndex = input.offset;
-        const endIndex = startIndex + input.limit;
-        const paginatedCatalogs = catalogs.slice(startIndex, endIndex);
-
-        return {
-          catalogs: paginatedCatalogs,
-          total: catalogs.length,
-          hasMore: endIndex < catalogs.length,
-        };
-      } catch (error) {
-        handleMDBListError(error, "Failed to search lists");
-      }
-    }),
-
-  // Get MDBList toplists with RPDB support
-  getTopListsWithRPDB: publicProcedure
-    .input(
-      z.object({
-        apiKey: z.string().optional(),
-        userId: z.string().min(1, "User ID is required"),
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-      }),
-    )
-    .query(async ({ input }) => {
-      try {
-        const apiKey = await getApiKeyForUser(input.userId, input.apiKey);
-        const url = `${MDBLIST_BASE_URL}/lists/top?apikey=${apiKey}&limit=${input.limit}&skip=${input.offset}`;
-        const parsedData = await fetchMDBListData(url);
-
+        // Transform data to catalog format
         const catalogs = await Promise.all(
           parsedData.map((list) =>
-            transformToMDBListCatalogWithRPDB(
-              list,
-              apiKey,
-              "toplist",
-              input.userId,
-            ),
-          ),
-        );
-
-        return {
-          catalogs,
-          total: parsedData.length,
-          hasMore: false,
-        };
-      } catch (error) {
-        handleMDBListError(error, "Failed to fetch toplists with RPDB");
-      }
-    }),
-
-  // Search MDBList catalogs with RPDB support
-  searchListsWithRPDB: publicProcedure
-    .input(
-      z.object({
-        apiKey: z.string().optional(),
-        userId: z.string().min(1, "User ID is required"),
-        query: z.string().min(1, "Search query is required"),
-        limit: z.number().min(1).max(100).default(20),
-        offset: z.number().min(0).default(0),
-      }),
-    )
-    .query(async ({ input }) => {
-      try {
-        const apiKey = await getApiKeyForUser(input.userId, input.apiKey);
-        const url = `${MDBLIST_BASE_URL}/lists/search?query=${encodeURIComponent(input.query)}&apikey=${apiKey}`;
-        const parsedData = await fetchMDBListData(url);
-
-        const catalogs = await Promise.all(
-          parsedData.map((list) =>
-            transformToMDBListCatalogWithRPDB(
-              list,
-              apiKey,
-              "userlist",
-              input.userId,
-            ),
+            transformToMDBListCatalog(list, apiKey, "userlist"),
           ),
         );
 
@@ -426,7 +303,7 @@ export const mdblistRouter = createTRPCRouter({
           hasMore: endIndex < sortedCatalogs.length,
         };
       } catch (error) {
-        handleMDBListError(error, "Failed to search lists with RPDB");
+        handleMDBListError(error, "Failed to search lists");
       }
     }),
 
@@ -457,8 +334,6 @@ export const mdblistRouter = createTRPCRouter({
           .limit(1);
 
         const isNewKey = existingKey.length === 0;
-        const isKeyChanged =
-          !isNewKey && existingKey[0]!.keyValue !== input.apiKey;
 
         if (existingKey.length > 0) {
           // Update existing key
@@ -481,23 +356,18 @@ export const mdblistRouter = createTRPCRouter({
           });
         }
 
-        // Update all MDBList catalog manifest URLs with the new API key
-        // This happens when the key is new or changed
-        let updatedCatalogs = 0;
-        if (isNewKey || isKeyChanged) {
-          updatedCatalogs = await updateUserMDBListCatalogUrls(
-            database,
-            input.userId,
-            input.apiKey,
-          );
-        }
+        // Update manifest URLs for existing catalogs
+        const updatedCount = await updateUserMDBListCatalogUrls(
+          database,
+          input.userId,
+          input.apiKey,
+        );
 
         return {
           success: true,
           message: "API key saved successfully",
-          updatedCatalogs,
           isNewKey,
-          isKeyChanged,
+          updatedManifestUrls: updatedCount,
         };
       } catch (error) {
         handleMDBListError(error, "Failed to save API key");
