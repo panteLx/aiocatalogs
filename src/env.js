@@ -34,6 +34,8 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE: z.string().default("false"),
+    NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON: z.string().default("true"),
   },
 
   /**
@@ -50,6 +52,10 @@ export const env = createEnv({
     GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     MDBLIST_MANIFEST_URL: process.env.MDBLIST_MANIFEST_URL,
+    NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE:
+      process.env.NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE,
+    NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON:
+      process.env.NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**

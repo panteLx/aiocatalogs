@@ -3,6 +3,8 @@ CLOUDFLARE_D1_DATABASE_ID='x'
 CLOUDFLARE_TOKEN='x'
 
 # GitHub Repository Configuration for Changelog
+NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE='true'
+NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON='true'
 GITHUB_REPO_OWNER='your-github-username'
 GITHUB_REPO_NAME='your-github-repo-name'
 # Optional: Add a GitHub Personal Access Token for higher rate limits
