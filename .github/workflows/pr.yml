@@ -1,4 +1,4 @@
-name: 'PR Validation'
+name: "PR Validation"
 
 on:
   pull_request_target:
@@ -20,19 +20,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '23.x'
-          cache: 'npm'
+          node-version: "23.x"
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Validate PR title
         uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run Prettier check
-        run: npm run format:check
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build check
+        run: pnpm run build
