@@ -8,6 +8,7 @@ import { GlobalFooter } from "@/components/layout/footer";
 import packageJson from "../../package.json";
 
 import { TRPCReactProvider } from "@/trpc/react";
+import { AnimatedBackground } from "@/components/layout/animated-background";
 
 export const metadata: Metadata = {
   // TODO: Update metadataBase with production url
@@ -97,7 +98,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${GeistSans.variable} dark`}>
-      <body className="flex min-h-screen flex-col bg-background text-foreground antialiased">
+      <body className="flex min-h-screen flex-col text-foreground antialiased">
+        <AnimatedBackground />
         <Navigation />
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <GlobalFooter />

@@ -2,7 +2,6 @@
 
 import { changelogConfig } from "@/lib/config/changelog-config";
 import { Changelog } from "@/components/changelog/changelog";
-import { AnimatedBackground } from "@/components/layout/animated-background";
 import { HeroSection } from "@/components/home/hero-section";
 import { UserActionCards } from "@/components/home/user-action-cards";
 import { ExistingUserModal } from "@/components/home/existing-user-modal";
@@ -22,9 +21,7 @@ export default function Home() {
   } = useUserActions();
 
   return (
-    <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center bg-background pt-16">
-      <AnimatedBackground />
-
+    <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center pt-16">
       <div className="container relative flex flex-col items-center justify-center gap-12 px-4 py-16">
         <HeroSection />
 

@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AnimatedBackground } from "@/components/layout/animated-background";
 import {
   Package,
   Download,
@@ -12,9 +11,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
-  Heart,
-  Github,
-  MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -138,16 +134,7 @@ export default function SharePage({ params }: SharePageProps) {
 
   if (isLoading) {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
-        {/* Modern animated background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
-          <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        </div>
-
+      <main className="relative flex min-h-screen flex-col items-center justify-center pt-16">
         <div className="relative z-10 flex items-center justify-center py-12">
           <div className="space-y-4 text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
@@ -160,9 +147,7 @@ export default function SharePage({ params }: SharePageProps) {
 
   if (error ?? !shareData) {
     return (
-      <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center bg-background pt-16">
-        <AnimatedBackground />
-
+      <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center pt-16">
         <div className="container relative z-10 mx-auto px-4 py-8">
           <div className="mx-auto max-w-2xl">
             <Card className="border-red-500/20 bg-red-500/5">
@@ -187,9 +172,7 @@ export default function SharePage({ params }: SharePageProps) {
   }
 
   return (
-    <main className="relative min-h-screen flex-1 bg-background pt-16">
-      <AnimatedBackground />
-
+    <main className="relative min-h-screen flex-1 pt-16">
       <div className="container relative z-10 mx-auto px-4 py-8">
         <div className="mx-auto max-w-4xl space-y-8">
           {/* Header */}

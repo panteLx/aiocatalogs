@@ -3,7 +3,6 @@
 import { useParams } from "next/navigation";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { useUserValidation } from "@/hooks/validation/use-user-validation";
-import { AnimatedBackground } from "@/components/layout/animated-background";
 
 export default function UserPage() {
   const params = useParams();
@@ -18,9 +17,7 @@ export default function UserPage() {
   // Show loading state only if validation takes time
   if (isValidating && showLoader) {
     return (
-      <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center bg-background pt-16">
-        <AnimatedBackground />
-
+      <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center pt-16">
         <div className="relative z-10 flex items-center justify-center py-12">
           <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </div>
@@ -31,9 +28,7 @@ export default function UserPage() {
   // Show dashboard if user is valid
   if (isValid && userId) {
     return (
-      <main className="relative min-h-screen flex-1 bg-background pt-16">
-        <AnimatedBackground />
-
+      <main className="relative min-h-screen flex-1 pt-16">
         <div className="container relative z-10 mx-auto px-4 py-8">
           <DashboardContent userId={userId} />
         </div>
@@ -44,9 +39,7 @@ export default function UserPage() {
   // This shouldn't render as redirects happen in the hook,
   // but show a minimal loader for the brief moment before redirect
   return (
-    <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center bg-background pt-16">
-      <AnimatedBackground />
-
+    <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center pt-16">
       <div className="relative z-10 flex items-center justify-center py-12">
         <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
       </div>
