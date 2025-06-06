@@ -45,15 +45,15 @@ export default function NotFound() {
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-lg text-muted-foreground">
-              The page you're looking for seems to have wandered off into the
-              digital void. Don't worry, even the best catalogs sometimes have
-              missing entries!
+              The page you&apos;re looking for seems to have wandered off into
+              the digital void. Don&apos;t worry, even the best catalogs
+              sometimes have missing entries!
             </p>
 
             {/* Suggestions */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground">
-                Here's what you can do:
+                Here&apos;s what you can do:
               </h3>
               <div className="grid gap-3 text-left">
                 <div className="flex items-center space-x-3 rounded-md border border-border/50 bg-background/30 p-3">
@@ -99,7 +99,8 @@ export default function NotFound() {
             {/* Fun Quote */}
             <div className="border-t border-border/50 pt-4">
               <p className="text-xs italic text-muted-foreground">
-                "Not all who wander are lost... but this page definitely is."
+                &ldquo;Not all who wander are lost... but this page definitely
+                is.&rdquo;
                 <span className="ml-2 text-primary">- AIOCatalogs Team</span>
               </p>
             </div>
