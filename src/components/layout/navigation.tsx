@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Home, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 interface NavigationProps {
   className?: string;
@@ -13,18 +13,8 @@ interface NavigationProps {
 
 export function Navigation({ className }: NavigationProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
 
   const toggleMenu = () => setIsOpen(!isOpen);
-
-  const handleHomeHover = () => {
-    // Prefetch the home route for instant navigation
-    router.prefetch("/");
-  };
-
-  // Only show home link if not on home page
-  const shouldShowHome = pathname !== "/";
 
   return (
     <nav
@@ -42,50 +32,65 @@ export function Navigation({ className }: NavigationProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden items-center space-x-6 md:flex">
-            {shouldShowHome && (
-              <Link
-                href="/"
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                onMouseEnter={handleHomeHover}
-              >
-                <Home className="h-4 w-4" />
-                <span>Home</span>
-              </Link>
-            )}
+            {/* Clerk Auth Components */}
+            <SignedIn>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-8 w-8",
+                  },
+                }}
+              />
+            </SignedIn>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button variant="default" className="hover:bg-primary/90">
+                  Sign In / Sign Up
+                </Button>
+              </SignInButton>
+            </SignedOut>
           </div>
 
           {/* Mobile Menu Button */}
-          {shouldShowHome && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={toggleMenu}
-            >
+          <div className="flex items-center space-x-2 md:hidden">
+            {/* Mobile Auth Components */}
+            <SignedIn>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "h-8 w-8",
+                  },
+                }}
+              />
+            </SignedIn>
+
+            <Button variant="ghost" size="icon" onClick={toggleMenu}>
               {isOpen ? (
                 <X className="h-4 w-4" />
               ) : (
                 <Menu className="h-4 w-4" />
               )}
             </Button>
-          )}
+          </div>
         </div>
 
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="animate-fade-in border-t border-border py-4 md:hidden">
             <div className="flex flex-col space-y-2">
-              {shouldShowHome && (
-                <Link
-                  href="/"
-                  className="flex items-center space-x-2 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  onClick={() => setIsOpen(false)}
-                  onMouseEnter={handleHomeHover}
-                >
-                  <Home className="h-4 w-4" />
-                  <span>Home</span>
-                </Link>
-              )}
+              {/* Mobile Auth Components */}
+              <SignedOut>
+                <div className="flex flex-col space-y-2 px-4">
+                  <SignInButton mode="modal">
+                    <Button
+                      className="w-full hover:bg-primary/90"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Sign In / Sign Up
+                    </Button>
+                  </SignInButton>
+                </div>
+              </SignedOut>
             </div>
           </div>
         )}

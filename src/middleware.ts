@@ -1,7 +1,8 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+const corsMiddleware = (request: NextRequest) => {
   // Handle preflight requests
   if (request.method === "OPTIONS") {
     return new NextResponse(null, {
@@ -30,12 +31,36 @@ export function middleware(request: NextRequest) {
   );
 
   return response;
-}
+};
+
+// const isProtectedRoute = createRouteMatcher(["/api(.*)", "/manifest(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // Apply CORS middleware for API routes and manifest routes
+  if (
+    req.nextUrl.pathname.startsWith("/api/") ||
+    req.nextUrl.pathname.includes("/manifest.json")
+  ) {
+    return corsMiddleware(req);
+  }
+
+  // Skip Clerk protection for catalog routes and manifest routes (needed for Stremio)
+  if (
+    req.nextUrl.pathname.includes("/manifest.json") ||
+    req.nextUrl.pathname.match(/^\/[^\/]+\/catalog\//)
+  ) {
+    return NextResponse.next();
+  }
+
+  // Continue with default Clerk middleware for other routes
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [
-    // Match all API routes and manifest routes
-    "/api/:path*",
-    "/:userId/manifest.json",
+    // Skip Next.js internals and all static files, unless found in search params
+    "/((?!_next|[^?]*\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Always run for API routes
+    "/(api|trpc)(.*)",
   ],
 };

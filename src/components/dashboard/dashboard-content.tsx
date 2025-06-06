@@ -16,6 +16,7 @@ import { CatalogList } from "./catalog-list";
 import { UnifiedManifestCard } from "./unified-manifest-card";
 import { ShareSection } from "./share-section";
 import { ShareDialog } from "./share-dialog";
+import { useUser } from "@clerk/nextjs";
 
 // Error type for proper error handling
 interface ValidationError {
@@ -31,6 +32,8 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ userId }: DashboardContentProps) {
+  // Get the current user and loading state inside the component
+  const { user, isLoaded } = useUser();
   const [catalogUrl, setCatalogUrl] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -663,7 +666,7 @@ export function DashboardContent({ userId }: DashboardContentProps) {
     <div className="space-y-8">
       {/* Welcome Header */}
       <DashboardHeader
-        title="Welcome to your Dashboard"
+        title={`Welcome to your Dashboard${isLoaded && user?.firstName ? `, ${user.firstName}` : ""}!`}
         description="Combine all your catalogs addons into one unified catalog"
       />
 

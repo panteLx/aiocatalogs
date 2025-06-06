@@ -18,6 +18,8 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    // Clerk Authentication
+    CLERK_SECRET_KEY: z.string().optional(),
     // GitHub Repository Configuration for Changelog
     GITHUB_REPO_OWNER: z.string().default("your-github-username"),
     GITHUB_REPO_NAME: z.string().default("aiocatalogs"),
@@ -34,6 +36,10 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    // Clerk Authentication
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default("/sign-in"),
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default("/sign-up"),
     NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE: z.string().default("false"),
     NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON: z.string().default("true"),
   },
@@ -48,10 +54,17 @@ export const env = createEnv({
     CLOUDFLARE_D1_DATABASE_ID: process.env.CLOUDFLARE_D1_DATABASE_ID,
     CLOUDFLARE_TOKEN: process.env.CLOUDFLARE_TOKEN,
     NODE_ENV: process.env.NODE_ENV,
+    // Clerk Authentication
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
     GITHUB_REPO_OWNER: process.env.GITHUB_REPO_OWNER,
     GITHUB_REPO_NAME: process.env.GITHUB_REPO_NAME,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     MDBLIST_MANIFEST_URL: process.env.MDBLIST_MANIFEST_URL,
+    // Clerk client-side
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_CLERK_SIGN_IN_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL,
+    NEXT_PUBLIC_CLERK_SIGN_UP_URL: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL,
     NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE:
       process.env.NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE,
     NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON:

@@ -20,9 +20,8 @@ export function HeroSection() {
           </Badge>
         </div>
       </div>
-      <p className="max-w-2xl text-xl text-muted-foreground">
-        Choose how you want to get started with your supercharged catalog
-        experience
+      <p className="mx-auto max-w-2xl text-center text-xl text-muted-foreground">
+        Start with your supercharged catalog experience now!
       </p>
     </div>
   );
