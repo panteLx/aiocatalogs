@@ -25,7 +25,7 @@ import {
   User,
   Hash,
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/ui/use-toast";
 import { api } from "@/trpc/react";
 
 // MDBList Catalog interface

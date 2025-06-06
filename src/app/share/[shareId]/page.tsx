@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AnimatedBackground } from "@/components/layout/animated-background";
 import {
   Package,
   Download,
@@ -18,7 +19,7 @@ import {
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/trpc/react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/ui/use-toast";
 
 interface StremioManifest {
   id: string;
@@ -159,15 +160,8 @@ export default function SharePage({ params }: SharePageProps) {
 
   if (error ?? !shareData) {
     return (
-      <main className="relative flex min-h-screen flex-col items-center justify-center bg-background pt-16">
-        {/* Modern animated background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
-          <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-        </div>
+      <main className="relative flex min-h-screen flex-1 flex-col items-center justify-center bg-background pt-16">
+        <AnimatedBackground />
 
         <div className="container relative z-10 mx-auto px-4 py-8">
           <div className="mx-auto max-w-2xl">
@@ -193,15 +187,8 @@ export default function SharePage({ params }: SharePageProps) {
   }
 
   return (
-    <main className="relative min-h-screen bg-background pt-16">
-      {/* Modern animated background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10"></div>
-        <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/20 blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full bg-secondary/20 blur-3xl delay-1000"></div>
-        <div className="absolute left-1/2 top-3/4 h-64 w-64 animate-pulse rounded-full bg-accent/20 blur-3xl delay-500"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-      </div>
+    <main className="relative min-h-screen flex-1 bg-background pt-16">
+      <AnimatedBackground />
 
       <div className="container relative z-10 mx-auto px-4 py-8">
         <div className="mx-auto max-w-4xl space-y-8">
@@ -394,48 +381,6 @@ export default function SharePage({ params }: SharePageProps) {
                 </Card>
               );
             })}
-          </div>
-
-          {/* Footer */}
-          <div className="mt-16 border-t border-border/50 pt-8">
-            <div className="flex flex-col items-center space-y-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Developed by{" "}
-                <span className="font-medium text-primary">panteL</span>
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
-                <button
-                  onClick={() =>
-                    window.open("https://buymeacoffee.com/pantel", "_blank")
-                  }
-                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-yellow-500"
-                >
-                  <Heart className="h-4 w-4" />
-                  <span>Buy me a coffee</span>
-                </button>
-                <button
-                  onClick={() =>
-                    window.open(
-                      "https://github.com/panteLx/aiocatalogs",
-                      "_blank",
-                    )
-                  }
-                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-primary"
-                >
-                  <Github className="h-4 w-4" />
-                  <span>GitHub</span>
-                </button>
-                <button
-                  onClick={() =>
-                    window.open("https://discord.gg/Ma4SnagqwE", "_blank")
-                  }
-                  className="flex items-center space-x-2 text-muted-foreground transition-colors hover:text-indigo-500"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>Discord</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

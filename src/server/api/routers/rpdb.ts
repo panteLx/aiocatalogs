@@ -6,7 +6,7 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import { apiKeys, catalogs } from "@/server/db/schema";
 import packageJson from "../../../../package.json";
-import { isMDBListManifestUrl } from "@/lib/mdblist-utils";
+import { isMDBListManifestUrl } from "@/lib/utils/mdblist-utils";
 
 // Helper function to update MDBList manifest URLs with RPDB API key
 function updateMDBListManifestUrlWithRPDB(
