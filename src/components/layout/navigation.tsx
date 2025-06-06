@@ -43,7 +43,7 @@ export function Navigation({ className }: NavigationProps) {
               />
             </SignedIn>
             <SignedOut>
-              <SignInButton mode="modal">
+              <SignInButton mode="modal" forceRedirectUrl="/api/auth/signed-in">
                 <Button variant="default" className="hover:bg-primary/90">
                   Sign In / Sign Up
                 </Button>
@@ -81,7 +81,10 @@ export function Navigation({ className }: NavigationProps) {
               {/* Mobile Auth Components */}
               <SignedOut>
                 <div className="flex flex-col space-y-2 px-4">
-                  <SignInButton mode="modal">
+                  <SignInButton
+                    mode="modal"
+                    forceRedirectUrl="/api/auth/redirect-after-signin"
+                  >
                     <Button
                       className="w-full hover:bg-primary/90"
                       onClick={() => setIsOpen(false)}

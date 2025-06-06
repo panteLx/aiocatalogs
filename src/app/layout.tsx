@@ -10,7 +10,6 @@ import packageJson from "../../package.json";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { AnimatedBackground } from "@/components/layout/animated-background";
-import { AuthRedirect } from "@/components/auth/auth-redirect";
 
 export const metadata: Metadata = {
   // TODO: Update metadataBase with production url
@@ -103,7 +102,6 @@ export default function RootLayout({
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body className="flex min-h-screen flex-col text-foreground antialiased">
           <AnimatedBackground />
-          <AuthRedirect />
           <Navigation />
           <TRPCReactProvider>{children}</TRPCReactProvider>
           <GlobalFooter />
