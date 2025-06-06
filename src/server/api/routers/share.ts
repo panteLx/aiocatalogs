@@ -14,7 +14,7 @@ import type { db as getDb } from "@/server/db";
 import {
   isMDBListManifestUrl,
   replaceMDBListApiKey,
-} from "@/lib/mdblist-utils";
+} from "@/lib/utils/mdblist-utils";
 
 // Helper function to get user's MDBList API key
 async function getUserMDBListApiKey(

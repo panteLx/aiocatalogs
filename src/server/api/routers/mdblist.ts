@@ -10,7 +10,7 @@ import { env } from "@/env";
 import {
   isMDBListManifestUrl,
   replaceMDBListApiKey,
-} from "@/lib/mdblist-utils";
+} from "@/lib/utils/mdblist-utils";
 
 // MDBList API types - Updated for new flat array response format
 const MDBListItem = z.object({

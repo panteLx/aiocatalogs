@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Key, CheckCircle, Loader2, AlertCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/ui/use-toast";
 import { api } from "@/trpc/react";
 
 interface RPDBConfigDialogProps {
