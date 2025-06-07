@@ -64,7 +64,12 @@ export function Navigation({ className }: NavigationProps) {
               />
             </SignedIn>
 
-            <Button variant="ghost" size="icon" onClick={toggleMenu}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMenu}
+              aria-label="Toggle menu"
+            >
               {isOpen ? (
                 <X className="h-4 w-4" />
               ) : (

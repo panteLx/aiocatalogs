@@ -17,7 +17,6 @@ export default function UserPage() {
   // Use ref to track if we've already attempted to create user for this session
   const userCreationAttempted = useRef(false);
   const userCreationCompleted = useRef(false);
-  const [, setIsCreatingUser] = useState(false);
   const [validationEnabled, setValidationEnabled] = useState(false);
 
   // Only start validation after user creation is completed for new users
@@ -37,7 +36,6 @@ export default function UserPage() {
     onSuccess: async (data, variables) => {
       // Mark user creation as completed
       userCreationCompleted.current = true;
-      setIsCreatingUser(false);
 
       if (data.alreadyExists) {
         console.log("User already existed - continuing to dashboard");
@@ -61,7 +59,6 @@ export default function UserPage() {
       console.error("Error creating user:", error);
       // Mark as completed even on error to allow validation to proceed
       userCreationCompleted.current = true;
-      setIsCreatingUser(false);
       // Enable validation even on error with a small delay
       setTimeout(() => {
         setValidationEnabled(true);
@@ -88,7 +85,6 @@ export default function UserPage() {
       // Check if user exists first, then create if needed
       const checkAndCreateUser = async () => {
         try {
-          setIsCreatingUser(true);
           // Use the utils to fetch user existence
           const userExists = await utils.user.exists.fetch({ userId: user.id });
 
@@ -100,7 +96,6 @@ export default function UserPage() {
             console.log("User already exists");
             // Mark as completed since user already exists
             userCreationCompleted.current = true;
-            setIsCreatingUser(false);
             // Enable validation since user already exists
             setValidationEnabled(true);
           }
