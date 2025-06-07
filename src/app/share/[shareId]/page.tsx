@@ -12,8 +12,9 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { api } from "@/trpc/react";
 import { toast } from "@/hooks/ui/use-toast";
 
@@ -40,10 +41,23 @@ export default function SharePage({ params }: SharePageProps) {
   const { shareId } = params;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const userId = searchParams.get("userId");
+  const { user, isLoaded } = useUser();
+
+  // Get userId from Clerk if authenticated, otherwise fall back to URL parameter
+  const urlUserId = searchParams.get("userId");
+  const userId = isLoaded && user ? user.id : urlUserId;
 
   const [selectedCatalogs, setSelectedCatalogs] = useState<number[]>([]);
   const [isImporting, setIsImporting] = useState(false);
+
+  // Update URL when Clerk user is loaded
+  useEffect(() => {
+    if (isLoaded && user && !urlUserId) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("userId", user.id);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [isLoaded, user, urlUserId]);
 
   // Fetch shared catalog data
   const {
@@ -241,23 +255,37 @@ export default function SharePage({ params }: SharePageProps) {
                   <div className="flex flex-col items-end gap-4 sm:flex-row">
                     <div className="flex-1">
                       <label className="mb-2 block text-sm font-medium text-muted-foreground">
-                        Your User ID (required to import)
+                        Your User ID{" "}
+                        {isLoaded && user
+                          ? "(automatically detected)"
+                          : "(required to import)"}
                       </label>
                       <input
                         type="text"
-                        placeholder="Enter your User ID"
+                        placeholder={
+                          isLoaded && user
+                            ? "Automatically using your account"
+                            : "Enter your User ID"
+                        }
                         value={userId ?? ""}
                         onChange={(e) => {
-                          const newUserId = e.target.value;
-                          const url = new URL(window.location.href);
-                          if (newUserId) {
-                            url.searchParams.set("userId", newUserId);
-                          } else {
-                            url.searchParams.delete("userId");
+                          if (!isLoaded || !user) {
+                            const newUserId = e.target.value;
+                            const url = new URL(window.location.href);
+                            if (newUserId) {
+                              url.searchParams.set("userId", newUserId);
+                            } else {
+                              url.searchParams.delete("userId");
+                            }
+                            window.history.replaceState({}, "", url.toString());
                           }
-                          window.history.replaceState({}, "", url.toString());
                         }}
-                        className="w-full rounded-md border border-border/50 bg-background/50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        disabled={isLoaded && !!user}
+                        className={`w-full rounded-md border border-border/50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                          isLoaded && user
+                            ? "cursor-not-allowed bg-muted/50 text-muted-foreground"
+                            : "bg-background/50"
+                        }`}
                       />
                     </div>
                     <div className="flex space-x-2">
