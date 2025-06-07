@@ -53,6 +53,7 @@ wrangler.toml
 # wrangler files
 .wrangler
 .dev.vars
+.prod.vars
 
 # Notes
 .notes
