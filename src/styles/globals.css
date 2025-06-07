@@ -123,6 +123,15 @@
     }
   }
 
+  @keyframes shine {
+    0% {
+      transform: translateX(-100%) skewX(-15deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-15deg);
+    }
+  }
+
   .animate-fade-in {
     animation: fade-in 0.5s ease-out;
   }
@@ -133,13 +142,6 @@
 
   .animate-scale-in {
     animation: scale-in 0.2s ease-out;
-  }
-
-  /* Glass morphism effect */
-  .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   /* Modern gradient text */

@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/toaster";
 import { Navigation } from "@/components/layout/navigation";
 import { GlobalFooter } from "@/components/layout/footer";
@@ -97,14 +98,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} dark`}>
-      <body className="flex min-h-screen flex-col text-foreground antialiased">
-        <AnimatedBackground />
-        <Navigation />
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-        <GlobalFooter />
-        <Toaster />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className={`${GeistSans.variable} dark`}>
+        <body className="flex min-h-screen flex-col text-foreground antialiased">
+          <AnimatedBackground />
+          <Navigation />
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+          <GlobalFooter />
+          <Toaster />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

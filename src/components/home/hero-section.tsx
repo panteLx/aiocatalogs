@@ -1,9 +1,39 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import packageJson from "../../../package.json";
 
 export function HeroSection() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
+  // If user is authenticated, show welcome back message
+  if (isLoaded && user) {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="relative inline-block">
+          <h1 className="gradient-text text-4xl font-bold sm:text-6xl">
+            Welcome back, {user.firstName ?? user.username}!
+          </h1>
+        </div>
+        <p className="text-lg text-muted-foreground sm:text-xl">
+          Ready to manage your AIO catalogs?
+        </p>
+        <Button
+          size="lg"
+          onClick={() => router.replace(`/${user.id}`)}
+          className="px-8 py-3 text-lg"
+        >
+          Go to your Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  // Default hero section for unauthenticated users
   return (
     <div className="space-y-6 text-center">
       <div className="relative inline-block">
@@ -20,9 +50,8 @@ export function HeroSection() {
           </Badge>
         </div>
       </div>
-      <p className="max-w-2xl text-xl text-muted-foreground">
-        Choose how you want to get started with your supercharged catalog
-        experience
+      <p className="mx-auto max-w-2xl text-center text-xl text-muted-foreground">
+        Start with your supercharged catalog experience now!
       </p>
     </div>
   );

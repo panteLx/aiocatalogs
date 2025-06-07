@@ -192,7 +192,7 @@ export const changelogRouter = createTRPCRouter({
         };
 
         // Add authorization header if GitHub token is available
-        const githubToken = process.env.GITHUB_TOKEN;
+        const githubToken = env.GITHUB_TOKEN;
         if (githubToken) {
           headers.Authorization = `Bearer ${githubToken}`;
         }
@@ -283,7 +283,7 @@ export const changelogRouter = createTRPCRouter({
         };
 
         // Add authorization header if GitHub token is available
-        const githubToken = process.env.GITHUB_TOKEN;
+        const githubToken = env.GITHUB_TOKEN;
         if (githubToken) {
           headers.Authorization = `Bearer ${githubToken}`;
         }
