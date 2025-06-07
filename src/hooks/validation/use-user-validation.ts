@@ -9,6 +9,7 @@ interface UseUserValidationProps {
   userId: string | null;
   redirectOnInvalid?: boolean;
   showToastOnError?: boolean;
+  enabled?: boolean;
 }
 
 interface UseUserValidationReturn {
@@ -21,6 +22,7 @@ export function useUserValidation({
   userId,
   redirectOnInvalid = true,
   showToastOnError = true,
+  enabled = true,
 }: UseUserValidationProps): UseUserValidationReturn {
   const router = useRouter();
   const [isValidating, setIsValidating] = useState(true);
@@ -30,7 +32,7 @@ export function useUserValidation({
   const userExistsQuery = api.user.exists.useQuery(
     { userId: userId! },
     {
-      enabled: !!userId,
+      enabled: !!userId && enabled,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: false,
@@ -40,7 +42,15 @@ export function useUserValidation({
   );
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !enabled) {
+      if (!enabled) {
+        // If validation is disabled, assume it's valid for now
+        setIsValid(true);
+        setIsValidating(false);
+        setShowLoader(false);
+        return;
+      }
+
       if (redirectOnInvalid) {
         router.replace("/");
       }
@@ -98,6 +108,7 @@ export function useUserValidation({
     return () => clearTimeout(loaderTimeout);
   }, [
     userId,
+    enabled,
     userExistsQuery.data,
     userExistsQuery.error,
     router,

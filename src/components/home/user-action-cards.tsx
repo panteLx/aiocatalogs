@@ -12,7 +12,7 @@ import { SignInButton } from "@clerk/nextjs";
 export function UserActionCards() {
   return (
     <div className="w-full max-w-2xl rounded-lg border border-border/50 bg-card shadow-lg transition-transform duration-500 hover:scale-[1.01] hover:shadow-xl hover:shadow-primary/10">
-      <SignInButton mode="modal" forceRedirectUrl="/api/auth/signed-in">
+      <SignInButton mode="modal">
         <Card className="group relative h-full cursor-pointer overflow-hidden border-2 border-transparent bg-gradient-to-br from-card via-card to-card/90 transition-all duration-500 hover:scale-[1.01] hover:border-primary/15 hover:shadow-xl hover:shadow-primary/10">
           {/* Animated background gradient */}
           <div className="from-primary/2 to-primary/3 absolute inset-0 bg-gradient-to-br via-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
