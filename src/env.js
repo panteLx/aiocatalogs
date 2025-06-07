@@ -19,7 +19,7 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     // Clerk Authentication
-    CLERK_SECRET_KEY: z.string().optional().default("your-clerk-secret-key"),
+    CLERK_SECRET_KEY: z.string().default("sk_test_JA=="),
     // GitHub Repository Configuration for Changelog
     GITHUB_REPO_OWNER: z.string().default("your-github-username"),
     GITHUB_REPO_NAME: z.string().default("aiocatalogs"),
@@ -36,10 +36,7 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
-      .string()
-      .optional()
-      .default("your-clerk-publishable-key"),
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().default("pk_test_JA=="),
     NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE: z.string().default("false"),
     NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON: z.string().default("true"),
   },
