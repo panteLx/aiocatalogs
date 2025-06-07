@@ -35,10 +35,17 @@ mode = "smart"
 # Environment Variables
 # https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 [vars]
-# NOT USED IN THIS PROJECT
+NEXT_PUBLIC_GITHUB_INCLUDE_PRERELEASE="true"
+NEXT_PUBLIC_GITHUB_SHOW_VIEW_ON_GITHUB_BUTTON="true"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="xxxx"
+GITHUB_REPO_OWNER=""
+GITHUB_REPO_NAME=""
+MDBLIST_MANIFEST_URL="https://1fe84bc728af-stremio-mdblist.baby-beamup.club"
 
 # Note: Use secrets to store sensitive data.
 # https://developers.cloudflare.com/workers/configuration/secrets/
+# Add GITHUB_TOKEN variable as a secret with `wrangler secret put GITHUB_TOKEN`
+# Add CLERK_SECRET_KEY variable as a secret with `wrangler secret put CLERK_SECRET_KEY`
 
 # Static Assets
 # https://developers.cloudflare.com/workers/static-assets/binding/
