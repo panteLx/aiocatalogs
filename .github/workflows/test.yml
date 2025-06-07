@@ -41,6 +41,10 @@ jobs:
 
       - name: Build
         id: build
+        env:
+          SKIP_ENV_VALIDATION: true
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder_for_build' }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY || 'sk_test_placeholder_for_build' }}
         run: pnpm run build
 
       # - name: Run tests
