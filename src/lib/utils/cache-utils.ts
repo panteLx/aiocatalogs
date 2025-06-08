@@ -23,16 +23,3 @@ export function invalidateMDBListCache() {
 export function invalidateCacheOnCatalogChange() {
   invalidateMDBListCache();
 }
-
-/**
- * Invalidate GitHub changelog cache
- * Can be called manually if needed (e.g., after deployments)
- */
-export function invalidateChangelogCache() {
-  try {
-    revalidateTag("github-releases");
-    console.log("GitHub changelog cache invalidated successfully");
-  } catch (error) {
-    console.error("Failed to invalidate GitHub changelog cache:", error);
-  }
-}
