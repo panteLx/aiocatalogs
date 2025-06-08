@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { env } from "@/env";
-import { unstable_cache } from "next/cache";
+import { createCachedFunction } from "@/lib/utils/cache-utils";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import packageJson from "../../../../package.json";
@@ -172,7 +172,7 @@ function convertReleaseToChangelogEntry(
 /**
  * Cached function to fetch GitHub releases
  */
-const fetchGitHubReleasesCached = unstable_cache(
+const fetchGitHubReleasesCached = createCachedFunction(
   async (): Promise<GitHubRelease[]> => {
     const { owner, repo } = getGitHubConfig();
 
@@ -219,7 +219,7 @@ const fetchGitHubReleasesCached = unstable_cache(
         }
       })
       .filter((release): release is GitHubRelease => release !== null)
-      .filter((release) => !release.draft); // Exclude draft releases
+      .filter((release: GitHubRelease) => !release.draft); // Exclude draft releases
 
     console.log(
       `✅ Successfully fetched ${validReleases.length} releases from GitHub API`,
@@ -257,7 +257,7 @@ export const changelogRouter = createTRPCRouter({
         // Apply prerelease filtering
         const filteredReleases = includePrerelease
           ? allReleases
-          : allReleases.filter((release) => !release.prerelease);
+          : allReleases.filter((release: GitHubRelease) => !release.prerelease);
 
         // Apply pagination after filtering
         const paginatedReleases = filteredReleases.slice(
@@ -306,7 +306,7 @@ export const changelogRouter = createTRPCRouter({
         const allReleases = await fetchGitHubReleasesCached();
 
         const cachedRelease = allReleases.find(
-          (release) =>
+          (release: GitHubRelease) =>
             release.tag_name === tag || release.tag_name === `v${tag}`,
         );
 

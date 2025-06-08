@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, sql } from "drizzle-orm";
-import { unstable_cache } from "next/cache";
+import { createCachedFunction } from "@/lib/utils/cache-utils";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
@@ -184,17 +184,12 @@ async function fetchMDBListData(
   return parsedData;
 }
 
-// Cached version of fetchMDBListData with Next.js caching
-const fetchMDBListDataCached = unstable_cache(
-  async (url: string) => {
-    return await fetchMDBListData(url);
-  },
-  ["mdblist-api"],
-  {
-    tags: ["mdblist-data"],
+// Cached version of fetchMDBListData with URL-specific cache keys
+function createMDBListDataCache(cacheKey: string) {
+  return createCachedFunction(fetchMDBListData, ["mdblist-api", cacheKey], {
     revalidate: 1800, // 30 minutes cache
-  },
-);
+  });
+}
 
 // Function to transform MDBList data to catalog format
 async function transformToMDBListCatalog(
@@ -265,15 +260,16 @@ export const mdblistRouter = createTRPCRouter({
         const apiKey = await getApiKeyForUser(input.userId, input.apiKey);
         const url = `${MDBLIST_BASE_URL}/lists/top?apikey=${apiKey}&limit=${input.limit}&skip=${input.offset}`;
 
-        // Use cached version of fetchMDBListData
-        const parsedData = await fetchMDBListDataCached(url);
+        // Use cached version with specific cache key for toplists
+        const fetchTopListsCached = createMDBListDataCache("toplists");
+        const parsedData = await fetchTopListsCached(url);
         console.log(
           `💾 Using cached MDBList data (${parsedData.length} toplists)`,
         );
 
         // Transform data to catalog format
         const catalogs = await Promise.all(
-          parsedData.map((list) =>
+          parsedData.map((list: z.infer<typeof MDBListItem>) =>
             transformToMDBListCatalog(list, apiKey, "toplist"),
           ),
         );
@@ -304,20 +300,25 @@ export const mdblistRouter = createTRPCRouter({
         const apiKey = await getApiKeyForUser(input.userId, input.apiKey);
         const url = `${MDBLIST_BASE_URL}/lists/search?query=${encodeURIComponent(input.query)}&apikey=${apiKey}`;
 
-        // Use cached version of fetchMDBListData
-        const parsedData = await fetchMDBListDataCached(url);
+        // Use cached version with specific cache key for search results
+        const fetchSearchCached = createMDBListDataCache(
+          `search-${input.query}`,
+        );
+        const parsedData = await fetchSearchCached(url);
         console.log(
           `💾 Using cached MDBList search results (${parsedData.length} lists found)`,
         );
 
         // Transform data to catalog format
         const catalogs = await Promise.all(
-          parsedData.map((list) =>
+          parsedData.map((list: z.infer<typeof MDBListItem>) =>
             transformToMDBListCatalog(list, apiKey, "userlist"),
           ),
         );
 
-        const sortedCatalogs = catalogs.sort((a, b) => b.likes - a.likes);
+        const sortedCatalogs = catalogs.sort(
+          (a: MDBListCatalog, b: MDBListCatalog) => b.likes - a.likes,
+        );
 
         // Apply client-side pagination
         const startIndex = input.offset;
