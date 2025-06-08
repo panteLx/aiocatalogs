@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
@@ -176,8 +177,24 @@ async function fetchMDBListData(
   }
 
   const data = await response.json();
-  return MDBListApiResponse.parse(data);
+  const parsedData = MDBListApiResponse.parse(data);
+  console.log(
+    `✅ Successfully fetched ${parsedData.length} MDBList items from API`,
+  );
+  return parsedData;
 }
+
+// Cached version of fetchMDBListData with Next.js caching
+const fetchMDBListDataCached = unstable_cache(
+  async (url: string) => {
+    return await fetchMDBListData(url);
+  },
+  ["mdblist-api"],
+  {
+    tags: ["mdblist-data"],
+    revalidate: 1800, // 30 minutes cache
+  },
+);
 
 // Function to transform MDBList data to catalog format
 async function transformToMDBListCatalog(
@@ -247,7 +264,12 @@ export const mdblistRouter = createTRPCRouter({
       try {
         const apiKey = await getApiKeyForUser(input.userId, input.apiKey);
         const url = `${MDBLIST_BASE_URL}/lists/top?apikey=${apiKey}&limit=${input.limit}&skip=${input.offset}`;
-        const parsedData = await fetchMDBListData(url);
+
+        // Use cached version of fetchMDBListData
+        const parsedData = await fetchMDBListDataCached(url);
+        console.log(
+          `💾 Using cached MDBList data (${parsedData.length} toplists)`,
+        );
 
         // Transform data to catalog format
         const catalogs = await Promise.all(
@@ -281,7 +303,12 @@ export const mdblistRouter = createTRPCRouter({
       try {
         const apiKey = await getApiKeyForUser(input.userId, input.apiKey);
         const url = `${MDBLIST_BASE_URL}/lists/search?query=${encodeURIComponent(input.query)}&apikey=${apiKey}`;
-        const parsedData = await fetchMDBListData(url);
+
+        // Use cached version of fetchMDBListData
+        const parsedData = await fetchMDBListDataCached(url);
+        console.log(
+          `💾 Using cached MDBList search results (${parsedData.length} lists found)`,
+        );
 
         // Transform data to catalog format
         const catalogs = await Promise.all(
