@@ -7,6 +7,7 @@ import { db } from "@/server/db";
 import { apiKeys, catalogs } from "@/server/db/schema";
 import packageJson from "../../../../package.json";
 import { isMDBListManifestUrl } from "@/lib/utils/mdblist-utils";
+import { invalidateCacheOnCatalogChange } from "@/lib/utils/cache-utils";
 
 // Helper function to update MDBList manifest URLs with RPDB API key
 function updateMDBListManifestUrlWithRPDB(
@@ -263,6 +264,9 @@ export const rpdbRouter = createTRPCRouter({
           input.apiKey,
         );
 
+        // Invalidate MDBList cache when RPDB API key is saved/updated
+        invalidateCacheOnCatalogChange();
+
         return {
           success: true,
           message: "RPDB API key saved successfully",
@@ -336,6 +340,9 @@ export const rpdbRouter = createTRPCRouter({
           input.userId,
           rpdbApiKey,
         );
+
+        // Invalidate MDBList cache when manifest URLs are updated
+        invalidateCacheOnCatalogChange();
 
         return {
           success: true,

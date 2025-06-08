@@ -15,6 +15,7 @@ import {
   isMDBListManifestUrl,
   replaceMDBListApiKey,
 } from "@/lib/utils/mdblist-utils";
+import { invalidateCacheOnCatalogChange } from "@/lib/utils/cache-utils";
 
 // Helper function to get user's MDBList API key
 async function getUserMDBListApiKey(
@@ -374,6 +375,9 @@ export const shareRouter = createTRPCRouter({
 
           importedCatalogs.push(importedCatalog);
         }
+
+        // Invalidate MDBList cache when catalogs are imported
+        invalidateCacheOnCatalogChange();
 
         return {
           success: true,

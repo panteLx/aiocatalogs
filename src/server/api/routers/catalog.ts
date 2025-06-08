@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { catalogs, userConfigs } from "@/server/db/schema";
+import { invalidateCacheOnCatalogChange } from "@/lib/utils/cache-utils";
 
 // Zod schema for Stremio manifest validation
 const catalogSchema = z.object({
@@ -162,6 +163,9 @@ export const catalogRouter = createTRPCRouter({
           })
           .returning();
 
+        // Invalidate MDBList cache when a new catalog is added
+        invalidateCacheOnCatalogChange();
+
         return {
           success: true,
           catalog: newCatalog,
@@ -301,6 +305,9 @@ export const catalogRouter = createTRPCRouter({
           );
         }
 
+        // Invalidate MDBList cache when catalog is updated
+        invalidateCacheOnCatalogChange();
+
         return {
           success: true,
           catalog: updatedCatalog,
@@ -355,6 +362,9 @@ export const catalogRouter = createTRPCRouter({
           ),
         );
 
+        // Invalidate MDBList cache when catalogs are reordered
+        invalidateCacheOnCatalogChange();
+
         return {
           success: true,
         };
@@ -400,6 +410,9 @@ export const catalogRouter = createTRPCRouter({
         }
 
         await ctx.db.delete(catalogs).where(eq(catalogs.id, input.catalogId));
+
+        // Invalidate MDBList cache when a catalog is removed
+        invalidateCacheOnCatalogChange();
 
         return {
           success: true,

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { env } from "@/env";
+import { unstable_cache } from "next/cache";
 
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import packageJson from "../../../../package.json";
@@ -168,6 +169,69 @@ function convertReleaseToChangelogEntry(
   };
 }
 
+/**
+ * Cached function to fetch GitHub releases
+ */
+const fetchGitHubReleasesCached = unstable_cache(
+  async (): Promise<GitHubRelease[]> => {
+    const { owner, repo } = getGitHubConfig();
+
+    // Prepare headers with optional GitHub token
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": `${packageJson.name}/${packageJson.version}`,
+    };
+
+    // Add authorization header if GitHub token is available
+    const githubToken = env.GITHUB_TOKEN;
+    if (githubToken) {
+      headers.Authorization = `Bearer ${githubToken}`;
+    }
+
+    // Fetch all releases from GitHub API (up to 100, which is GitHub's max per page)
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/releases?per_page=100`,
+      { headers },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Repository ${owner}/${repo} not found or releases are not accessible`,
+        });
+      }
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `GitHub API error: ${response.status} ${response.statusText}`,
+      });
+    }
+
+    const releases: unknown[] = await response.json();
+
+    // Validate and parse releases
+    const validReleases = releases
+      .map((release) => {
+        try {
+          return GitHubReleaseSchema.parse(release);
+        } catch {
+          return null;
+        }
+      })
+      .filter((release): release is GitHubRelease => release !== null)
+      .filter((release) => !release.draft); // Exclude draft releases
+
+    console.log(
+      `✅ Successfully fetched ${validReleases.length} releases from GitHub API`,
+    );
+    return validReleases;
+  },
+  ["github-releases"],
+  {
+    revalidate: 1800, // 30 minutes
+  },
+);
+
 export const changelogRouter = createTRPCRouter({
   /**
    * Get changelog entries from GitHub releases
@@ -183,60 +247,23 @@ export const changelogRouter = createTRPCRouter({
     .query(async ({ input }) => {
       try {
         const { limit, offset, includePrerelease } = input;
-        const { owner, repo } = getGitHubConfig();
 
-        // Prepare headers with optional GitHub token
-        const headers: Record<string, string> = {
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": `${packageJson.name}/${packageJson.version}`,
-        };
-
-        // Add authorization header if GitHub token is available
-        const githubToken = env.GITHUB_TOKEN;
-        if (githubToken) {
-          headers.Authorization = `Bearer ${githubToken}`;
-        }
-
-        // Calculate how many releases we need to fetch from GitHub
-        // We need to fetch more than needed because we might filter some out
-        const fetchLimit = Math.min(100, (offset + limit) * 2); // GitHub max is 100 per page
-
-        // Fetch releases from GitHub API
-        const response = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/releases?per_page=${fetchLimit}`,
-          { headers },
+        // Fetch cached releases
+        const allReleases = await fetchGitHubReleasesCached();
+        console.log(
+          `💾 Using cached GitHub releases data (${allReleases.length} total releases)`,
         );
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: `Repository ${owner}/${repo} not found or releases are not accessible`,
-            });
-          }
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `GitHub API error: ${response.status} ${response.statusText}`,
-          });
-        }
-
-        const releases: unknown[] = await response.json();
-
-        // Validate and parse releases
-        const validReleases = releases
-          .map((release) => {
-            try {
-              return GitHubReleaseSchema.parse(release);
-            } catch {
-              return null;
-            }
-          })
-          .filter((release): release is GitHubRelease => release !== null)
-          .filter((release) => !release.draft) // Exclude draft releases
-          .filter((release) => includePrerelease || !release.prerelease); // Filter prereleases if needed
+        // Apply prerelease filtering
+        const filteredReleases = includePrerelease
+          ? allReleases
+          : allReleases.filter((release) => !release.prerelease);
 
         // Apply pagination after filtering
-        const paginatedReleases = validReleases.slice(offset, offset + limit);
+        const paginatedReleases = filteredReleases.slice(
+          offset,
+          offset + limit,
+        );
 
         // Convert to changelog entries
         const changelogEntries = paginatedReleases.map(
@@ -246,7 +273,7 @@ export const changelogRouter = createTRPCRouter({
         return {
           entries: changelogEntries,
           total: changelogEntries.length,
-          hasMore: validReleases.length > offset + limit,
+          hasMore: filteredReleases.length > offset + limit,
         };
       } catch (error) {
         if (error instanceof TRPCError) {
@@ -274,6 +301,24 @@ export const changelogRouter = createTRPCRouter({
     .query(async ({ input }) => {
       try {
         const { tag } = input;
+
+        // First, try to find the release in our cached data
+        const allReleases = await fetchGitHubReleasesCached();
+
+        const cachedRelease = allReleases.find(
+          (release) =>
+            release.tag_name === tag || release.tag_name === `v${tag}`,
+        );
+
+        if (cachedRelease) {
+          console.log(`✅ Found release "${tag}" in cache`);
+          return convertReleaseToChangelogEntry(cachedRelease);
+        }
+
+        console.log(
+          `⚠️ Release "${tag}" not found in cache, fetching from GitHub API directly`,
+        );
+        // If not found in cache, fall back to direct API call
         const { owner, repo } = getGitHubConfig();
 
         // Prepare headers with optional GitHub token
@@ -309,6 +354,9 @@ export const changelogRouter = createTRPCRouter({
         const release: unknown = await response.json();
         const validRelease = GitHubReleaseSchema.parse(release);
 
+        console.log(
+          `✅ Successfully fetched release "${tag}" directly from GitHub API`,
+        );
         return convertReleaseToChangelogEntry(validRelease);
       } catch (error) {
         if (error instanceof TRPCError) {
