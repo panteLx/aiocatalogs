@@ -232,6 +232,23 @@ function handleMDBListError(error: unknown, defaultMessage: string): never {
   });
 }
 
+// Helper function for concurrent processing with concurrency limit
+async function processConcurrently<T, R>(
+  items: T[],
+  processor: (item: T) => Promise<R>,
+  concurrencyLimit: number = 5,
+): Promise<R[]> {
+  const results: R[] = [];
+
+  for (let i = 0; i < items.length; i += concurrencyLimit) {
+    const batch = items.slice(i, i + concurrencyLimit);
+    const batchResults = await Promise.all(batch.map(processor));
+    results.push(...batchResults);
+  }
+
+  return results;
+}
+
 export const mdblistRouter = createTRPCRouter({
   // Validate API key
   validateApiKey: publicProcedure
@@ -502,65 +519,105 @@ export const mdblistRouter = createTRPCRouter({
         }
 
         const database = await db();
-        let importedCount = 0; // Import each list as a catalog
-        for (const list of listsToImport) {
-          const manifestUrl = `${MANIFEST_BASE_URL}/${list.id}/${apiKey}/manifest.json`;
 
-          // Check if catalog already exists for this user
-          const existingCatalog = await database
-            .select()
-            .from(catalogs)
-            .where(
-              and(
-                eq(catalogs.userId, input.userId),
-                eq(catalogs.manifestUrl, manifestUrl),
-              ),
-            )
-            .limit(1);
+        // First, check which lists don't exist yet to avoid unnecessary work
+        const listsToCheck = await Promise.all(
+          listsToImport.map(async (list) => {
+            const manifestUrl = `${MANIFEST_BASE_URL}/${list.id}/${apiKey}/manifest.json`;
+            const existingCatalog = await database
+              .select()
+              .from(catalogs)
+              .where(
+                and(
+                  eq(catalogs.userId, input.userId),
+                  eq(catalogs.manifestUrl, manifestUrl),
+                ),
+              )
+              .limit(1);
 
-          if (existingCatalog.length === 0) {
-            try {
-              // Fetch the real manifest from the MDBList manifest URL
-              const manifestResponse = await fetch(manifestUrl, {
-                headers: { "User-Agent": USER_AGENT },
-              });
+            return {
+              list,
+              manifestUrl,
+              exists: existingCatalog.length > 0,
+            };
+          }),
+        );
 
-              if (!manifestResponse.ok) {
-                console.error(
-                  `Failed to fetch manifest for list ${list.id}: ${manifestResponse.status}`,
-                );
-                continue; // Skip this list if manifest fetch fails
-              }
+        const newLists = listsToCheck.filter((item) => !item.exists);
 
-              const originalManifest = await manifestResponse.json();
+        if (newLists.length === 0) {
+          return {
+            success: true,
+            imported: 0,
+            total: listsToImport.length,
+            message: "All lists already exist in your catalog",
+          };
+        }
 
-              // Insert new catalog with the real manifest data
-              await database.insert(catalogs).values({
-                userId: input.userId,
-                name: list.name,
-                description: list.description ?? "Personal MDBList",
-                manifestUrl,
-                originalManifest,
-                status: "active",
-                order: 0,
-              });
-              importedCount++;
-            } catch (manifestError) {
+        // Process manifests concurrently with a limit of 5 concurrent requests
+        const processManifest = async (item: (typeof newLists)[0]) => {
+          try {
+            const manifestResponse = await fetch(item.manifestUrl, {
+              headers: { "User-Agent": USER_AGENT },
+            });
+
+            if (!manifestResponse.ok) {
               console.error(
-                `Error fetching manifest for list ${list.id}:`,
-                manifestError,
+                `Failed to fetch manifest for list ${item.list.id}: ${manifestResponse.status}`,
               );
-              // Continue with next list if manifest fetch fails
-              continue;
+              return {
+                success: false,
+                list: item.list,
+                error: `HTTP ${manifestResponse.status}`,
+              };
             }
+
+            const originalManifest = await manifestResponse.json();
+
+            // Insert new catalog with the real manifest data
+            await database.insert(catalogs).values({
+              userId: input.userId,
+              name: item.list.name,
+              description: item.list.description ?? "Personal MDBList",
+              manifestUrl: item.manifestUrl,
+              originalManifest,
+              status: "active",
+              order: 0,
+            });
+
+            return { success: true, list: item.list };
+          } catch (manifestError) {
+            console.error(
+              `Error fetching manifest for list ${item.list.id}:`,
+              manifestError,
+            );
+            return {
+              success: false,
+              list: item.list,
+              error:
+                manifestError instanceof Error
+                  ? manifestError.message
+                  : "Unknown error",
+            };
           }
+        };
+
+        // Process all manifests concurrently with a concurrency limit
+        const results = await processConcurrently(newLists, processManifest, 5);
+        const importedCount = results.filter((result) => result.success).length;
+        const failedCount = results.length - importedCount;
+
+        let message = `Successfully imported ${importedCount} of ${listsToImport.length} lists`;
+        if (failedCount > 0) {
+          message += ` (${failedCount} failed)`;
         }
 
         return {
           success: true,
           imported: importedCount,
           total: listsToImport.length,
-          message: `Successfully imported ${importedCount} of ${listsToImport.length} lists`,
+          failed: failedCount,
+          message,
         };
       } catch (error) {
         handleMDBListError(error, "Failed to import user lists");
