@@ -15,3 +15,6 @@ global.fetch = vi.fn();
 afterEach(() => {
   vi.clearAllMocks();
 });
+
+// Install vitest as a dev dependency
+// npm install --save-dev vitest
