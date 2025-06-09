@@ -25,7 +25,6 @@ import {
   User,
   Hash,
   List,
-  Bookmark,
 } from "lucide-react";
 import { toast } from "@/hooks/ui/use-toast";
 import { api } from "@/trpc/react";
@@ -112,9 +111,6 @@ export function AddCatalogDialog({
 
   // Save API key mutation
   const saveApiKeyMutation = api.mdblist.saveApiKey.useMutation();
-
-  // Import user lists mutation
-  const importUserListsMutation = api.mdblist.importUserLists.useMutation();
 
   // Get tRPC utils for cache invalidation
   const utils = api.useUtils();
@@ -1064,7 +1060,7 @@ export function AddCatalogDialog({
                       No Personal Lists Found
                     </p>
                     <p className="text-sm">
-                      You don't have any personal lists on MDBList yet
+                      You don&apos;t have any personal lists on MDBList yet
                     </p>
                   </div>
                 ) : (
@@ -1077,7 +1073,7 @@ export function AddCatalogDialog({
                           Your Personal Lists
                         </h3>
                         <span className="text-sm text-muted-foreground">
-                          ({getUserListsQuery.data?.catalogs?.length || 0}{" "}
+                          ({getUserListsQuery.data?.catalogs?.length ?? 0}{" "}
                           lists)
                         </span>
                       </div>
@@ -1089,7 +1085,7 @@ export function AddCatalogDialog({
                               variant="outline"
                               onClick={() =>
                                 setSelectedPersonalLists([
-                                  ...getUserListsQuery.data!.catalogs,
+                                  ...getUserListsQuery.data.catalogs,
                                 ])
                               }
                               disabled={
