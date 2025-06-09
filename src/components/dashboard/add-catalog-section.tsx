@@ -86,9 +86,9 @@ export function AddCatalogSection({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Use the &quot;Add MDBList Catalog&quot; button to browse the MDBList
-            catalog library, or quickly add a manifest URL directly in the input
-            field above.
+            Use the &quot;Add MDBList Catalogs&quot; button to browse the
+            MDBList catalog library, or quickly add a manifest URL directly in
+            the input field above.
           </p>
         </div>
       </CardContent>

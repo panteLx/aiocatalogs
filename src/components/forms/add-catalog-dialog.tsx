@@ -24,6 +24,7 @@ import {
   AlertCircle,
   User,
   Hash,
+  List,
 } from "lucide-react";
 import { toast } from "@/hooks/ui/use-toast";
 import { api } from "@/trpc/react";
@@ -67,11 +68,16 @@ export function AddCatalogDialog({
   const [selectedSearchResults, setSelectedSearchResults] = useState<
     MDBListCatalog[]
   >([]);
+  const [selectedPersonalLists, setSelectedPersonalLists] = useState<
+    MDBListCatalog[]
+  >([]);
   const [isAdding, setIsAdding] = useState(false);
   const [currentlyProcessing, setCurrentlyProcessing] = useState<string | null>(
     null,
   );
-  const [activeTab, setActiveTab] = useState<"browse" | "search">("browse");
+  const [activeTab, setActiveTab] = useState<"browse" | "search" | "personal">(
+    "browse",
+  );
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const [searchName, setSearchName] = useState("");
   const [actualSearchQuery, setActualSearchQuery] = useState("");
@@ -95,6 +101,10 @@ export function AddCatalogDialog({
     { userId },
     { enabled: isOpen && !!userId },
   );
+  const getUserListsQuery = api.mdblist.getUserLists.useQuery(
+    { apiKey, userId },
+    { enabled: false, retry: false },
+  );
 
   // Add catalog mutation
   const addCatalogMutation = api.catalog.add.useMutation();
@@ -116,8 +126,17 @@ export function AddCatalogDialog({
           return [...prev, catalog];
         }
       });
-    } else {
+    } else if (activeTab === "search") {
       setSelectedSearchResults((prev) => {
+        const exists = prev.find((c) => c.id === catalog.id);
+        if (exists) {
+          return prev.filter((c) => c.id !== catalog.id);
+        } else {
+          return [...prev, catalog];
+        }
+      });
+    } else if (activeTab === "personal") {
+      setSelectedPersonalLists((prev) => {
         const exists = prev.find((c) => c.id === catalog.id);
         if (exists) {
           return prev.filter((c) => c.id !== catalog.id);
@@ -131,18 +150,25 @@ export function AddCatalogDialog({
   const isCatalogSelected = (catalog: MDBListCatalog) => {
     if (activeTab === "browse") {
       return selectedCatalogs.some((c) => c.id === catalog.id);
-    } else {
+    } else if (activeTab === "search") {
       return selectedSearchResults.some((c) => c.id === catalog.id);
+    } else if (activeTab === "personal") {
+      return selectedPersonalLists.some((c) => c.id === catalog.id);
     }
+    return false;
   };
 
   const getSelectedCatalogs = () => {
-    return activeTab === "browse" ? selectedCatalogs : selectedSearchResults;
+    if (activeTab === "browse") return selectedCatalogs;
+    if (activeTab === "search") return selectedSearchResults;
+    if (activeTab === "personal") return selectedPersonalLists;
+    return [];
   };
 
   const clearSelections = () => {
     setSelectedCatalogs([]);
     setSelectedSearchResults([]);
+    setSelectedPersonalLists([]);
   };
 
   // Handle keyboard shortcuts
@@ -172,13 +198,20 @@ export function AddCatalogDialog({
           setSelectedCatalogs([...filtered]);
         } else if (activeTab === "search" && searchListsQuery.data?.catalogs) {
           setSelectedSearchResults([...searchListsQuery.data.catalogs]);
+        } else if (
+          activeTab === "personal" &&
+          getUserListsQuery.data?.catalogs
+        ) {
+          setSelectedPersonalLists([...getUserListsQuery.data.catalogs]);
         }
       }
 
       // Escape to clear selections
       if (
         e.key === "Escape" &&
-        (selectedCatalogs.length > 0 || selectedSearchResults.length > 0)
+        (selectedCatalogs.length > 0 ||
+          selectedSearchResults.length > 0 ||
+          selectedPersonalLists.length > 0)
       ) {
         e.preventDefault();
         clearSelections();
@@ -192,10 +225,12 @@ export function AddCatalogDialog({
     activeTab,
     selectedCatalogs.length,
     selectedSearchResults.length,
+    selectedPersonalLists.length,
     apiKeyValid,
     searchQuery,
     getTopListsQuery.data?.catalogs,
     searchListsQuery.data?.catalogs,
+    getUserListsQuery.data?.catalogs,
   ]);
 
   // Handle API key validation on Enter key press
@@ -241,6 +276,9 @@ export function AddCatalogDialog({
             await getTopListsQuery.refetch();
             setTopListsLoaded(true);
           }
+
+          // Load user's personal lists
+          await getUserListsQuery.refetch();
         } else {
           setApiKeyValid(false);
           setTopListsLoaded(false);
@@ -293,6 +331,9 @@ export function AddCatalogDialog({
             await getTopListsQuery.refetch();
             setTopListsLoaded(true);
           }
+
+          // Load user's personal lists
+          await getUserListsQuery.refetch();
         } else {
           setApiKeyValid(false);
           setTopListsLoaded(false);
@@ -517,11 +558,7 @@ export function AddCatalogDialog({
             <br />
             <span className="text-xs">
               <kbd className="rounded bg-muted px-1 py-0.5 text-xs">Ctrl+A</kbd>{" "}
-              to select all,
-              <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-xs">
-                Esc
-              </kbd>{" "}
-              to clear selections
+              to select all visible catalogs.
             </span>
           </p>
         </DialogHeader>
@@ -607,7 +644,7 @@ export function AddCatalogDialog({
               className="relative flex-1"
             >
               <Package className="h-4 w-4" />
-              Browse Catalogs
+              Browse
               {activeTab === "browse" && selectedCatalogs.length > 0 && (
                 <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs font-medium">
                   {selectedCatalogs.length}
@@ -619,18 +656,35 @@ export function AddCatalogDialog({
               size="sm"
               onClick={() => setActiveTab("search")}
               className="relative flex-1"
+              disabled={apiKeyValid !== true}
             >
               <Search className="h-4 w-4" />
-              Search Catalogs
+              Search
               {activeTab === "search" && selectedSearchResults.length > 0 && (
                 <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs font-medium">
                   {selectedSearchResults.length}
                 </span>
               )}
             </Button>
+            <Button
+              variant={activeTab === "personal" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setActiveTab("personal")}
+              className="relative flex-1"
+              disabled={apiKeyValid !== true}
+            >
+              <User className="h-4 w-4" />
+              Personal Lists
+              {activeTab === "personal" && selectedPersonalLists.length > 0 && (
+                <span className="ml-1 rounded-full bg-primary/20 px-1.5 py-0.5 text-xs font-medium">
+                  {selectedPersonalLists.length}
+                </span>
+              )}
+            </Button>
           </div>
 
-          {activeTab === "browse" ? (
+          {/* Tab Content */}
+          {activeTab === "browse" && (
             <div className="flex flex-1 flex-col space-y-4 overflow-hidden p-1">
               {/* Search Input */}
               <div className="space-y-2">
@@ -785,7 +839,9 @@ export function AddCatalogDialog({
                   )}
               </div>
             </div>
-          ) : (
+          )}
+
+          {activeTab === "search" && (
             <div className="flex-1 space-y-4 overflow-y-auto p-1">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -965,20 +1021,155 @@ export function AddCatalogDialog({
                       </div>
                     )}
                 </div>
+              </div>
+            </div>
+          )}
 
-                <div className="rounded-md border border-blue-500/20 bg-blue-500/10 p-3">
-                  <div className="flex items-start space-x-2">
-                    <Search className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
-                    <div className="text-xs text-blue-600 dark:text-blue-400">
-                      <p className="font-medium">MDBList Catalog Search</p>
-                      <p className="mt-1">
-                        Search through MDBList toplists and user lists to find
-                        additional content. You can select multiple catalogs and
-                        add them all at once.
-                      </p>
+          {activeTab === "personal" && (
+            <div className="flex flex-1 flex-col space-y-4 overflow-hidden p-1">
+              <div className="flex-1 overflow-y-auto p-1">
+                {apiKeyValid !== true ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <Key className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                    <p className="text-lg font-medium">API Key Required</p>
+                    <p className="text-sm">
+                      Please enter a valid MDBList API key to access your
+                      personal lists
+                    </p>
+                  </div>
+                ) : getUserListsQuery.isLoading ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <Loader2 className="mx-auto mb-4 h-16 w-16 animate-spin opacity-50" />
+                    <p className="text-lg font-medium">
+                      Loading Personal Lists
+                    </p>
+                    <p className="text-sm">
+                      Fetching your MDBList personal lists...
+                    </p>
+                  </div>
+                ) : getUserListsQuery.error ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <AlertCircle className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                    <p className="text-lg font-medium">Error Loading Lists</p>
+                    <p className="text-sm">{getUserListsQuery.error.message}</p>
+                  </div>
+                ) : getUserListsQuery.data?.catalogs?.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <List className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                    <p className="text-lg font-medium">
+                      No Personal Lists Found
+                    </p>
+                    <p className="text-sm">
+                      You don&apos;t have any personal lists on MDBList yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Header with actions */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <List className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="text-lg font-medium">
+                          Your Personal Lists
+                        </h3>
+                        <span className="text-sm text-muted-foreground">
+                          ({getUserListsQuery.data?.catalogs?.length ?? 0}{" "}
+                          lists)
+                        </span>
+                      </div>
+                      {getUserListsQuery.data?.catalogs &&
+                        getUserListsQuery.data.catalogs.length > 0 && (
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setSelectedPersonalLists([
+                                  ...getUserListsQuery.data.catalogs,
+                                ])
+                              }
+                              disabled={
+                                selectedPersonalLists.length ===
+                                getUserListsQuery.data.catalogs.length
+                              }
+                            >
+                              Select All
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedPersonalLists([])}
+                              disabled={selectedPersonalLists.length === 0}
+                            >
+                              Clear All
+                            </Button>
+                          </div>
+                        )}
+                    </div>
+
+                    {/* Personal Lists Grid */}
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {getUserListsQuery.data?.catalogs?.map((list) => (
+                        <Card
+                          key={list.id}
+                          className={`cursor-pointer border-border/50 bg-background/30 transition-all duration-200 hover:bg-background/50 ${
+                            isCatalogSelected(list)
+                              ? "border-primary/50 ring-2 ring-primary"
+                              : ""
+                          }`}
+                          onClick={() => toggleCatalogSelection(list)}
+                        >
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between">
+                              <div className="min-w-0 flex-1">
+                                <CardTitle className="flex items-center space-x-2 text-sm font-medium">
+                                  <span className="truncate">{list.name}</span>
+                                </CardTitle>
+                              </div>
+                              {isCatalogSelected(list) && (
+                                <CheckCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3 pt-0">
+                            <p className="line-clamp-2 text-xs text-muted-foreground">
+                              {list.description.length > 0
+                                ? list.description
+                                : "No description available"}
+                            </p>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <User className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {list.username || "You"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Hash className="h-3 w-3 flex-shrink-0" />
+                                <span>{list.items.toLocaleString()} items</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Heart className="h-3 w-3 flex-shrink-0" />
+                                <span>{list.likes}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {list.types.map((type) => (
+                                <Badge
+                                  key={type}
+                                  variant="secondary"
+                                  className="text-xs capitalize"
+                                >
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -1054,7 +1245,7 @@ export function AddCatalogTrigger({
   return (
     <Button onClick={onClick} disabled={disabled} className={`${className}`}>
       <Plus className="h-4 w-4" />
-      Add MDBList Catalog
+      Add MDBList Catalogs
     </Button>
   );
 }
