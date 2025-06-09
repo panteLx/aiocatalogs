@@ -236,7 +236,7 @@ function handleMDBListError(error: unknown, defaultMessage: string): never {
 async function processConcurrently<T, R>(
   items: T[],
   processor: (item: T) => Promise<R>,
-  concurrencyLimit: number = 5,
+  concurrencyLimit = 5,
 ): Promise<R[]> {
   const results: R[] = [];
 
