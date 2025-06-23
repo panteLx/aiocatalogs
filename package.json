@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/panteLx/aiocatalogs#readme",
   "dependencies": {
-    "hono": "^3.12.12",
+    "hono": "^4.8.2",
     "stremio-addon-sdk": "^1.6.10"
   },
   "devDependencies": {
