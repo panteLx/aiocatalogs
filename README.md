@@ -12,6 +12,10 @@
 
 </div>
 
+# Project discontinuation notice
+
+**Important Notice:** As of June 2025, active development and maintenance of AIOCatalogs has been discontinued. While the project will remain available for use, no further updates, bug fixes, or support will be provided. Users are encouraged to explore alternative solutions for their catalog management needs. We thank the community for their support throughout the project's lifespan.
+
 > **Note**
 >
 > AIOCatalogs is an open-source addon that combines multiple catalog addons into a single one. It offers enhanced performance, user-friendly configuration, and supports various platforms like Stremio, Omni, Vidi, Fusion and more. Developed for maximum flexibility and compatibility.
